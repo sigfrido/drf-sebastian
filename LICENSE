@@ -1,5 +1,9 @@
 BSD 3-Clause License
 
+drf-sebastian
+
+A server-side HTML GUI generator for Django Rest Framework API-First applications.
+
 Copyright (c) 2026, Luca Sigfrido Percich
 
 Redistribution and use in source and binary forms, with or without

@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "drf-sebastian"
+version = "0.1.0"
+description = "Server-side HTML GUI generator for Django REST Framework"
+readme = "README.md"
+license = {file = "LICENSE"}
+requires-python = ">=3.11"
+dependencies = [
+    "django>=5.0",
+    "djangorestframework>=3.14",
+]
+
+[project.optional-dependencies]
+filter = ["django-filter>=23.0"]
+htmx = ["django-htmx>=1.17"]
+dev = [
+    "pytest>=8.0",
+    "pytest-django>=4.8",
+    "django-filter>=23.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+sebastian = ["templates/**/*.html"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "settings"
+pythonpath = ["src", "testproject"]
+testpaths = ["tests"]

@@ -1,0 +1,84 @@
+{% extends "sebastian/base.html" %}
+{% load sebastian_tags %}
+
+{% block title %}Detail{% endblock %}
+
+{% block content %}
+{% with groups=sebastian_config.groups %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4>{{ view.get_view_name }} — Detail</h4>
+  <div class="btn-group">
+    <a href="{{ request.path }}../edit/"
+       class="btn btn-outline-primary btn-sm">
+      <i class="bi bi-pencil"></i> Edit
+    </a>
+    {% for action in view.get_available_actions %}
+      {% with cfg=action.gui_config %}
+        {% if cfg.position != 'list' %}
+        <button class="btn btn-{{ cfg.color|default:'secondary' }} btn-sm"
+                hx-post="{{ request.path }}{{ action.name }}/"
+                hx-target="#sebastian-content"
+                {% if cfg.confirm %}hx-confirm="{{ cfg.confirm }}"{% endif %}>
+          {% if cfg.icon %}<i class="bi bi-{{ cfg.icon }}"></i>{% endif %}
+          {{ cfg.label }}
+        </button>
+        {% endif %}
+      {% endwith %}
+    {% endfor %}
+  </div>
+</div>
+
+{% if groups %}
+{# --- Tabbed field groups + entity groups --- #}
+<ul class="nav nav-tabs mb-3" role="tablist">
+  {% for group in groups %}
+  <li class="nav-item" role="presentation">
+    <button class="nav-link {% if forloop.first %}active{% endif %}"
+            data-bs-toggle="tab"
+            data-bs-target="#tab-{{ group.name }}"
+            type="button">
+      {{ group.label|default:group.name }}
+    </button>
+  </li>
+  {% endfor %}
+</ul>
+
+<div class="tab-content">
+  {% for group in groups %}
+  <div class="tab-pane fade {% if forloop.first %}show active{% endif %}"
+       id="tab-{{ group.name }}">
+
+    {% if group.fields %}
+    {# FieldGroup #}
+    <dl class="row">
+      {% for field_name in group.fields %}
+      <dt class="col-sm-3">{{ field_name }}</dt>
+      <dd class="col-sm-9">{{ data|get_item:field_name }}</dd>
+      {% endfor %}
+    </dl>
+    {% else %}
+    {# EntityGroup — inline list with HTMX add/edit/delete #}
+    <div id="entity-{{ group.name }}"
+         hx-get="{{ request.path }}{{ group.name }}/"
+         hx-trigger="load">
+      <p class="text-muted">Loading…</p>
+    </div>
+    {% endif %}
+
+  </div>
+  {% endfor %}
+</div>
+
+{% else %}
+{# No groups declared — flat display #}
+<dl class="row">
+  {% for key, value in data.items %}
+  <dt class="col-sm-3">{{ key }}</dt>
+  <dd class="col-sm-9">{{ value }}</dd>
+  {% endfor %}
+</dl>
+{% endif %}
+
+{% endwith %}
+{% endblock %}

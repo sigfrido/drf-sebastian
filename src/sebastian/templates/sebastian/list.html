@@ -1,0 +1,73 @@
+{% extends "sebastian/base.html" %}
+{% load sebastian_tags %}
+
+{% block title %}{{ view.get_view_name }} — List{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4>{{ view.get_view_name }}</h4>
+  <a href="{{ request.path }}new/" class="btn btn-primary btn-sm">
+    <i class="bi bi-plus-lg"></i> New
+  </a>
+</div>
+
+{# --- Filters (auto-generated from filterset_fields if present) --- #}
+{% if view.filterset_class %}
+<form class="row g-2 mb-3"
+      hx-get="{{ request.path }}"
+      hx-target="#list-table"
+      hx-push-url="true">
+  {% for name, filter in view.filterset_class.base_filters.items %}
+  <div class="col-auto">
+    <label class="visually-hidden" for="f-{{ name }}">{{ filter.label }}</label>
+    <input id="f-{{ name }}" class="form-control form-control-sm"
+           name="{{ name }}" placeholder="{{ filter.label }}"
+           value="{{ request.GET|get_item:name }}">
+  </div>
+  {% endfor %}
+  <div class="col-auto">
+    <button type="submit" class="btn btn-outline-secondary btn-sm">Filter</button>
+    <a href="{{ request.path }}" class="btn btn-link btn-sm">Clear</a>
+  </div>
+</form>
+{% endif %}
+
+{# --- Table --- #}
+<div id="list-table">
+{% if data %}
+<div class="table-responsive">
+  <table class="table table-hover table-sm">
+    <thead class="table-light">
+      <tr>
+        {% for key in data.0.keys %}
+        <th>{{ key }}</th>
+        {% endfor %}
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in data %}
+      <tr>
+        {% for key, value in item.items %}
+        <td>{{ value }}</td>
+        {% endfor %}
+        <td>
+          <a href="{{ request.path }}{{ item.id }}/"
+             class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-eye"></i>
+          </a>
+          <a href="{{ request.path }}{{ item.id }}/edit/"
+             class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-pencil"></i>
+          </a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p class="text-muted">No records found.</p>
+{% endif %}
+</div>
+{% endblock %}
