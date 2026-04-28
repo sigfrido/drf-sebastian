@@ -17,10 +17,7 @@
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
   <div class="container-fluid">
     <a class="navbar-brand" href="/">{% block brand %}Sebastian{% endblock %}</a>
-    <div class="collapse navbar-collapse" id="nav-menu"
-         hx-get="{% block menu_url %}{% endblock %}"
-         hx-trigger="load"
-         hx-swap="innerHTML">
+    <div class="collapse navbar-collapse" id="nav-menu">
       {% block nav_items %}{% endblock %}
     </div>
   </div>
