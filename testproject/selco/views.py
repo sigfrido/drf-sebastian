@@ -5,12 +5,13 @@ from sebastian.config import FieldGroup, EntityGroup
 from sebastian.decorators import action
 from .models import Fornitore, Richiesta
 from .serializers import FornitoreSerializer, RichiestaSerializer, AllegatoSerializer
+from .filters import FornitoreFilter, RichiestaFilter
 
 
 class FornitoreViewSet(GUIMixin, viewsets.ModelViewSet):
     queryset         = Fornitore.objects.all()
     serializer_class = FornitoreSerializer
-    filterset_fields = ['ragione_sociale', 'attivo']
+    filterset_class  = FornitoreFilter
 
     class Sebastian:
         groups = [
@@ -22,7 +23,7 @@ class FornitoreViewSet(GUIMixin, viewsets.ModelViewSet):
 class RichiestaViewSet(GUIMixin, viewsets.ModelViewSet):
     queryset         = Richiesta.objects.select_related('fornitore').all()
     serializer_class = RichiestaSerializer
-    filterset_fields = ['stato', 'fornitore']
+    filterset_class  = RichiestaFilter
 
     class Sebastian:
         groups = [
