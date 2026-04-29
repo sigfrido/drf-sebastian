@@ -1,57 +1,52 @@
 {% extends "sebastian/base.html" %}
 {% load sebastian_tags %}
 
-{% block title %}{{ view.get_view_name }} — List{% endblock %}
+{% block title %}{{ view.get_view_name }} — Lista{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h4>{{ view.get_view_name }}</h4>
   <a href="{{ request.path }}new/" class="btn btn-primary btn-sm">
-    <i class="bi bi-plus-lg"></i> New
+    <i class="bi bi-plus-lg"></i> Nuovo
   </a>
 </div>
 
-{# --- Filters (auto-generated from filterset_fields if present) --- #}
-{% if view.filterset_class %}
+{% if filter_form %}
 <form class="row g-2 mb-3"
       hx-get="{{ request.path }}"
-      hx-target="#list-table"
+      hx-target="#sebastian-content"
       hx-push-url="true">
-  {% for name, filter in view.filterset_class.base_filters.items %}
+  {% for field in filter_form %}
   <div class="col-auto">
-    <label class="visually-hidden" for="f-{{ name }}">{{ filter.label }}</label>
-    <input id="f-{{ name }}" class="form-control form-control-sm"
-           name="{{ name }}" placeholder="{{ filter.label }}"
-           value="{{ request.GET|get_item:name }}">
+    <label class="visually-hidden" for="{{ field.id_for_label }}">{{ field.label }}</label>
+    {{ field }}
   </div>
   {% endfor %}
-  <div class="col-auto">
-    <button type="submit" class="btn btn-outline-secondary btn-sm">Filter</button>
-    <a href="{{ request.path }}" class="btn btn-link btn-sm">Clear</a>
+  <div class="col-auto align-self-end">
+    <button type="submit" class="btn btn-outline-secondary btn-sm">Filtra</button>
+    <a href="{{ request.path }}" class="btn btn-link btn-sm">Cancella</a>
   </div>
 </form>
 {% endif %}
 
-{# --- Table --- #}
-<div id="list-table">
-{% if data %}
+{% if items %}
 <div class="table-responsive">
   <table class="table table-hover table-sm">
     <thead class="table-light">
       <tr>
-        {% for key in data.0.keys %}
-        <th>{{ key }}</th>
+        {% for key in items.0.keys %}
+        <th>{{ field_labels|get_item:key|default:key }}</th>
         {% endfor %}
         <th></th>
       </tr>
     </thead>
     <tbody>
-      {% for item in data %}
+      {% for item in items %}
       <tr>
         {% for key, value in item.items %}
         <td>{{ value }}</td>
         {% endfor %}
-        <td>
+        <td class="text-end text-nowrap">
           <a href="{{ request.path }}{{ item.id }}/"
              class="btn btn-outline-secondary btn-sm">
             <i class="bi bi-eye"></i>
@@ -66,8 +61,27 @@
     </tbody>
   </table>
 </div>
-{% else %}
-<p class="text-muted">No records found.</p>
-{% endif %}
+
+{% if pagination %}
+<div class="d-flex justify-content-between align-items-center mt-2">
+  <small class="text-muted">{{ pagination.count }} record</small>
+  <div>
+    {% if pagination.previous %}
+    <a href="{{ pagination.previous }}" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-chevron-left"></i>
+    </a>
+    {% endif %}
+    {% if pagination.next %}
+    <a href="{{ pagination.next }}" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-chevron-right"></i>
+    </a>
+    {% endif %}
+  </div>
 </div>
+{% endif %}
+
+{% else %}
+<p class="text-muted">Nessun record trovato.</p>
+{% endif %}
+
 {% endblock %}

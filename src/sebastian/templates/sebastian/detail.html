@@ -53,7 +53,7 @@
     {# FieldGroup #}
     <dl class="row">
       {% for field_name in group.fields %}
-      <dt class="col-sm-3">{{ field_name }}</dt>
+      <dt class="col-sm-3">{{ field_labels|get_item:field_name|default:field_name }}</dt>
       <dd class="col-sm-9">{{ data|get_item:field_name }}</dd>
       {% endfor %}
     </dl>
@@ -74,7 +74,7 @@
 {# No groups declared — flat display #}
 <dl class="row">
   {% for key, value in data.items %}
-  <dt class="col-sm-3">{{ key }}</dt>
+  <dt class="col-sm-3">{{ field_labels|get_item:key|default:key }}</dt>
   <dd class="col-sm-9">{{ value }}</dd>
   {% endfor %}
 </dl>

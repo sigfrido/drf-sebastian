@@ -10,6 +10,7 @@ from .serializers import FornitoreSerializer, RichiestaSerializer, AllegatoSeria
 class FornitoreViewSet(GUIMixin, viewsets.ModelViewSet):
     queryset         = Fornitore.objects.all()
     serializer_class = FornitoreSerializer
+    filterset_fields = ['ragione_sociale', 'attivo']
 
     class Sebastian:
         groups = [
@@ -21,6 +22,7 @@ class FornitoreViewSet(GUIMixin, viewsets.ModelViewSet):
 class RichiestaViewSet(GUIMixin, viewsets.ModelViewSet):
     queryset         = Richiesta.objects.select_related('fornitore').all()
     serializer_class = RichiestaSerializer
+    filterset_fields = ['stato', 'fornitore']
 
     class Sebastian:
         groups = [

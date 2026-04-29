@@ -37,10 +37,33 @@ class GUIRouter:
         return self._build_urls()
 
     def _build_urls(self):
-        urls = []
+        urls = [path('', self._home_view(), name='sebastian-home')]
         for prefix, viewset, basename in self.api_router.registry:
             urls += self._routes_for(prefix, viewset, basename)
         return urls
+
+    def _home_view(self):
+        from django.shortcuts import render as django_render
+
+        registry = self.api_router.registry
+
+        def home(request):
+            entries = []
+            for prefix, viewset, basename in registry:
+                if not issubclass(viewset, GUIMixin):
+                    continue
+                model = getattr(getattr(viewset, 'queryset', None), 'model', None)
+                if model:
+                    label = model._meta.verbose_name_plural.title()
+                    icon  = getattr(getattr(viewset, 'Sebastian', None), 'icon', None) or 'table'
+                else:
+                    label = prefix.replace('-', ' ').title()
+                    icon  = 'table'
+                entries.append({'prefix': prefix, 'label': label, 'icon': icon, 'url': f'{prefix}/'})
+            return django_render(request, 'sebastian/home.html', {'entries': entries})
+
+        home.__name__ = 'sebastian_home'
+        return home
 
     def _routes_for(self, prefix, viewset, basename):
         has_gui = issubclass(viewset, GUIMixin)

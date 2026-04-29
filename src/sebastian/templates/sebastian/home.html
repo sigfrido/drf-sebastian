@@ -1,0 +1,28 @@
+{% extends "sebastian/base.html" %}
+
+{% block title %}Sebastian — Home{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+  <h4>Moduli disponibili</h4>
+</div>
+
+<div class="row row-cols-1 row-cols-md-3 g-3">
+  {% for entry in entries %}
+  <div class="col">
+    <a href="{{ entry.url }}" class="text-decoration-none">
+      <div class="card h-100 shadow-sm border-0 bg-light">
+        <div class="card-body d-flex align-items-center gap-3">
+          <i class="bi bi-{{ entry.icon }} fs-2 text-secondary"></i>
+          <span class="fs-5 fw-semibold text-dark">{{ entry.label }}</span>
+        </div>
+      </div>
+    </a>
+  </div>
+  {% empty %}
+  <div class="col">
+    <p class="text-muted">Nessun modulo registrato.</p>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}
