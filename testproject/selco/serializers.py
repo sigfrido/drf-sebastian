@@ -28,3 +28,8 @@ class RichiestaSerializer(GUISerializer, serializers.ModelSerializer):
             'created_at', 'updated_at',
         ]
         read_only_fields = ['created_at', 'updated_at']
+
+    def get_sebastian_description(self, field_name, related_obj):
+        if field_name == 'fornitore':
+            return f'{related_obj.pk} - {related_obj.ragione_sociale} ({related_obj.codice_fiscale})'
+        return super().get_sebastian_description(field_name, related_obj)

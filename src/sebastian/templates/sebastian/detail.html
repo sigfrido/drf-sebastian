@@ -7,11 +7,11 @@
 {% with groups=sebastian_config.groups %}
 
 <div class="d-flex justify-content-between align-items-center mb-3">
-  <h4>{{ view.get_view_name }} — Detail</h4>
+  <h4><a href="..">{{ view.get_view_name }}</a> — Detail</h4>
   <div class="btn-group">
-    <a href="{{ request.path }}../edit/"
+    <a href="{{ request.path }}edit/"
        class="btn btn-outline-primary btn-sm">
-      <i class="bi bi-pencil"></i> Edit
+      <i class="bi bi-pencil"></i> Modifica
     </a>
     {% for action in view.get_available_actions %}
       {% with cfg=action.gui_config %}
@@ -30,7 +30,7 @@
 </div>
 
 {% if groups %}
-{# --- Tabbed field groups + entity groups --- #}
+{# --- FieldGroup tabs --- #}
 <ul class="nav nav-tabs mb-3" role="tablist">
   {% for group in groups %}
   <li class="nav-item" role="presentation">
@@ -44,41 +44,43 @@
   {% endfor %}
 </ul>
 
-<div class="tab-content">
+<div class="tab-content mb-4">
   {% for group in groups %}
   <div class="tab-pane fade {% if forloop.first %}show active{% endif %}"
        id="tab-{{ group.name }}">
-
-    {% if group.fields %}
-    {# FieldGroup #}
     <dl class="row">
       {% for field_name in group.fields %}
       <dt class="col-sm-3">{{ field_labels|get_item:field_name|default:field_name }}</dt>
-      <dd class="col-sm-9">{{ data|get_item:field_name }}</dd>
+      <dd class="col-sm-9">{{ data|display_value:field_name }}</dd>
       {% endfor %}
     </dl>
-    {% else %}
-    {# EntityGroup — inline list with HTMX add/edit/delete #}
-    <div id="entity-{{ group.name }}"
-         hx-get="{{ request.path }}{{ group.name }}/"
-         hx-trigger="load">
-      <p class="text-muted">Loading…</p>
-    </div>
-    {% endif %}
-
   </div>
   {% endfor %}
 </div>
 
 {% else %}
-{# No groups declared — flat display #}
-<dl class="row">
-  {% for key, value in data.items %}
+{# No groups — flat display #}
+<dl class="row mb-4">
+  {% for key in data|data_keys %}
   <dt class="col-sm-3">{{ field_labels|get_item:key|default:key }}</dt>
-  <dd class="col-sm-9">{{ value }}</dd>
+  <dd class="col-sm-9">{{ data|display_value:key }}</dd>
   {% endfor %}
 </dl>
 {% endif %}
+
+{# --- Inline sections (NestedGUIMixin viewsets) --- #}
+{% for inline in inlines %}
+<div class="mt-3 border-top pt-3">
+  <h6 class="mb-2 text-muted text-uppercase" style="font-size:.75rem;letter-spacing:.05em">
+    {{ inline.label }}
+  </h6>
+  <div id="inline-{{ inline.mountpoint }}"
+       hx-get="{{ request.path }}{{ inline.mountpoint }}/"
+       hx-trigger="load">
+    <p class="text-muted small">Caricamento…</p>
+  </div>
+</div>
+{% endfor %}
 
 {% endwith %}
 {% endblock %}

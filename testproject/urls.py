@@ -1,10 +1,9 @@
 from django.contrib import admin
 from django.urls import path, include
-from rest_framework.routers import DefaultRouter
-from sebastian.routers import GUIRouter
+from sebastian.routers import SebastianRouter, GUIRouter
 from selco.views import FornitoreViewSet, RichiestaViewSet
 
-api_router = DefaultRouter()
+api_router = SebastianRouter()
 api_router.register('fornitori', FornitoreViewSet, basename='fornitore')
 api_router.register('richieste', RichiestaViewSet, basename='richiesta')
 

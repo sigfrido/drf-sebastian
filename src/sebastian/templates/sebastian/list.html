@@ -6,7 +6,10 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h4>{{ view.get_view_name }}</h4>
-  <a href="{{ request.path }}new/" class="btn btn-primary btn-sm">
+  <a href="{{ request.path }}new/"
+     hx-get="{{ request.path }}new/"
+     hx-target="{{ htmx_target }}"
+     class="btn btn-primary btn-sm">
     <i class="bi bi-plus-lg"></i> Nuovo
   </a>
 </div>
@@ -18,7 +21,7 @@
       hx-push-url="true">
   {% for field in filter_form %}
   <div class="col-auto">
-    <label class="visually-hidden" for="{{ field.id_for_label }}">{{ field.label }}</label>
+    <label class="form-label small mb-1" for="{{ field.id_for_label }}">{{ field.label }}</label>
     {{ field }}
   </div>
   {% endfor %}
@@ -30,11 +33,11 @@
 {% endif %}
 
 {% if items %}
-<div class="table-responsive">
+<div class="table-responsive list-level{{ list_level }}">
   <table class="table table-hover table-sm">
     <thead class="table-light">
       <tr>
-        {% for key in items.0.keys %}
+        {% for key in items.0|data_keys %}
         <th>{{ field_labels|get_item:key|default:key }}</th>
         {% endfor %}
         <th></th>
@@ -43,18 +46,27 @@
     <tbody>
       {% for item in items %}
       <tr>
-        {% for key, value in item.items %}
-        <td>{{ value }}</td>
+        {% for key in items.0|data_keys %}
+        <td>{{ item|display_value:key }}</td>
         {% endfor %}
         <td class="text-end text-nowrap">
+          {% if not is_inline %}
           <a href="{{ request.path }}{{ item.id }}/"
              class="btn btn-outline-secondary btn-sm">
             <i class="bi bi-eye"></i>
           </a>
-          <a href="{{ request.path }}{{ item.id }}/edit/"
+          {% endif %}
+          <a hx-get="{{ request.path }}{{ item.id }}/edit/"
+             hx-target="{{ htmx_target }}"
              class="btn btn-outline-primary btn-sm">
             <i class="bi bi-pencil"></i>
           </a>
+          <button hx-delete="{{ request.path }}{{ item.id }}/"
+                  hx-target="{{ htmx_target }}"
+                  hx-confirm="Eliminare {{ view.get_view_name }}: {{ item|get_item:'sebastian__str' }}?"
+                  class="btn btn-outline-danger btn-sm">
+            <i class="bi bi-trash"></i>
+          </button>
         </td>
       </tr>
       {% endfor %}

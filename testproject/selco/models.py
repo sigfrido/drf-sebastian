@@ -12,7 +12,8 @@ class Fornitore(models.Model):
         ordering            = ['ragione_sociale']
 
     def __str__(self):
-        return self.ragione_sociale
+        return f"{self.pk} - {self.ragione_sociale}"
+
 
 
 class Richiesta(models.Model):
@@ -41,7 +42,7 @@ class Richiesta(models.Model):
         ordering            = ['-created_at']
 
     def __str__(self):
-        return self.titolo
+        return f"{self.pk} - {self.titolo}"
 
 
 class Allegato(models.Model):
@@ -58,4 +59,4 @@ class Allegato(models.Model):
         ordering            = ['caricato_il']
 
     def __str__(self):
-        return self.descrizione
+        return f"{self.pk} - {self.descrizione}"

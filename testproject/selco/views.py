@@ -1,9 +1,9 @@
 from rest_framework import viewsets, permissions
 from rest_framework.response import Response
-from sebastian.mixins import GUIMixin
-from sebastian.config import FieldGroup, EntityGroup
+from sebastian.mixins import GUIMixin, NestedGUIMixin
+from sebastian.config import FieldGroup
 from sebastian.decorators import action
-from .models import Fornitore, Richiesta
+from .models import Fornitore, Richiesta, Allegato
 from .serializers import FornitoreSerializer, RichiestaSerializer, AllegatoSerializer
 from .filters import FornitoreFilter, RichiestaFilter
 
@@ -17,6 +17,18 @@ class FornitoreViewSet(GUIMixin, viewsets.ModelViewSet):
         groups = [
             FieldGroup('anagrafica', ['ragione_sociale', 'codice_fiscale', 'attivo'],
                        label='Anagrafica'),
+        ]
+
+
+class AllegatoViewSet(NestedGUIMixin, viewsets.ModelViewSet):
+    queryset         = Allegato.objects.all()
+    serializer_class = AllegatoSerializer
+    mountpoint       = 'allegati'
+
+    class Sebastian:
+        label  = 'Allegati'
+        groups = [
+            FieldGroup('dati', ['descrizione', 'file', 'caricato_il'], label='Dati'),
         ]
 
 
@@ -36,17 +48,9 @@ class RichiestaViewSet(GUIMixin, viewsets.ModelViewSet):
                 'direzione',
                 ['note_direttore', 'cig'],
                 label='Direzione',
-                # example: restrict editing to directors
-                # edit_permission=lambda req, obj: req.user.groups.filter(name='direttori').exists(),
-            ),
-            EntityGroup(
-                'allegati',
-                model=None,           # set below to avoid circular import at class-body time
-                serializer_class=AllegatoSerializer,
-                label='Allegati',
-                related_field='richiesta',
             ),
         ]
+        inlines = [AllegatoViewSet]
 
     @action(
         detail=True,
@@ -87,8 +91,3 @@ class RichiestaViewSet(GUIMixin, viewsets.ModelViewSet):
         instance.stato = Richiesta.Stato.APPROVATA
         instance.save()
         return Response(self.get_serializer(instance).data)
-
-
-# Patch EntityGroup model reference (avoids circular import at class-body time)
-from .models import Allegato  # noqa: E402
-RichiestaViewSet.Sebastian.groups[2].model = Allegato

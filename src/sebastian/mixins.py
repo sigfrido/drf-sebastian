@@ -1,4 +1,7 @@
+from django.core.exceptions import ImproperlyConfigured
+from django.shortcuts import get_object_or_404
 from rest_framework import renderers as drf_renderers
+from rest_framework.mixins import CreateModelMixin, UpdateModelMixin
 from rest_framework.response import Response
 
 from .renderers import SebastianHTMLRenderer
@@ -41,19 +44,49 @@ class GUIMixin:
                 request.sebastian_gui = True
 
     # ------------------------------------------------------------------ #
+    # Create / update — redirect to detail on success                     #
+    # ------------------------------------------------------------------ #
+
+    def create(self, request, *args, **kwargs):
+        response = super().create(request, *args, **kwargs)
+        if getattr(request, 'sebastian_gui', False) and response.status_code == 201:
+            pk = response.data.get('id')
+            response.status_code = 200
+            response['HX-Redirect'] = f'{request.path}{pk}/'
+        return response
+
+    def update(self, request, *args, **kwargs):
+        response = super().update(request, *args, **kwargs)
+        if getattr(request, 'sebastian_gui', False) and response.status_code == 200:
+            response['HX-Redirect'] = request.path
+        return response
+
+    def destroy(self, request, *args, **kwargs):
+        response = super().destroy(request, *args, **kwargs)
+        if getattr(request, 'sebastian_gui', False) and response.status_code == 204:
+            self.action = 'list'
+            request._request.path = request.path.rstrip('/').rsplit('/', 1)[0] + '/'
+            return self.list(request, *args, **kwargs)
+        return response
+
+    # ------------------------------------------------------------------ #
     # GUI-only actions (registered by GUIRouter)                          #
     # ------------------------------------------------------------------ #
 
     def create_form(self, request, *args, **kwargs):
         """Return an empty HTML form for creating a new instance."""
         serializer = self.get_serializer()
-        return Response({'serializer': serializer, 'action': 'create'})
+        # Absolute URL so the form submits correctly when loaded as an HTMX fragment
+        # (relative ../  would resolve against the browser URL, not the form fetch URL)
+        submit_url = request.path.rstrip('/').rsplit('/', 1)[0] + '/'
+        return Response({'serializer': serializer, 'action': 'create', 'submit_url': submit_url})
 
     def update_form(self, request, *args, **kwargs):
         """Return an HTML form pre-filled with an existing instance's data."""
         instance = self.get_object()
         serializer = self.get_serializer(instance)
-        return Response({'serializer': serializer, 'instance': instance, 'action': 'update'})
+        submit_url = request.path.rstrip('/').rsplit('/', 1)[0] + '/'
+        return Response({'serializer': serializer, 'instance': serializer.data, 'action': 'update', 'submit_url': submit_url})
 
     # ------------------------------------------------------------------ #
     # Sebastian metadata helpers                                          #
@@ -93,3 +126,135 @@ class GUIMixin:
             except (PermissionError, Exception):
                 pass
         return available
+
+
+class NestedGUIMixin(GUIMixin):
+    """
+    ViewSet mixin for nested resources (child of another ViewSet).
+
+    Auto-detects the parent from URL kwargs named `{parent_model_name}_pk`.
+    Filters the queryset and injects the parent FK on create.
+
+    Usage:
+        class AllegatoViewSet(NestedGUIMixin, viewsets.ModelViewSet):
+            queryset         = Allegato.objects.all()
+            serializer_class = AllegatoSerializer
+            mountpoint       = 'allegati'   # URL segment after parent pk
+
+    The parent is declared in the parent ViewSet:
+        class RichiestaViewSet(GUIMixin, viewsets.ModelViewSet):
+            class Sebastian:
+                inlines = [AllegatoViewSet]
+    """
+
+    _sebastian_is_nested = True
+    parent_field = ''  # FK on this model to parent; auto-detected if blank
+
+    # ------------------------------------------------------------------ #
+    # Inline helpers                                                       #
+    # ------------------------------------------------------------------ #
+
+    def _inline_list_path(self):
+        """Return the GUI URL of the inline list (e.g. /gui/richieste/3/allegati/)."""
+        mp = getattr(self.__class__, 'mountpoint', '')
+        if mp:
+            p = self.request.path
+            marker = f'/{mp}/'
+            idx = p.find(marker)
+            if idx != -1:
+                return p[:idx + len(marker)]
+        return self.request.path
+
+    def _inline_container_id(self):
+        mp = getattr(self.__class__, 'mountpoint', '')
+        return f'inline-{mp}' if mp else 'inline-section'
+
+    # ------------------------------------------------------------------ #
+    # Create / update — reload inline section instead of page redirect    #
+    # ------------------------------------------------------------------ #
+
+    def create(self, request, *args, **kwargs):
+        response = CreateModelMixin.create(self, request, *args, **kwargs)
+        if getattr(request, 'sebastian_gui', False) and response.status_code == 201:
+            self.action = 'list'
+            request._request.path = self._inline_list_path()
+            return self.list(request, *args, **kwargs)
+        return response
+
+    def update(self, request, *args, **kwargs):
+        response = UpdateModelMixin.update(self, request, *args, **kwargs)
+        if getattr(request, 'sebastian_gui', False) and response.status_code == 200:
+            self.action = 'list'
+            request._request.path = self._inline_list_path()
+            return self.list(request, *args, **kwargs)
+        return response
+
+    # ------------------------------------------------------------------ #
+    # GUI-only actions — carry htmx_target + cancel_url for the template  #
+    # ------------------------------------------------------------------ #
+
+    def create_form(self, request, *args, **kwargs):
+        serializer = self.get_serializer()
+        container  = self._inline_container_id()
+        list_path  = self._inline_list_path()
+        return Response({
+            'serializer':  serializer,
+            'action':      'create',
+            'htmx_target': f'#{container}',
+            'cancel_url':  list_path,
+            'submit_url':  list_path,
+        })
+
+    def update_form(self, request, *args, **kwargs):
+        instance   = self.get_object()
+        serializer = self.get_serializer(instance)
+        container  = self._inline_container_id()
+        list_path  = self._inline_list_path()
+        return Response({
+            'serializer':  serializer,
+            'instance':    serializer.data,
+            'action':      'update',
+            'htmx_target': f'#{container}',
+            'cancel_url':  list_path,
+            'submit_url':  f'{list_path}{instance.pk}/',
+        })
+
+    def _child_model(self):
+        return self.queryset.model
+
+    def get_parent_object(self):
+        model = self._child_model()
+        for f in model._meta.get_fields():
+            if not hasattr(f, 'related_model') or not f.related_model:
+                continue
+            kwarg = f'{f.related_model._meta.model_name}_pk'
+            if kwarg in self.kwargs:
+                return get_object_or_404(f.related_model, pk=self.kwargs[kwarg])
+        raise ImproperlyConfigured(
+            f"{self.__class__.__name__}: cannot find parent object from URL kwargs. "
+            f"Expected a kwarg named '{{parent_model_name}}_pk'. "
+            f"Set parent_field explicitly if needed."
+        )
+
+    def _resolve_parent_field(self, parent_obj):
+        if self.parent_field:
+            return self.parent_field
+        model = self._child_model()
+        parent_model = type(parent_obj)
+        for f in model._meta.get_fields():
+            if hasattr(f, 'related_model') and f.related_model == parent_model:
+                return f.name
+        raise ImproperlyConfigured(
+            f"{self.__class__.__name__}: cannot auto-detect FK from "
+            f"{model.__name__} to {parent_model.__name__}. Set parent_field explicitly."
+        )
+
+    def get_queryset(self):
+        parent = self.get_parent_object()
+        field = self._resolve_parent_field(parent)
+        return super().get_queryset().filter(**{field: parent})
+
+    def perform_create(self, serializer):
+        parent = self.get_parent_object()
+        field = self._resolve_parent_field(parent)
+        serializer.save(**{field: parent})

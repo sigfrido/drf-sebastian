@@ -6,10 +6,45 @@ register = template.Library()
 
 @register.filter
 def get_item(obj, key):
-    """Get a value from a dict or object attribute by key."""
-    if isinstance(obj, dict):
-        return obj.get(key)
-    return getattr(obj, key, '')
+    """Get a value from a mapping (dict, BindingDict…) or object attribute by key."""
+    try:
+        return obj[key]
+    except (KeyError, IndexError, TypeError):
+        return getattr(obj, key, '')
+
+
+@register.filter
+def display_value(data, field_name):
+    """Return the display value for field_name: uses {field}__display if present, else raw value."""
+    try:
+        display = data[f'{field_name}__display']
+        if display != '' and display is not None:
+            return display
+    except (KeyError, TypeError):
+        pass
+    try:
+        return data[field_name]
+    except (KeyError, TypeError):
+        return getattr(data, field_name, '')
+
+
+@register.filter
+def data_items(data):
+    """Iterate data items skipping internal __display keys added by GUISerializer."""
+    try:
+        return [(k, v) for k, v in data.items() if not k.endswith('__display')]
+    except AttributeError:
+        return []
+
+
+@register.filter
+def data_keys(data):
+    """Return data keys skipping internal keys added by GUISerializer."""
+    try:
+        return [k for k in data.keys()
+                if not k.endswith('__display') and not k.startswith('sebastian__')]
+    except AttributeError:
+        return []
 
 
 @register.filter

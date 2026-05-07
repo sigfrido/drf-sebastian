@@ -1,19 +1,59 @@
 """
 GUISerializer mixin — enforces FieldGroup permissions at the serializer layer
-so that field-level access control applies to both API and GUI calls.
+and adds GUI display helpers for RelatedField values.
 """
+from rest_framework.relations import RelatedField
 
 
 class GUISerializer:
     """
-    Mixin for DRF Serializers. Reads FieldGroup configuration from the view
-    (available via self.context['view']) and marks fields as read_only or
-    removes them from the representation according to per-group permissions.
+    Mixin for DRF Serializers.
 
-    Works with any serializer that has self.context['view'] set — this is
-    standard DRF behaviour for serializers instantiated by GenericAPIView/ViewSet.
-    For plain APIView, pass context={'view': self, 'request': request} explicitly.
+    - Enforces FieldGroup visibility/edit permissions via get_fields().
+    - In GUI mode (request.sebastian_gui=True), adds {field}__display keys
+      to the serialized output for each RelatedField so templates can show
+      human-readable values without extra DB queries.
+
+    Override get_sebastian_description() to customize per-field display:
+
+        def get_sebastian_description(self, field_name, related_obj):
+            if field_name == 'fornitore':
+                return related_obj.ragione_sociale
+            return super().get_sebastian_description(field_name, related_obj)
     """
+
+    # ------------------------------------------------------------------ #
+    # Representation                                                       #
+    # ------------------------------------------------------------------ #
+
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        request = (self.context or {}).get('request')
+        if not getattr(request, 'sebastian_gui', False):
+            return ret
+        ret['sebastian__str'] = str(instance)
+        for field_name, field in self.fields.items():
+            if not isinstance(field, RelatedField) or field.write_only:
+                continue
+            if ret.get(field_name) is None:
+                continue
+            related_obj = getattr(instance, field_name, None)
+            ret[f'{field_name}__display'] = self.get_sebastian_description(field_name, related_obj)
+        return ret
+
+    def get_sebastian_description(self, field_name, related_obj):
+        """Template method: return a display string for a RelatedField value.
+
+        Default: str(related_obj) — delegates to the model's __str__.
+        Override per-serializer to customise individual fields.
+        """
+        if related_obj is None:
+            return ''
+        return str(related_obj)
+
+    # ------------------------------------------------------------------ #
+    # Field permissions                                                    #
+    # ------------------------------------------------------------------ #
 
     def get_fields(self):
         fields = super().get_fields()
@@ -26,7 +66,6 @@ class GUISerializer:
             return fields
 
         obj = getattr(self, 'instance', None)
-        grouped_fields = {}
         for group in groups:
             from sebastian.config import FieldGroup
             if not isinstance(group, FieldGroup):
@@ -34,15 +73,10 @@ class GUISerializer:
             for field_name in group.fields:
                 if field_name not in fields:
                     continue
-                visible  = group.is_visible(request, obj)
-                editable = group.is_editable(request, obj)
-
-                if not visible:
+                if not group.is_visible(request, obj):
                     del fields[field_name]
-                elif not editable:
+                elif not group.is_editable(request, obj):
                     fields[field_name].read_only = True
-
-                grouped_fields[field_name] = True
 
         return fields
 

@@ -32,17 +32,35 @@ class SebastianHTMLRenderer(BaseRenderer):
             items      = data
             pagination = None
 
+        is_inline   = bool(view and getattr(view.__class__, '_sebastian_is_nested', False))
+        if is_inline:
+            mp          = getattr(view.__class__, 'mountpoint', 'inline')
+            htmx_target = f'#inline-{mp}'
+        else:
+            htmx_target = '#sebastian-content'
+        # Forms pass htmx_target/cancel_url in response data; pull them into context.
+        if isinstance(data, dict) and 'htmx_target' in data:
+            htmx_target = data['htmx_target']
+        cancel_url = data.get('cancel_url', '') if isinstance(data, dict) else ''
+        submit_url = data.get('submit_url', '') if isinstance(data, dict) else ''
+
         context = {
             'data':             data,
             'items':            items,
             'pagination':       pagination,
             'is_htmx':          is_htmx,
+            'is_inline':        is_inline,
+            'list_level':       2 if is_inline else 1,
+            'htmx_target':      htmx_target,
+            'cancel_url':       cancel_url,
+            'submit_url':       submit_url,
             'view':             view,
             'request':          request,
             'response':         response,
             'sebastian_config': getattr(view.__class__, 'Sebastian', None) if view else None,
             'field_labels':     self._get_field_labels(view),
             'filter_form':      self._get_filter_form(view, request),
+            'inlines':          self._get_inlines(view),
         }
 
         return render_to_string(template_name, context, request=request)
@@ -80,9 +98,30 @@ class SebastianHTMLRenderer(BaseRenderer):
         for backend_class in getattr(view, 'filter_backends', []):
             try:
                 if issubclass(backend_class, DjangoFilterBackend):
-                    backend  = backend_class()
+                    backend   = backend_class()
                     filterset = backend.get_filterset(request, view.get_queryset(), view)
                     return filterset.form if filterset else None
             except Exception:
                 pass
         return None
+
+    def _get_inlines(self, view) -> list:
+        """Return a normalized list of {mountpoint, label} for each inline in Sebastian.inlines."""
+        if not view:
+            return []
+        sebastian = getattr(view.__class__, 'Sebastian', None)
+        if not sebastian:
+            return []
+        result = []
+        for spec in getattr(sebastian, 'inlines', []):
+            inline_vs = spec[0] if isinstance(spec, (list, tuple)) else spec
+            mountpoint = (
+                getattr(inline_vs, 'mountpoint', None)
+                or getattr(getattr(getattr(inline_vs, 'queryset', None), 'model', None),
+                           '_meta', None) and
+                   inline_vs.queryset.model._meta.verbose_name_plural.lower()
+                or inline_vs.__name__.lower().replace('viewset', '')
+            )
+            label = getattr(getattr(inline_vs, 'Sebastian', None), 'label', None) or mountpoint.title()
+            result.append({'mountpoint': mountpoint, 'label': label})
+        return result
