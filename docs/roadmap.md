@@ -18,12 +18,15 @@
 
 ## Phase 2 — Working list + detail views
 
-- [ ] `list.html` renders real data from API response
-- [ ] `detail.html` renders FieldGroups as Bootstrap tabs
-- [ ] EntityGroup section loads inline list via HTMX (`hx-trigger="load"`)
-- [ ] HTMX partial detection in renderer (full page vs fragment)
-- [ ] `GUIRouter` mirrors `@action` routes correctly (url_path, detail flag)
-- [ ] Filter form wired to `django-filter` filterset
+- [x] `list.html` renders real data from API response (pagination unpacked in renderer)
+- [x] `detail.html` renders FieldGroups as Bootstrap tabs with serializer labels
+- [x] HTMX partial detection in renderer (`HX-Request` → content block only, no full page)
+- [x] `GUIRouter` mirrors `@action` routes correctly (url_path, detail flag)
+- [x] Filter form wired to `django-filter` filterset (FilterSet class, `icontains` on text fields)
+- [x] `GUIRouter` auto-generates home at `/gui/` with card grid of registered ViewSets
+- [x] `django_filters` in INSTALLED_APPS + DEFAULT_FILTER_BACKENDS in REST_FRAMEWORK
+- [x] `selco/admin.py` — Fornitore, Richiesta, Allegato registered for data entry
+- [ ] EntityGroup section loads inline list via HTMX (`hx-trigger="load"`) — deferred to Phase 3
 
 ## Phase 3 — Forms and actions
 

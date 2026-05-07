@@ -8,7 +8,14 @@ Sebastian is **S**mart **E**asy **B**ackend **A**pplication **S**tack for **T**i
 
 > *"I'm DRF Sebastian. I make friends. They're GUI elements.  
 > My friends are GUI elements. I make them."*
+D. R. F. Sebastian
 
+> "More API than API" is our motto.
+> Our GUI elements are replicants of the API endpoints.
+E. Tyrell
+
+> "API endpoints with a skin: skin jobs, for short".
+H. Bryant
 
 ## Summary
 
