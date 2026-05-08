@@ -68,18 +68,41 @@
 - [x] `HIDE_UNAUTHORIZED_ACTIONS` setting: `True` (default) hides unauthorised buttons; `False` renders them as `disabled`
 - [x] `app_settings.py` — thin settings accessor for `SEBASTIAN` dict in Django settings
 
-## Phase 5 — BPM/SELCO integration
+## Phase 5 — App menu
+
+- [ ] `Sebastian.menu` declaration on the router (or a top-level config) — ordered list of `{label, viewset, icon}` entries
+- [ ] `GUIRouter` exposes the menu structure via a context variable (or template tag) available in every page render
+- [ ] `base.html` renders the menu as a Bootstrap navbar collapse, highlighting the active section
+- [ ] Menu items respect `visible_permission` — hidden if the current user has no access
+- [ ] Optional section grouping (dropdown) for large menu sets
+
+## Phase 6 — Action confirmation forms
+
+- [ ] `@action` can declare a `confirmation_serializer` in `gui_config` — a DRF serializer whose fields are collected in a modal form before the action is dispatched
+- [ ] Example use-case: workflow transition that requires a `note` (text) and an optional `destinatario` (FK to user), only shown when the WF phase is configured to accept a receiver
+- [ ] GUI flow: action button click → HTMX loads confirmation form into modal → user fills form → submit POSTs action with form data merged into the request body
+- [ ] `SebastianHTMLRenderer` detects `confirmation_serializer` in `gui_config` and adds a `confirm_form` template for the modal content
+- [ ] Confirmation forms use the same FieldGroup / field rendering pipeline as regular forms
+
+## Phase 7 — Theming and template override framework
+
+- [ ] `SEBASTIAN['TEMPLATE_PACK']` setting selects a subdirectory under `sebastian/templates/` (default: `bootstrap5`)
+- [ ] All templates moved into `sebastian/templates/bootstrap5/`; existing imports updated
+- [ ] Management command `sebastian_templates` copies the active pack's templates into the project's `templates/sebastian/` directory for per-project customization
+- [ ] CSS custom-property hooks (`--sb-primary`, `--sb-font`, etc.) injected in `base.html` and driven by `SEBASTIAN['THEME']` dict
+- [ ] Documentation of the override points: which blocks exist in each template, which context variables are always available
+
+## Phase 8 — BPM/SELCO integration
 
 - [ ] Install `drf-sebastian` from local path into BPM project
 - [ ] Wire one real SELCO ViewSet, validate real-world friction
 - [ ] Add actual SELCO domain models and permissions
-- [ ] Workflow phase → FieldGroup permission callables
+- [ ] Workflow phase → FieldGroup permission callables + action confirmation serializers
 
 ## Deferred
 
 - Management command `sebastian-templates` for exporting/customizing templates
 - SPA/schema mode (`GET /api/...?_schema`)
-- Theme system
 - Inline editing (double-click in list)
 - Breadcrumbs
 - Menu auto-generation from router registry
