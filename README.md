@@ -6,24 +6,22 @@ Sebastian is **S**mart **E**asy **B**ackend **A**pplication **S**tack for **T**i
 
 **Note**: This is a third-party extension for Django REST Framework, and is not an official Django REST Framework project.
 
-> *"I'm DRF Sebastian. I make friends. They're GUI elements.  
-> My friends are GUI elements. I make them."*
+> "I make... friends. They're GUIs. My friends are GUIs. I make them."
 D. R. F. Sebastian
 
-> "More API than API" is our motto.
-> Our GUI elements are replicants of the API endpoints.
+> "If we give them custom templates, we’d create a cushion, a pillow for their functionalities and consequently we can control them better."
 E. Tyrell
 
-> "API endpoints with a skin: skin jobs, for short".
+> "Skin jobs - API endpoints with a skin."
 H. Bryant
 
 ## Summary
 
-Sebastian is a Django/DRF snap-in that eliminates API/GUI logic duplication by auto-generating server-side HTML interfaces and interface abstraction data from existing DRF ViewSets and Serializers.
+Sebastian is a Django/DRF snap-in that eliminates API/GUI logic duplication by auto-generating server-side HTML interfaces and interface abstraction data from DRF ViewSets and Serializers. The GUI endpoints are "replicants" of the corresponding API endpoints.
 
-It provides a declarative mapping between API endpoints and GUI elements (lists, details, forms, actions) without requiring separate forms, views, or templates, except where customization is needed.
+Sebastian provides a declarative mapping between API endpoints and GUI elements (lists, details, forms, actions) without requiring separate forms, views, or templates, except where specialized customization is needed.
 
-The main concept with Sebastian is: Implement your business logic in your DRF API, enrich it with GUI context metadata, and get both JSON endpoints and HTML interface automatically.
+The main concept with Sebastian is: Implement your business logic in your DRF API, enrich it with GUI context metadata, and get an HTML GUI automatically.
 
 
 ## Comparison to Alternatives
