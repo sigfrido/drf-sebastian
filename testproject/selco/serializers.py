@@ -1,12 +1,14 @@
 from rest_framework import serializers
-from sebastian.serializers import GUISerializer
+from sebastian.serializers import GUISerializer, NullableFileField
 from .models import Fornitore, Richiesta, Allegato
 
 
 class FornitoreSerializer(GUISerializer, serializers.ModelSerializer):
+    certificazione = NullableFileField(allow_null=True, required=False)
+
     class Meta:
         model  = Fornitore
-        fields = ['id', 'ragione_sociale', 'codice_fiscale', 'attivo']
+        fields = ['id', 'ragione_sociale', 'codice_fiscale', 'attivo', 'certificazione']
 
 
 class AllegatoSerializer(GUISerializer, serializers.ModelSerializer):

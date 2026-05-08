@@ -59,6 +59,8 @@
           </label>
           {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
         </div>
+        {% elif field|input_type == 'file' %}
+        {% include "sebastian/_file_field.html" with field_name=field_name field=field action=action instance=instance %}
         {% else %}
         <div class="mb-3">
           <label class="form-label" for="id_{{ field_name }}">
@@ -120,6 +122,8 @@
            {% if instance %}{% if instance|get_item:field_name %}checked{% endif %}{% endif %}>
     <label class="form-check-label" for="id_{{ field_name }}">{{ field.label|default:field_name }}</label>
   </div>
+  {% elif field|input_type == 'file' %}
+  {% include "sebastian/_file_field.html" with field_name=field_name field=field action=action instance=instance %}
   {% else %}
   <div class="mb-3">
     <label class="form-label" for="id_{{ field_name }}">

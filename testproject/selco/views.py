@@ -18,7 +18,25 @@ class FornitoreViewSet(GUIMixin, viewsets.ModelViewSet):
         groups = [
             FieldGroup('anagrafica', ['ragione_sociale', 'codice_fiscale', 'attivo'],
                        label='Anagrafica'),
+            FieldGroup('documenti', ['certificazione'], label='Documenti'),
         ]
+
+    @action(
+        detail=True,
+        methods=['get'],
+        permission_classes=[permissions.IsAuthenticated],
+        gui_config={
+            'label':    'Scarica',
+            'icon':     'download',
+            'color':    'outline-secondary',
+            'position': 'both',
+        },
+    )
+    def download(self, request, pk=None, **kwargs):
+        instance = self.get_object()
+        filename = instance.certificazione.name.split('/')[-1]
+        return FileResponse(instance.certificazione.open('rb'), as_attachment=True, filename=filename)
+
 
 
 class AllegatoViewSet(NestedGUIMixin, viewsets.ModelViewSet):

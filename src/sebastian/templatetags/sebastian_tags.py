@@ -48,6 +48,13 @@ def data_keys(data):
 
 
 @register.filter
+def filename(value) -> str:
+    """Extract just the filename from a URL or file path."""
+    from pathlib import PurePosixPath
+    return PurePosixPath(str(value)).name if value else ''
+
+
+@register.filter
 def input_type(field) -> str:
     """Map a DRF field instance to an appropriate HTML input type."""
     mapping = {

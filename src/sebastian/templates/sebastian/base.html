@@ -56,6 +56,50 @@
       if (msg) { evt.detail.target = msg; }
     }
   });
+
+  /* File-field helpers -------------------------------------------------- */
+
+  function sbFileClear(fieldName) {
+    var badge = document.getElementById('sb-file-badge-' + fieldName);
+    var fileInp = document.getElementById('id_' + fieldName);
+    if (fileInp) {
+      fileInp.disabled = true;
+      fileInp.setAttribute('data-sb-pending', '1');
+    }
+    if (badge) {
+      badge.innerHTML =
+        '<span class="badge bg-warning text-dark fw-normal">' +
+        '<i class="bi bi-x-circle me-1"></i>File verrà rimosso</span>';
+    }
+  }
+
+  /* htmx:configRequest fires after HTMX has collected form parameters but
+     before the XHR is sent — the only reliable place to add/remove entries.
+
+     1. Drop enabled file inputs with no file selected so partial-PATCH
+        leaves the existing server-side file untouched.
+     2. Inject '' for file fields the user explicitly cleared via sbFileClear
+        (their hidden clear input is tagged with data-sb-pending).           */
+  document.body.addEventListener('htmx:configRequest', function (evt) {
+    var elt = evt.detail.elt;
+    var form = elt.tagName === 'FORM' ? elt : (elt.closest && elt.closest('form'));
+    if (!form) { return; }
+    var params = evt.detail.parameters;
+
+    form.querySelectorAll('input[type=file].sb-file-input:not([disabled])').forEach(function (inp) {
+      if (!inp.files || !inp.files.length) { delete params[inp.name]; }
+    });
+
+    form.querySelectorAll('[data-sb-pending]').forEach(function (inp) {
+      if (inp.name) { params[inp.name] = ''; }
+    });
+  });
+
+  document.body.addEventListener('htmx:afterRequest', function (evt) {
+    document.querySelectorAll('[data-sb-pending]').forEach(function (inp) {
+      inp.removeAttribute('data-sb-pending');
+    });
+  });
 </script>
 </body>
 </html>{% endif %}

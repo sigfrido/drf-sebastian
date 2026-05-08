@@ -174,6 +174,31 @@ class TestAllegatoInlineGUI:
         assert r.status_code == 200
         assert b'hx-target="#inline-allegati"' in r.content
 
+    def test_edit_form_mostra_filename_esistente(self, auth_client, richiesta, allegato):
+        """In edit mode, il form mostra il nome del file attuale e non lo richiede."""
+        import re
+        r = auth_client.get(
+            f'/gui/richieste/{richiesta.pk}/allegati/{allegato.pk}/edit/', **HTMX
+        )
+        assert r.status_code == 200
+        filename = allegato.file.name.split('/')[-1].encode()
+        assert filename in r.content                # filename attuale visibile
+        file_input = re.search(rb'<input[^>]+name="file"[^>]*>', r.content)
+        assert file_input and b'required' not in file_input.group(0)
+        assert b'Seleziona un file per' in r.content  # hint sostituzione
+
+    def test_edit_senza_nuovo_file_mantiene_file_esistente(self, auth_client, richiesta, allegato):
+        """PATCH senza file field → file esistente preservato."""
+        r = auth_client.patch(
+            f'/gui/richieste/{richiesta.pk}/allegati/{allegato.pk}/',
+            {'descrizione': 'Descrizione aggiornata'},
+            **HTMX,
+        )
+        assert r.status_code == 200
+        allegato.refresh_from_db()
+        assert allegato.file.name  # file ancora presente
+        assert allegato.descrizione == 'Descrizione aggiornata'
+
     def test_download_button_visible_in_inline_list(self, auth_client, richiesta, allegato):
         r = auth_client.get(f'/gui/richieste/{richiesta.pk}/allegati/', **HTMX)
         assert r.status_code == 200

@@ -5,6 +5,7 @@ class Fornitore(models.Model):
     ragione_sociale = models.CharField(max_length=200)
     codice_fiscale  = models.CharField(max_length=16, blank=True)
     attivo          = models.BooleanField(default=True)
+    certificazione  = models.FileField(upload_to='fornitori/', null=True, blank=True)
 
     class Meta:
         verbose_name        = 'Fornitore'

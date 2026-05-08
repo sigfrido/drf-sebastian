@@ -69,6 +69,38 @@ class TestAllegatoNestedAPI:
 
 
 @pytest.mark.django_db
+class TestFornitoreCertificazione:
+    def test_patch_carica_certificazione(self, auth_client, fornitore):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        f = SimpleUploadedFile('cert.pdf', b'%PDF-1.4', content_type='application/pdf')
+        r = auth_client.patch(
+            f'/api/fornitori/{fornitore.pk}/',
+            {'certificazione': f},
+            format='multipart',
+        )
+        assert r.status_code == 200
+        fornitore.refresh_from_db()
+        assert fornitore.certificazione  # file present
+
+    def test_patch_rimuove_certificazione(self, auth_client, fornitore):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        f = SimpleUploadedFile('cert.pdf', b'%PDF-1.4', content_type='application/pdf')
+        auth_client.patch(
+            f'/api/fornitori/{fornitore.pk}/',
+            {'certificazione': f},
+            format='multipart',
+        )
+        r = auth_client.patch(
+            f'/api/fornitori/{fornitore.pk}/',
+            {'certificazione': ''},
+            format='multipart',
+        )
+        assert r.status_code == 200
+        fornitore.refresh_from_db()
+        assert not fornitore.certificazione  # file cleared
+
+
+@pytest.mark.django_db
 class TestRichiestaActions:
     def test_invia_cambia_stato(self, auth_client, richiesta):
         r = auth_client.post(f'/api/richieste/{richiesta.pk}/invia/')

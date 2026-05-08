@@ -2,7 +2,22 @@
 GUISerializer mixin — enforces FieldGroup permissions at the serializer layer
 and adds GUI display helpers for RelatedField values.
 """
+from rest_framework import serializers
 from rest_framework.relations import RelatedField
+
+
+class NullableFileField(serializers.FileField):
+    """FileField that treats an empty string as None.
+
+    When the HTMX clear button (sbFileClear) is activated, the form sends
+    an empty string for the field name. Standard DRF FileField rejects it;
+    this subclass converts '' to None so nullable file fields can be cleared.
+    """
+
+    def to_internal_value(self, data):
+        if data == '':
+            return None
+        return super().to_internal_value(data)
 
 
 class GUISerializer:
