@@ -96,7 +96,7 @@ class RichiestaViewSet(GUIMixin, viewsets.ModelViewSet):
                 'direzione',
                 ['note_direttore', 'cig'],
                 label='Direzione',
-                edit_permission=(perm_is_admin, perm_fail),
+                edit_permission=(perm_is_admin, ),
             ),
         ]
         inlines = [AllegatoViewSet]

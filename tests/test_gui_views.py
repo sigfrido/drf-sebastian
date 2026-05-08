@@ -288,14 +288,19 @@ class TestRichiestaActionsGUI:
         assert 'inviate'.encode() in r.content  # messaggio dall'action
 
     def test_approva_button_nascosto_per_non_admin(self, regular_client, richiesta):
-        """Non-staff never sees Approva, regardless of stato."""
-        r = regular_client.get(f'/gui/richieste/{richiesta.pk}/', **HTMX)
+        """Non-staff: perm_is_admin fails → Approva hidden."""
+        from selco.models import Richiesta as R
+        richiesta.stato = R.Stato.INVIATA
+        richiesta.save()
+        with override_settings(SEBASTIAN={'HIDE_UNAUTHORIZED_ACTIONS': True}):
+            r = regular_client.get(f'/gui/richieste/{richiesta.pk}/', **HTMX)
         assert r.status_code == 200
         assert b'Approva' not in r.content
 
     def test_approva_button_nascosto_per_admin_su_bozza(self, auth_client, richiesta):
-        """Admin on bozza: is_admin passes but stato check fails → button hidden."""
-        r = auth_client.get(f'/gui/richieste/{richiesta.pk}/', **HTMX)
+        """Admin on bozza: perm_is_admin passes but stato check fails → hidden."""
+        with override_settings(SEBASTIAN={'HIDE_UNAUTHORIZED_ACTIONS': True}):
+            r = auth_client.get(f'/gui/richieste/{richiesta.pk}/', **HTMX)
         assert r.status_code == 200
         assert b'Approva' not in r.content
 
@@ -304,28 +309,46 @@ class TestRichiestaActionsGUI:
         from selco.models import Richiesta as R
         richiesta.stato = R.Stato.INVIATA
         richiesta.save()
-        r = auth_client.get(f'/gui/richieste/{richiesta.pk}/', **HTMX)
+        with override_settings(SEBASTIAN={'HIDE_UNAUTHORIZED_ACTIONS': True}):
+            r = auth_client.get(f'/gui/richieste/{richiesta.pk}/', **HTMX)
         assert r.status_code == 200
         assert b'Approva' in r.content
+
+    def test_invia_button_nascosto_dopo_invio(self, auth_client, richiesta):
+        """Invia has permission=stato==BOZZA → hidden once stato changes."""
+        from selco.models import Richiesta as R
+        richiesta.stato = R.Stato.INVIATA
+        richiesta.save()
+        with override_settings(SEBASTIAN={'HIDE_UNAUTHORIZED_ACTIONS': True}):
+            r = auth_client.get(f'/gui/richieste/{richiesta.pk}/', **HTMX)
+        assert r.status_code == 200
+        assert b'Invia' not in r.content
+
+    def test_invia_button_visibile_su_bozza(self, auth_client, richiesta):
+        """Invia button visible when stato==BOZZA."""
+        with override_settings(SEBASTIAN={'HIDE_UNAUTHORIZED_ACTIONS': True}):
+            r = auth_client.get(f'/gui/richieste/{richiesta.pk}/', **HTMX)
+        assert r.status_code == 200
+        assert b'Invia' in r.content
 
 
 @pytest.mark.django_db
 class TestFieldGroupPermissions:
     def test_direzione_fields_readonly_for_non_admin(self, regular_client, richiesta):
-        """Non-admin: direzione group has edit_permission=is_admin → fields read-only in form."""
+        """Non-admin: edit_permission=perm_is_admin → direzione fields read-only in form."""
         r = regular_client.get(f'/gui/richieste/{richiesta.pk}/edit/', **HTMX)
         assert r.status_code == 200
-        # note_direttore should appear as plain text, not as an <input>
-        assert b'note_direttore' not in r.content or b'form-control-plaintext' in r.content
+        assert b'form-control-plaintext' in r.content
+        assert b'name="note_direttore"' not in r.content
 
     def test_direzione_fields_editable_for_admin(self, auth_client, richiesta):
-        """Admin: direzione group is fully editable."""
+        """Admin: edit_permission passes → direzione fields rendered as inputs."""
         r = auth_client.get(f'/gui/richieste/{richiesta.pk}/edit/', **HTMX)
         assert r.status_code == 200
         assert b'name="note_direttore"' in r.content
 
-    def test_hide_unauthorized_actions_false_renders_disabled(self, regular_client, richiesta):
-        """HIDE_UNAUTHORIZED_ACTIONS=False: Approva rendered as disabled button for non-admin."""
+    def test_hide_false_renders_disabled_button(self, regular_client, richiesta):
+        """HIDE_UNAUTHORIZED_ACTIONS=False: unauthorized action rendered as disabled button."""
         from selco.models import Richiesta as R
         richiesta.stato = R.Stato.INVIATA
         richiesta.save()
@@ -336,8 +359,8 @@ class TestFieldGroupPermissions:
         assert b'disabled' in r.content
 
     def test_permission_list_and_logic(self, auth_client, richiesta):
-        """List of callables: both must pass — admin on bozza still can't approve."""
-        r = auth_client.get(f'/gui/richieste/{richiesta.pk}/', **HTMX)
+        """List of callables uses AND: admin+bozza fails the stato check → hidden."""
+        with override_settings(SEBASTIAN={'HIDE_UNAUTHORIZED_ACTIONS': True}):
+            r = auth_client.get(f'/gui/richieste/{richiesta.pk}/', **HTMX)
         assert r.status_code == 200
-        # is_admin passes, stato check fails → hidden
         assert b'Approva' not in r.content
