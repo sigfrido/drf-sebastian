@@ -21,6 +21,9 @@ class SebastianHTMLRenderer(BaseRenderer):
         request  = renderer_context.get('request')
         response = renderer_context.get('response')
 
+        if response and response.status_code >= 400:
+            return self._render_error(data, response, request)
+
         template_name = self._resolve_template(view)
         is_htmx = bool(request and request.META.get('HTTP_HX_REQUEST'))
 
@@ -64,6 +67,19 @@ class SebastianHTMLRenderer(BaseRenderer):
         }
 
         return render_to_string(template_name, context, request=request)
+
+    def _render_error(self, data, response, request) -> str:
+        alert_map = {400: 'warning', 403: 'danger', 404: 'warning'}
+        alert_class = alert_map.get(response.status_code, 'danger')
+        detail = ''
+        if isinstance(data, dict):
+            detail = data.get('detail', '') or data.get('message', '')
+        if not detail:
+            detail = f'Errore {response.status_code}'
+        return render_to_string('sebastian/error.html', {
+            'error_detail': str(detail),
+            'alert_class': alert_class,
+        }, request=request)
 
     def _resolve_template(self, view) -> str:
         if view is None:

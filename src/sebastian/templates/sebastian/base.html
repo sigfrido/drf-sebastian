@@ -27,6 +27,7 @@
 <div class="container-fluid mt-3">
   <div class="row">
     <main class="col" id="sebastian-content">
+    <div id="sebastian-messages" class="mb-2"></div>
 {% endif %}
 
 {% block content %}{% endblock %}
@@ -47,5 +48,14 @@
         integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
         crossorigin="anonymous"></script>
 {% block extra_js %}{% endblock %}
+<script>
+  document.body.addEventListener('htmx:beforeSwap', function (evt) {
+    if (evt.detail.xhr.status >= 400) {
+      evt.detail.shouldSwap = true;
+      var msg = document.getElementById('sebastian-messages');
+      if (msg) { evt.detail.target = msg; }
+    }
+  });
+</script>
 </body>
 </html>{% endif %}

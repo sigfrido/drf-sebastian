@@ -64,7 +64,7 @@ class RichiestaViewSet(GUIMixin, viewsets.ModelViewSet):
             'position': 'detail',
         },
     )
-    def invia(self, request, pk=None):
+    def invia(self, request, pk=None, **kwargs):
         instance = self.get_object()
         if instance.stato != Richiesta.Stato.BOZZA:
             return Response({'detail': 'Solo le bozze possono essere inviate.'}, status=400)
@@ -84,7 +84,7 @@ class RichiestaViewSet(GUIMixin, viewsets.ModelViewSet):
             'position': 'detail',
         },
     )
-    def approva(self, request, pk=None):
+    def approva(self, request, pk=None, **kwargs):
         instance = self.get_object()
         if instance.stato != Richiesta.Stato.INVIATA:
             return Response({'detail': 'Solo le richieste inviate possono essere approvate.'}, status=400)

@@ -25,6 +25,11 @@ class GUIMixin:
 
     renderer_classes = [drf_renderers.JSONRenderer, SebastianHTMLRenderer]
 
+    _STANDARD_ACTIONS = frozenset([
+        'list', 'create', 'retrieve', 'update', 'partial_update', 'destroy',
+        'create_form', 'update_form',
+    ])
+
     # ------------------------------------------------------------------ #
     # Request lifecycle                                                    #
     # ------------------------------------------------------------------ #
@@ -42,6 +47,20 @@ class GUIMixin:
         if getattr(request, 'accepted_renderer', None):
             if request.accepted_renderer.format == 'html':
                 request.sebastian_gui = True
+
+    def finalize_response(self, request, response, *args, **kwargs):
+        response = super().finalize_response(request, response, *args, **kwargs)
+        # After a successful custom action in GUI mode, redirect to the parent URL
+        # so the detail page reloads from the correct path (avoids broken inline URLs).
+        action = getattr(self, 'action', None)
+        if (
+            getattr(request, 'sebastian_gui', False)
+            and getattr(response, 'status_code', None) == 200
+            and action not in self._STANDARD_ACTIONS
+            and 'HX-Redirect' not in response
+        ):
+            response['HX-Redirect'] = request.path.rstrip('/').rsplit('/', 1)[0] + '/'
+        return response
 
     # ------------------------------------------------------------------ #
     # Create / update — redirect to detail on success                     #
@@ -123,7 +142,7 @@ class GUIMixin:
                     if not perm.has_permission(self.request, self):
                         raise PermissionError
                 available.append({'name': name, 'gui_config': gui_config})
-            except (PermissionError, Exception):
+            except PermissionError:
                 pass
         return available
 
