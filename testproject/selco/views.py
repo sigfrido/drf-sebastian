@@ -1,3 +1,4 @@
+from django.http import FileResponse
 from rest_framework import viewsets, permissions
 from rest_framework.response import Response
 from sebastian.mixins import GUIMixin, NestedGUIMixin
@@ -30,6 +31,22 @@ class AllegatoViewSet(NestedGUIMixin, viewsets.ModelViewSet):
         groups = [
             FieldGroup('dati', ['descrizione', 'file', 'caricato_il'], label='Dati'),
         ]
+
+    @action(
+        detail=True,
+        methods=['get'],
+        permission_classes=[permissions.IsAuthenticated],
+        gui_config={
+            'label':    'Scarica',
+            'icon':     'download',
+            'color':    'outline-secondary',
+            'position': 'list',
+        },
+    )
+    def download(self, request, pk=None, **kwargs):
+        instance = self.get_object()
+        filename = instance.file.name.split('/')[-1]
+        return FileResponse(instance.file.open('rb'), as_attachment=True, filename=filename)
 
 
 class RichiestaViewSet(GUIMixin, viewsets.ModelViewSet):

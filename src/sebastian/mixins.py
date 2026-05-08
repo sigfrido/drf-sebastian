@@ -2,7 +2,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.shortcuts import get_object_or_404
 from rest_framework import renderers as drf_renderers
 from rest_framework.mixins import CreateModelMixin, UpdateModelMixin
-from rest_framework.response import Response
+from rest_framework.response import Response as DRFResponse
 
 from .renderers import SebastianHTMLRenderer
 
@@ -54,8 +54,9 @@ class GUIMixin:
         # so the detail page reloads from the correct path (avoids broken inline URLs).
         action = getattr(self, 'action', None)
         if (
-            getattr(request, 'sebastian_gui', False)
-            and getattr(response, 'status_code', None) == 200
+            isinstance(response, DRFResponse)  # skip FileResponse / StreamingHttpResponse
+            and getattr(request, 'sebastian_gui', False)
+            and response.status_code == 200
             and action not in self._STANDARD_ACTIONS
             and 'HX-Redirect' not in response
         ):
@@ -98,14 +99,14 @@ class GUIMixin:
         # Absolute URL so the form submits correctly when loaded as an HTMX fragment
         # (relative ../  would resolve against the browser URL, not the form fetch URL)
         submit_url = request.path.rstrip('/').rsplit('/', 1)[0] + '/'
-        return Response({'serializer': serializer, 'action': 'create', 'submit_url': submit_url})
+        return DRFResponse({'serializer': serializer, 'action': 'create', 'submit_url': submit_url})
 
     def update_form(self, request, *args, **kwargs):
         """Return an HTML form pre-filled with an existing instance's data."""
         instance = self.get_object()
         serializer = self.get_serializer(instance)
         submit_url = request.path.rstrip('/').rsplit('/', 1)[0] + '/'
-        return Response({'serializer': serializer, 'instance': serializer.data, 'action': 'update', 'submit_url': submit_url})
+        return DRFResponse({'serializer': serializer, 'instance': serializer.data, 'action': 'update', 'submit_url': submit_url})
 
     # ------------------------------------------------------------------ #
     # Sebastian metadata helpers                                          #
@@ -141,7 +142,8 @@ class GUIMixin:
                     perm = perm_class()
                     if not perm.has_permission(self.request, self):
                         raise PermissionError
-                available.append({'name': name, 'gui_config': gui_config})
+                primary_method = next(iter(method.mapping), 'post')
+                available.append({'name': name, 'gui_config': gui_config, 'method': primary_method})
             except PermissionError:
                 pass
         return available
@@ -216,7 +218,7 @@ class NestedGUIMixin(GUIMixin):
         serializer = self.get_serializer()
         container  = self._inline_container_id()
         list_path  = self._inline_list_path()
-        return Response({
+        return DRFResponse({
             'serializer':  serializer,
             'action':      'create',
             'htmx_target': f'#{container}',
@@ -229,7 +231,7 @@ class NestedGUIMixin(GUIMixin):
         serializer = self.get_serializer(instance)
         container  = self._inline_container_id()
         list_path  = self._inline_list_path()
-        return Response({
+        return DRFResponse({
             'serializer':  serializer,
             'instance':    serializer.data,
             'action':      'update',

@@ -174,6 +174,17 @@ class TestAllegatoInlineGUI:
         assert r.status_code == 200
         assert b'hx-target="#inline-allegati"' in r.content
 
+    def test_download_button_visible_in_inline_list(self, auth_client, richiesta, allegato):
+        r = auth_client.get(f'/gui/richieste/{richiesta.pk}/allegati/', **HTMX)
+        assert r.status_code == 200
+        assert b'Scarica' in r.content
+        assert f'/gui/richieste/{richiesta.pk}/allegati/{allegato.pk}/download/'.encode() in r.content
+
+    def test_download_returns_file(self, auth_client, richiesta, allegato):
+        r = auth_client.get(f'/gui/richieste/{richiesta.pk}/allegati/{allegato.pk}/download/')
+        assert r.status_code == 200
+        assert 'attachment' in r.get('Content-Disposition', '')
+
     def test_inline_update_returns_updated_list(self, auth_client, richiesta, allegato):
         r = auth_client.patch(
             f'/gui/richieste/{richiesta.pk}/allegati/{allegato.pk}/',

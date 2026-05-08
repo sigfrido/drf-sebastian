@@ -56,6 +56,27 @@
             <i class="bi bi-eye"></i>
           </a>
           {% endif %}
+          {% for action in view.get_available_actions %}
+            {% with cfg=action.gui_config %}
+              {% if cfg.position == 'list' or cfg.position == 'both' %}
+                {% if action.method == 'get' %}
+                <a href="{{ request.path }}{{ item.id }}/{{ action.name }}/"
+                   class="btn btn-{{ cfg.color|default:'secondary' }} btn-sm">
+                  {% if cfg.icon %}<i class="bi bi-{{ cfg.icon }}"></i>{% endif %}
+                  {{ cfg.label }}
+                </a>
+                {% else %}
+                <button hx-post="{{ request.path }}{{ item.id }}/{{ action.name }}/"
+                        hx-target="{{ htmx_target }}"
+                        {% if cfg.confirm %}hx-confirm="{{ cfg.confirm }}"{% endif %}
+                        class="btn btn-{{ cfg.color|default:'secondary' }} btn-sm">
+                  {% if cfg.icon %}<i class="bi bi-{{ cfg.icon }}"></i>{% endif %}
+                  {{ cfg.label }}
+                </button>
+                {% endif %}
+              {% endif %}
+            {% endwith %}
+          {% endfor %}
           <a hx-get="{{ request.path }}{{ item.id }}/edit/"
              hx-target="{{ htmx_target }}"
              class="btn btn-outline-primary btn-sm">

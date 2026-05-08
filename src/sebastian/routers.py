@@ -254,6 +254,31 @@ class GUIRouter:
                     name=f'{nested_base}-edit',
                 ))
 
+            # Mirror @actions with gui_config on the nested viewset
+            for attr_name in dir(inline_vs):
+                action_method = getattr(inline_vs, attr_name, None)
+                if not callable(action_method) or not hasattr(action_method, 'mapping'):
+                    continue
+                if not getattr(action_method, 'gui_config', {}):
+                    continue
+                url_path = getattr(action_method, 'url_path', attr_name)
+                detail   = getattr(action_method, 'detail', True)
+                mapping  = dict(action_method.mapping)
+                if detail:
+                    routes.append(path(
+                        f'{nested_prefix}/<pk>/{url_path}/',
+                        self._wrap(inline_vs.as_view(mapping)),
+                        kw,
+                        name=f'{nested_base}-{attr_name}',
+                    ))
+                else:
+                    routes.append(path(
+                        f'{nested_prefix}/{url_path}/',
+                        self._wrap(inline_vs.as_view(mapping)),
+                        kw,
+                        name=f'{nested_base}-{attr_name}',
+                    ))
+
             # Recurse for sub-inlines
             if sub_specs:
                 child_model = inline_vs.queryset.model
