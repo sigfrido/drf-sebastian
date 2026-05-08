@@ -61,11 +61,12 @@
 - [x] Form cancel on top-level uses `hx-get` HTMX navigation (same mechanism as nested inline forms)
 - [x] `GUISerializer.validate()` calls `Model.clean()` automatically — model-level validation fires on every API write without duplicating logic in the serializer; Django `ValidationError` is remapped to DRF `ValidationError`
 
-## Phase 4 — Permission enforcement
+## Phase 4 — Permission enforcement (done)
 
-- [ ] `FieldGroup.edit_permission` / `visible_permission` callables evaluated per-request
-- [ ] `get_available_actions()` correctly filters by per-action `permission_classes`
-- [ ] `HIDE_UNAUTHORIZED_ACTIONS` setting respected
+- [x] `FieldGroup.edit_permission` / `visible_permission` accept a single callable or list of callables (AND logic); evaluated per-request via `_check_permission()`
+- [x] `get_available_actions()` checks DRF `permission_classes` + optional `gui_config['permission']` (callable or list); caches instance via `retrieve()` override for zero extra queries
+- [x] `HIDE_UNAUTHORIZED_ACTIONS` setting: `True` (default) hides unauthorised buttons; `False` renders them as `disabled`
+- [x] `app_settings.py` — thin settings accessor for `SEBASTIAN` dict in Django settings
 
 ## Phase 5 — BPM/SELCO integration
 

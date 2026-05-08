@@ -9,6 +9,19 @@ from .serializers import FornitoreSerializer, RichiestaSerializer, AllegatoSeria
 from .filters import FornitoreFilter, RichiestaFilter
 
 
+def perm_fail(request, _obj):
+    return False
+
+def perm_is_admin(request, _obj):
+    return request.user.is_staff
+
+
+def perm_richiesta_stato(stato):
+    def has_perm(request, _obj):
+        return _obj.stato == stato
+    return has_perm
+    
+
 class FornitoreViewSet(GUIMixin, viewsets.ModelViewSet):
     queryset         = Fornitore.objects.all()
     serializer_class = FornitoreSerializer
@@ -83,6 +96,7 @@ class RichiestaViewSet(GUIMixin, viewsets.ModelViewSet):
                 'direzione',
                 ['note_direttore', 'cig'],
                 label='Direzione',
+                edit_permission=(perm_is_admin, perm_fail),
             ),
         ]
         inlines = [AllegatoViewSet]
@@ -97,6 +111,9 @@ class RichiestaViewSet(GUIMixin, viewsets.ModelViewSet):
             'color':    'primary',
             'confirm':  'Confermi invio della richiesta?',
             'position': 'detail',
+            'permission' : [
+                perm_richiesta_stato(Richiesta.Stato.BOZZA),
+            ],
         },
     )
     def invia(self, request, pk=None, **kwargs):
@@ -112,11 +129,15 @@ class RichiestaViewSet(GUIMixin, viewsets.ModelViewSet):
         methods=['post'],
         permission_classes=[permissions.IsAdminUser],
         gui_config={
-            'label':    'Approva',
-            'icon':     'check-circle',
-            'color':    'success',
-            'confirm':  'Confermi approvazione?',
-            'position': 'detail',
+            'label':      'Approva',
+            'icon':       'check-circle',
+            'color':      'success',
+            'confirm':    'Confermi approvazione?',
+            'position':   'detail',
+            'permission': [
+                perm_is_admin,
+                perm_richiesta_stato(Richiesta.Stato.INVIATA),
+            ],
         },
     )
     def approva(self, request, pk=None, **kwargs):

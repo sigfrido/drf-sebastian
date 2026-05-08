@@ -16,7 +16,12 @@
     {% for action in view.get_available_actions %}
       {% with cfg=action.gui_config %}
         {% if cfg.position != 'list' %}
-        {% if action.method == 'get' %}
+        {% if action.disabled %}
+        <button class="btn btn-{{ cfg.color|default:'secondary' }} btn-sm" disabled>
+          {% if cfg.icon %}<i class="bi bi-{{ cfg.icon }}"></i>{% endif %}
+          {{ cfg.label }}
+        </button>
+        {% elif action.method == 'get' %}
         <a href="{{ request.path }}{{ action.name }}/"
            class="btn btn-{{ cfg.color|default:'secondary' }} btn-sm">
           {% if cfg.icon %}<i class="bi bi-{{ cfg.icon }}"></i>{% endif %}

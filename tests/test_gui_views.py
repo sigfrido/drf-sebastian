@@ -4,6 +4,7 @@ Covers: list, detail, form rendering, form submit (create/update/delete),
 HTMX fragment detection, and nested inline behaviour.
 """
 import pytest
+from django.test import override_settings
 
 
 GUI = {'HTTP_ACCEPT': 'text/html'}
@@ -287,13 +288,56 @@ class TestRichiestaActionsGUI:
         assert 'inviate'.encode() in r.content  # messaggio dall'action
 
     def test_approva_button_nascosto_per_non_admin(self, regular_client, richiesta):
-        """Utente non-staff non vede il pulsante Approva nel detail."""
+        """Non-staff never sees Approva, regardless of stato."""
         r = regular_client.get(f'/gui/richieste/{richiesta.pk}/', **HTMX)
         assert r.status_code == 200
         assert b'Approva' not in r.content
 
-    def test_approva_button_visibile_per_admin(self, auth_client, richiesta):
-        """Utente admin vede il pulsante Approva nel detail."""
+    def test_approva_button_nascosto_per_admin_su_bozza(self, auth_client, richiesta):
+        """Admin on bozza: is_admin passes but stato check fails → button hidden."""
+        r = auth_client.get(f'/gui/richieste/{richiesta.pk}/', **HTMX)
+        assert r.status_code == 200
+        assert b'Approva' not in r.content
+
+    def test_approva_button_visibile_per_admin_su_inviata(self, auth_client, richiesta):
+        """Admin on inviata: both callables pass → button visible."""
+        from selco.models import Richiesta as R
+        richiesta.stato = R.Stato.INVIATA
+        richiesta.save()
         r = auth_client.get(f'/gui/richieste/{richiesta.pk}/', **HTMX)
         assert r.status_code == 200
         assert b'Approva' in r.content
+
+
+@pytest.mark.django_db
+class TestFieldGroupPermissions:
+    def test_direzione_fields_readonly_for_non_admin(self, regular_client, richiesta):
+        """Non-admin: direzione group has edit_permission=is_admin → fields read-only in form."""
+        r = regular_client.get(f'/gui/richieste/{richiesta.pk}/edit/', **HTMX)
+        assert r.status_code == 200
+        # note_direttore should appear as plain text, not as an <input>
+        assert b'note_direttore' not in r.content or b'form-control-plaintext' in r.content
+
+    def test_direzione_fields_editable_for_admin(self, auth_client, richiesta):
+        """Admin: direzione group is fully editable."""
+        r = auth_client.get(f'/gui/richieste/{richiesta.pk}/edit/', **HTMX)
+        assert r.status_code == 200
+        assert b'name="note_direttore"' in r.content
+
+    def test_hide_unauthorized_actions_false_renders_disabled(self, regular_client, richiesta):
+        """HIDE_UNAUTHORIZED_ACTIONS=False: Approva rendered as disabled button for non-admin."""
+        from selco.models import Richiesta as R
+        richiesta.stato = R.Stato.INVIATA
+        richiesta.save()
+        with override_settings(SEBASTIAN={'HIDE_UNAUTHORIZED_ACTIONS': False}):
+            r = regular_client.get(f'/gui/richieste/{richiesta.pk}/', **HTMX)
+        assert r.status_code == 200
+        assert b'Approva' in r.content
+        assert b'disabled' in r.content
+
+    def test_permission_list_and_logic(self, auth_client, richiesta):
+        """List of callables: both must pass — admin on bozza still can't approve."""
+        r = auth_client.get(f'/gui/richieste/{richiesta.pk}/', **HTMX)
+        assert r.status_code == 200
+        # is_admin passes, stato check fails → hidden
+        assert b'Approva' not in r.content

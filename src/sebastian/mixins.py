@@ -4,6 +4,8 @@ from rest_framework import renderers as drf_renderers
 from rest_framework.mixins import CreateModelMixin, UpdateModelMixin
 from rest_framework.response import Response as DRFResponse
 
+from .app_settings import hide_unauthorized_actions
+from .config import _check_permission
 from .renderers import SebastianHTMLRenderer
 
 
@@ -159,11 +161,18 @@ class GUIMixin:
             return []
         return getattr(sebastian, 'groups', [])
 
+    def retrieve(self, request, *args, **kwargs):
+        self._sebastian_obj = self.get_object()
+        serializer = self.get_serializer(self._sebastian_obj)
+        return DRFResponse(serializer.data)
+
     def get_available_actions(self):
         """
         Returns gui_config metadata for @actions the current user has permission for.
         Used by templates to render action buttons.
         """
+        obj = getattr(self, '_sebastian_obj', None)
+        hide = hide_unauthorized_actions()
         available = []
         for name in dir(self.__class__):
             method = getattr(self.__class__, name, None)
@@ -172,16 +181,32 @@ class GUIMixin:
             gui_config = getattr(method, 'gui_config', {})
             if not gui_config:
                 continue
+
+            # Check DRF permission_classes declared on the action
+            permitted = True
             permission_classes = getattr(method, 'kwargs', {}).get('permission_classes', [])
-            try:
-                for perm_class in permission_classes:
-                    perm = perm_class()
-                    if not perm.has_permission(self.request, self):
-                        raise PermissionError
-                primary_method = next(iter(method.mapping), 'post')
-                available.append({'name': name, 'gui_config': gui_config, 'method': primary_method})
-            except PermissionError:
-                pass
+            for perm_class in permission_classes:
+                if not perm_class().has_permission(self.request, self):
+                    permitted = False
+                    break
+
+            # Check Sebastian-style permission (callable or list) from gui_config.
+            # Only evaluated when obj is available (detail context); in list context
+            # obj is None and object-aware callables would fail — DRF permission_classes
+            # already handle user-level gating for list actions.
+            if permitted and obj is not None:
+                permitted = _check_permission(gui_config.get('permission'), self.request, obj)
+
+            if not permitted and hide:
+                continue
+
+            primary_method = next(iter(method.mapping), 'post')
+            available.append({
+                'name': name,
+                'gui_config': gui_config,
+                'method': primary_method,
+                'disabled': not permitted,
+            })
         return available
 
 
