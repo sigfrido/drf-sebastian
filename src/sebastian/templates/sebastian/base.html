@@ -52,8 +52,10 @@
   document.body.addEventListener('htmx:beforeSwap', function (evt) {
     if (evt.detail.xhr.status >= 400) {
       evt.detail.shouldSwap = true;
-      var msg = document.getElementById('sebastian-messages');
-      if (msg) { evt.detail.target = msg; }
+      if (!evt.detail.xhr.getResponseHeader('X-Sebastian-Form-Error')) {
+        var msg = document.getElementById('sebastian-messages');
+        if (msg) { evt.detail.target = msg; }
+      }
     }
   });
 

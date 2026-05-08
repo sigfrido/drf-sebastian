@@ -101,6 +101,87 @@ class TestFornitoreCertificazione:
 
 
 @pytest.mark.django_db
+class TestFornitoreCodFiscValidation:
+    """Validation of codice_fiscale at model and serializer level."""
+
+    # --- valid formats ---
+
+    def test_valid_partita_iva_11_digits(self, auth_client):
+        r = auth_client.post('/api/fornitori/', {
+            'ragione_sociale': 'IVA Srl', 'codice_fiscale': '12345678901',
+        })
+        assert r.status_code == 201
+
+    def test_valid_codice_fiscale_persona_fisica(self, auth_client):
+        r = auth_client.post('/api/fornitori/', {
+            'ragione_sociale': 'CF Snc',
+            'codice_fiscale': 'RSSMRA85M01H501Z',
+        })
+        assert r.status_code == 201
+
+    def test_valid_codice_fiscale_lowercase_accepted(self, auth_client):
+        r = auth_client.post('/api/fornitori/', {
+            'ragione_sociale': 'CF low', 'codice_fiscale': 'rssmra85m01h501z',
+        })
+        assert r.status_code == 201
+
+    def test_blank_codice_fiscale_allowed(self, auth_client):
+        r = auth_client.post('/api/fornitori/', {
+            'ragione_sociale': 'No CF', 'codice_fiscale': '',
+        })
+        assert r.status_code == 201
+
+    # --- invalid formats (API → 400) ---
+
+    def test_invalid_too_short_rejected(self, auth_client):
+        r = auth_client.post('/api/fornitori/', {
+            'ragione_sociale': 'X', 'codice_fiscale': '1234',
+        })
+        assert r.status_code == 400
+        assert 'codice_fiscale' in r.data
+
+    def test_invalid_wrong_length_10_digits_rejected(self, auth_client):
+        r = auth_client.post('/api/fornitori/', {
+            'ragione_sociale': 'X', 'codice_fiscale': '1234567890',
+        })
+        assert r.status_code == 400
+
+    def test_invalid_letters_only_rejected(self, auth_client):
+        r = auth_client.post('/api/fornitori/', {
+            'ragione_sociale': 'X', 'codice_fiscale': 'ABCDEFGHIJKLMNOP',
+        })
+        assert r.status_code == 400
+
+    def test_invalid_mixed_format_rejected(self, auth_client):
+        r = auth_client.post('/api/fornitori/', {
+            'ragione_sociale': 'X', 'codice_fiscale': '1234ABC5678',
+        })
+        assert r.status_code == 400
+
+    # --- model clean() ---
+
+    def test_model_clean_raises_for_invalid(self):
+        from django.core.exceptions import ValidationError
+        from selco.models import Fornitore
+        f = Fornitore(ragione_sociale='X', codice_fiscale='invalid')
+        with pytest.raises(ValidationError) as exc_info:
+            f.clean()
+        assert 'codice_fiscale' in exc_info.value.message_dict
+
+    def test_model_clean_passes_for_partita_iva(self):
+        from selco.models import Fornitore
+        Fornitore(ragione_sociale='X', codice_fiscale='12345678901').clean()
+
+    def test_model_clean_passes_for_codice_fiscale(self):
+        from selco.models import Fornitore
+        Fornitore(ragione_sociale='X', codice_fiscale='RSSMRA85M01H501Z').clean()
+
+    def test_model_clean_passes_for_blank(self):
+        from selco.models import Fornitore
+        Fornitore(ragione_sociale='X', codice_fiscale='').clean()
+
+
+@pytest.mark.django_db
 class TestRichiestaActions:
     def test_invia_cambia_stato(self, auth_client, richiesta):
         r = auth_client.post(f'/api/richieste/{richiesta.pk}/invia/')

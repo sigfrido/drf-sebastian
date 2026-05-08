@@ -2,6 +2,8 @@
 GUISerializer mixin — enforces FieldGroup permissions at the serializer layer
 and adds GUI display helpers for RelatedField values.
 """
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db import models as django_models
 from rest_framework import serializers
 from rest_framework.relations import RelatedField
 
@@ -65,6 +67,30 @@ class GUISerializer:
         if related_obj is None:
             return ''
         return str(related_obj)
+
+    # ------------------------------------------------------------------ #
+    # Model-level validation                                              #
+    # ------------------------------------------------------------------ #
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        # Build a scratch instance and run Model.clean() so model-level
+        # validation rules don't have to be duplicated in the serializer.
+        # We call clean() only — not full_clean() — to avoid re-running
+        # field-level DB constraints (blank/null/max_length) and unique
+        # checks that the serializer fields already handle.
+        instance = self.instance or self.Meta.model()
+        # Only proceed if the model actually overrides clean() — base Model.clean() is a no-op.
+        if type(instance).clean is django_models.Model.clean:
+            return attrs
+        for attr, value in attrs.items():
+            setattr(instance, attr, value)
+        try:
+            instance.clean()
+        except DjangoValidationError as exc:
+            errors = exc.message_dict if hasattr(exc, 'message_dict') else exc.messages
+            raise serializers.ValidationError(errors)
+        return attrs
 
     # ------------------------------------------------------------------ #
     # Field permissions                                                    #

@@ -68,18 +68,46 @@ class GUIMixin:
     # ------------------------------------------------------------------ #
 
     def create(self, request, *args, **kwargs):
-        response = super().create(request, *args, **kwargs)
-        if getattr(request, 'sebastian_gui', False) and response.status_code == 201:
-            pk = response.data.get('id')
-            response.status_code = 200
-            response['HX-Redirect'] = f'{request.path}{pk}/'
-        return response
+        if not getattr(request, 'sebastian_gui', False):
+            return super().create(request, *args, **kwargs)
+        serializer = self.get_serializer(data=request.data)
+        if not serializer.is_valid():
+            resp = DRFResponse(
+                {'serializer': serializer, 'action': 'create',
+                 'submit_url': request.path, 'cancel_url': request.path,
+                 'htmx_target': '#sebastian-content'},
+                status=400,
+            )
+            resp['X-Sebastian-Form-Error'] = 'true'
+            return resp
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        pk = serializer.data.get('id')
+        resp = DRFResponse(serializer.data, status=200, headers=headers)
+        resp['HX-Redirect'] = f'{request.path}{pk}/'
+        return resp
 
     def update(self, request, *args, **kwargs):
-        response = super().update(request, *args, **kwargs)
-        if getattr(request, 'sebastian_gui', False) and response.status_code == 200:
-            response['HX-Redirect'] = request.path
-        return response
+        if not getattr(request, 'sebastian_gui', False):
+            return super().update(request, *args, **kwargs)
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        if not serializer.is_valid():
+            resp = DRFResponse(
+                {'serializer': serializer, 'instance': serializer.data, 'action': 'update',
+                 'submit_url': request.path, 'cancel_url': request.path,
+                 'htmx_target': '#sebastian-content'},
+                status=400,
+            )
+            resp['X-Sebastian-Form-Error'] = 'true'
+            return resp
+        self.perform_update(serializer)
+        if getattr(instance, '_prefetched_objects_cache', None):
+            instance._prefetched_objects_cache = {}
+        resp = DRFResponse(serializer.data, status=200)
+        resp['HX-Redirect'] = request.path
+        return resp
 
     def destroy(self, request, *args, **kwargs):
         response = super().destroy(request, *args, **kwargs)
@@ -99,14 +127,22 @@ class GUIMixin:
         # Absolute URL so the form submits correctly when loaded as an HTMX fragment
         # (relative ../  would resolve against the browser URL, not the form fetch URL)
         submit_url = request.path.rstrip('/').rsplit('/', 1)[0] + '/'
-        return DRFResponse({'serializer': serializer, 'action': 'create', 'submit_url': submit_url})
+        return DRFResponse({
+            'serializer': serializer, 'action': 'create',
+            'submit_url': submit_url, 'cancel_url': submit_url,
+            'htmx_target': '#sebastian-content',
+        })
 
     def update_form(self, request, *args, **kwargs):
         """Return an HTML form pre-filled with an existing instance's data."""
         instance = self.get_object()
         serializer = self.get_serializer(instance)
         submit_url = request.path.rstrip('/').rsplit('/', 1)[0] + '/'
-        return DRFResponse({'serializer': serializer, 'instance': serializer.data, 'action': 'update', 'submit_url': submit_url})
+        return DRFResponse({
+            'serializer': serializer, 'instance': serializer.data, 'action': 'update',
+            'submit_url': submit_url, 'cancel_url': submit_url,
+            'htmx_target': '#sebastian-content',
+        })
 
     # ------------------------------------------------------------------ #
     # Sebastian metadata helpers                                          #
@@ -195,20 +231,48 @@ class NestedGUIMixin(GUIMixin):
     # ------------------------------------------------------------------ #
 
     def create(self, request, *args, **kwargs):
-        response = CreateModelMixin.create(self, request, *args, **kwargs)
-        if getattr(request, 'sebastian_gui', False) and response.status_code == 201:
-            self.action = 'list'
-            request._request.path = self._inline_list_path()
-            return self.list(request, *args, **kwargs)
-        return response
+        if not getattr(request, 'sebastian_gui', False):
+            return CreateModelMixin.create(self, request, *args, **kwargs)
+        serializer = self.get_serializer(data=request.data)
+        if not serializer.is_valid():
+            container = self._inline_container_id()
+            list_path = self._inline_list_path()
+            resp = DRFResponse(
+                {'serializer': serializer, 'action': 'create',
+                 'htmx_target': f'#{container}', 'cancel_url': list_path,
+                 'submit_url': list_path},
+                status=400,
+            )
+            resp['X-Sebastian-Form-Error'] = 'true'
+            return resp
+        self.perform_create(serializer)
+        self.action = 'list'
+        request._request.path = self._inline_list_path()
+        return self.list(request, *args, **kwargs)
 
     def update(self, request, *args, **kwargs):
-        response = UpdateModelMixin.update(self, request, *args, **kwargs)
-        if getattr(request, 'sebastian_gui', False) and response.status_code == 200:
-            self.action = 'list'
-            request._request.path = self._inline_list_path()
-            return self.list(request, *args, **kwargs)
-        return response
+        if not getattr(request, 'sebastian_gui', False):
+            return UpdateModelMixin.update(self, request, *args, **kwargs)
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        if not serializer.is_valid():
+            container = self._inline_container_id()
+            list_path = self._inline_list_path()
+            resp = DRFResponse(
+                {'serializer': serializer, 'instance': serializer.data, 'action': 'update',
+                 'htmx_target': f'#{container}', 'cancel_url': list_path,
+                 'submit_url': f'{list_path}{instance.pk}/'},
+                status=400,
+            )
+            resp['X-Sebastian-Form-Error'] = 'true'
+            return resp
+        self.perform_update(serializer)
+        if getattr(instance, '_prefetched_objects_cache', None):
+            instance._prefetched_objects_cache = {}
+        self.action = 'list'
+        request._request.path = self._inline_list_path()
+        return self.list(request, *args, **kwargs)
 
     # ------------------------------------------------------------------ #
     # GUI-only actions — carry htmx_target + cancel_url for the template  #

@@ -21,10 +21,16 @@ class SebastianHTMLRenderer(BaseRenderer):
         request  = renderer_context.get('request')
         response = renderer_context.get('response')
 
-        if response and response.status_code >= 400:
+        is_form_error = (
+            response and response.status_code >= 400
+            and isinstance(data, dict) and 'serializer' in data
+        )
+        if response and response.status_code >= 400 and not is_form_error:
             return self._render_error(data, response, request)
 
         template_name = self._resolve_template(view)
+        if is_form_error:
+            template_name = 'sebastian/form.html'
         is_htmx = bool(request and request.META.get('HTTP_HX_REQUEST'))
 
         # Unpack DRF paginated response so templates always get a plain list
@@ -46,6 +52,7 @@ class SebastianHTMLRenderer(BaseRenderer):
             htmx_target = data['htmx_target']
         cancel_url = data.get('cancel_url', '') if isinstance(data, dict) else ''
         submit_url = data.get('submit_url', '') if isinstance(data, dict) else ''
+        form_errors = data['serializer'].errors if is_form_error else {}
 
         context = {
             'data':             data,
@@ -64,6 +71,7 @@ class SebastianHTMLRenderer(BaseRenderer):
             'field_labels':     self._get_field_labels(view),
             'filter_form':      self._get_filter_form(view, request),
             'inlines':          self._get_inlines(view),
+            'form_errors':      form_errors,
         }
 
         return render_to_string(template_name, context, request=request)

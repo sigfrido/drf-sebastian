@@ -97,6 +97,46 @@ class TestFornitoreGUIForms:
         assert r.status_code == 200
         assert r['HX-Redirect'] == f'/gui/fornitori/{fornitore.pk}/'
 
+    def test_create_form_has_cancel_button(self, auth_client):
+        r = auth_client.get('/gui/fornitori/new/', **HTMX)
+        assert b'hx-get="/gui/fornitori/"' in r.content
+
+    def test_update_form_has_cancel_button(self, auth_client, fornitore):
+        r = auth_client.get(f'/gui/fornitori/{fornitore.pk}/edit/', **HTMX)
+        expected = f'hx-get="/gui/fornitori/{fornitore.pk}/"'.encode()
+        assert expected in r.content
+
+    def test_create_invalid_rerenders_form_with_errors(self, auth_client):
+        r = auth_client.post('/gui/fornitori/', {
+            'ragione_sociale': '',      # required — triggers error
+            'codice_fiscale': 'x',
+        }, **HTMX)
+        assert r.status_code == 400
+        assert r.get('X-Sebastian-Form-Error') == 'true'
+        assert b'ragione_sociale' in r.content   # form is re-rendered
+        assert b'invalid-feedback' in r.content  # field-level error shown
+
+    def test_update_invalid_rerenders_form_with_errors(self, auth_client, fornitore):
+        r = auth_client.patch(
+            f'/gui/fornitori/{fornitore.pk}/',
+            {'ragione_sociale': '', 'codice_fiscale': '12345678901'},
+            **HTMX,
+        )
+        assert r.status_code == 400
+        assert r.get('X-Sebastian-Form-Error') == 'true'
+        assert b'ragione_sociale' in r.content
+        assert b'invalid-feedback' in r.content
+
+    def test_inline_create_invalid_rerenders_form(self, auth_client, richiesta):
+        r = auth_client.post(
+            f'/gui/richieste/{richiesta.pk}/allegati/',
+            {'descrizione': ''},   # file is required — triggers error
+            **HTMX,
+        )
+        assert r.status_code == 400
+        assert r.get('X-Sebastian-Form-Error') == 'true'
+        assert b'invalid-feedback' in r.content
+
 
 @pytest.mark.django_db
 class TestFornitoreGUIDelete:

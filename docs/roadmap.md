@@ -50,11 +50,16 @@
 - [x] Bootstrap 5.3.3 JS SRI hash corrected (wrong hash was silently blocking JS, breaking tabs)
 - [x] `list_level` context variable (`1` top-level, `2` inline) → CSS class `list-level1/2` on table wrapper
 - [x] Single `list.html` template shared by top-level and inline lists; `is_inline` / `htmx_target` distinguish behavior
+- [x] `@action` GET actions render as `<a href>` links in list and detail; POST actions render as `<button hx-post>`
+- [x] `NullableFileField` — DRF FileField subclass that converts empty-string → None for nullable file clearing
+- [x] File field UX: badge shows current filename; X button disables file input + marks it `data-sb-pending`; `htmx:configRequest` injects `''` for pending-clear fields and drops empty file inputs from params
+- [x] `selco` app migrations split: `0001_initial` (pre-existing schema), `0002_fornitore_add_certificazione` (new nullable FileField)
 
 ## Phase 3b — Remaining form polish
 
-- [ ] Validation errors returned as HTML fragment (form re-render with field-level error messages)
-- [ ] Form cancel on top-level navigates correctly when loaded via HTMX (currently uses `href="../"`)
+- [x] Validation errors returned as HTML fragment (form re-render with field-level error messages via `X-Sebastian-Form-Error` header + `htmx:beforeSwap` hook)
+- [x] Form cancel on top-level uses `hx-get` HTMX navigation (same mechanism as nested inline forms)
+- [x] `GUISerializer.validate()` calls `Model.clean()` automatically — model-level validation fires on every API write without duplicating logic in the serializer; Django `ValidationError` is remapped to DRF `ValidationError`
 
 ## Phase 4 — Permission enforcement
 

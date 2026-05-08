@@ -1,4 +1,20 @@
+import re
+
+from django.core.exceptions import ValidationError
 from django.db import models
+
+_CF_PARTITA_IVA = re.compile(r'^\d{11}$')
+_CF_PERSONA_FIS = re.compile(r'^[A-Z]{6}\d{2}[A-Z]\d{2}[A-Z]\d{3}[A-Z]$')
+
+_CF_ERROR = (
+    'Inserire una Partita IVA (11 cifre) oppure un Codice Fiscale '
+    'nel formato LLLLLLNNLNNLNNNL.'
+)
+
+
+def _is_valid_codice_fiscale(value: str) -> bool:
+    v = value.upper()
+    return bool(_CF_PARTITA_IVA.match(v) or _CF_PERSONA_FIS.match(v))
 
 
 class Fornitore(models.Model):
@@ -14,6 +30,10 @@ class Fornitore(models.Model):
 
     def __str__(self):
         return f"{self.pk} - {self.ragione_sociale}"
+
+    def clean(self):
+        if self.codice_fiscale and not _is_valid_codice_fiscale(self.codice_fiscale):
+            raise ValidationError({'codice_fiscale': _CF_ERROR})
 
 
 
