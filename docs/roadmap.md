@@ -68,13 +68,18 @@
 - [x] `HIDE_UNAUTHORIZED_ACTIONS` setting: `True` (default) hides unauthorised buttons; `False` renders them as `disabled`
 - [x] `app_settings.py` — thin settings accessor for `SEBASTIAN` dict in Django settings
 
-## Phase 5 — App menu
+## Phase 5 — App menu (done)
 
-- [ ] `Sebastian.menu` declaration on the router (or a top-level config) — ordered list of `{label, viewset, icon}` entries
-- [ ] `GUIRouter` exposes the menu structure via a context variable (or template tag) available in every page render
-- [ ] `base.html` renders the menu as a Bootstrap navbar collapse, highlighting the active section
-- [ ] Menu items respect `visible_permission` — hidden if the current user has no access
-- [ ] Optional section grouping (dropdown) for large menu sets
+- [x] `MenuItem` / `MenuGroup` dataclasses in `config.py` — explicit opt-in via `ViewSet.Sebastian.menu`
+- [x] `SebastianMenuView` — DRF `APIView` at `/api/menu/` (JSON for SPAs) and `/gui/menu/` (HTML fragment); auto-registered by `GUIRouter` + `SebastianRouter`
+- [x] `GUIRouter._build_menu_groups()` resolves `MenuItem.action` → URL names at startup; `SebastianMenuView._menu_groups` set as class attribute for shared access
+- [x] `base.html` loads menu via `hx-get="/gui/menu/" hx-trigger="load, menuRefresh from:body"` — single extra request per page load; reloads on HTMX navigation via `htmx:pushedIntoHistory` → `menuRefresh` event
+- [x] Active item: server-side longest-prefix-wins matching via `HX-Current-URL` header; exact match beats prefix (so `/new/` activates "Nuovo", not "Elenco"); group toggle inherits `active` from any active child
+- [x] Responsive navbar: hamburger toggler button; dropdowns become inline sub-lists on small screens (Bootstrap 5 built-in)
+- [x] `Cancel` button in top-level forms sets `hx-push-url` so URL history is updated and menu refreshes correctly
+- [x] Menu items respect `permission` (callable or list) — follows `HIDE_UNAUTHORIZED_ACTIONS`: hidden or `disabled`
+- [x] `gui_router.add_page(url_path, view, name)` — register custom pages; view receives `request.sebastian_gui = True`
+- [x] `Sebastian.templates` dict — per-ViewSet template overrides (`'list'`, `'detail'`, `'form'`); legacy `Sebastian.{action}_template` still supported
 
 ## Phase 6 — Action confirmation forms
 
