@@ -40,23 +40,35 @@ def _evaluate_menu(request, groups: list, current_url: str = '') -> list:
                 url = reverse(item['url_name'])
             except (NoReverseMatch, KeyError):
                 url = '#'
-            # Prefix match: /gui/richieste/3/ is active when current_url starts with /gui/richieste/
-            active = bool(current_url and url != '#' and current_url.startswith(url))
             evaluated_items.append({
                 'label':    item['label'],
                 'url':      url,
                 'icon':     item.get('icon', ''),
                 'disabled': not item_permitted,
-                'active':   active,
+                'active':   False,   # resolved below
             })
 
         if not evaluated_items and hide:
             continue
 
+        # Active item: exact match wins; fall back to longest prefix match.
+        # This ensures /gui/richieste/new/ activates "Nuova", not "Elenco".
+        if current_url:
+            candidate_urls = [i['url'] for i in evaluated_items if i['url'] != '#']
+            exact = current_url if current_url in candidate_urls else None
+            if exact:
+                best = exact
+            else:
+                prefixes = [u for u in candidate_urls if current_url.startswith(u)]
+                best = max(prefixes, key=len) if prefixes else None
+            for item in evaluated_items:
+                item['active'] = (item['url'] == best)
+
         result.append({
             'label':    group['label'],
             'icon':     group.get('icon', ''),
             'disabled': not group_permitted,
+            'active':   any(i['active'] for i in evaluated_items),
             'items':    evaluated_items,
         })
     return result

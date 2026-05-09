@@ -412,8 +412,10 @@ class TestAppMenu:
         )
         assert r.status_code == 200
         content = r.content.decode()
-        # 'active' class should appear on the Elenco item of Richieste
-        assert 'active' in content
+        # Parent group toggle must carry the active class
+        assert 'nav-link dropdown-toggle active' in content
+        # The matching dropdown item must also be active
+        assert 'dropdown-item active' in content
 
     def test_base_template_loads_menu_via_htmx(self, auth_client):
         r = auth_client.get('/gui/richieste/', **GUI)

@@ -24,7 +24,7 @@
       <span class="navbar-toggler-icon"></span>
     </button>
     <div class="collapse navbar-collapse" id="nav-menu"
-         hx-get="{% url 'sebastian-menu' %}" hx-trigger="load" hx-swap="innerHTML">
+         hx-get="{% url 'sebastian-menu' %}" hx-trigger="load, menuRefresh from:body" hx-swap="innerHTML">
     </div>
   </div>
 </nav>
@@ -102,12 +102,10 @@
     });
   });
 
-  /* Update active menu item after HTMX navigation without re-fetching the menu */
-  document.body.addEventListener('htmx:pushUrl', function () {
-    var path = window.location.pathname;
-    document.querySelectorAll('#nav-menu .dropdown-item[href]').forEach(function (el) {
-      el.classList.toggle('active', el.getAttribute('href') === path);
-    });
+  /* After HTMX pushes a new URL into history, reload the menu so the server
+     can recompute the active item using the HX-Current-URL header. */
+  document.addEventListener('htmx:pushedIntoHistory', function () {
+    document.body.dispatchEvent(new Event('menuRefresh'));
   });
 
   document.body.addEventListener('htmx:afterRequest', function (evt) {
