@@ -1,4 +1,4 @@
-# drf-sebastian
+![SEBASTIAN Logo](assets/sebastian-logo-big.png)
 
 A server-side HTML GUI generator for Django Rest Framework API-First applications.
 
@@ -45,3 +45,10 @@ With Sebastian, you implement your business logic in your DRF API (Views and Ser
 | SPA Support | ✅ Yes | ❌ No | ❌ No | ✅ Yes | ✅ Yes |
 | Server-side GUI| ✅ Yes | ✅ Yes | ✅ Yes | ❌ No | ⚠️ Via Jinja |
 
+
+## Credits
+
+See [CREDITS](CREDITS.md) for details
+
+- Freely inspired by J.F. Sebastian character in Blade Runner (1982)
+- **Blade Runner Font** by Phil Steinschneider - https://www.dafont.com/blade-runner-movie-font.font
