@@ -18,8 +18,13 @@
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
   <div class="container-fluid">
     <a class="navbar-brand" href="/gui/">{% block brand %}Sebastian{% endblock %}</a>
-    <div class="collapse navbar-collapse" id="nav-menu">
-      {% block nav_items %}{% endblock %}
+    <button class="navbar-toggler" type="button"
+            data-bs-toggle="collapse" data-bs-target="#nav-menu"
+            aria-controls="nav-menu" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="nav-menu"
+         hx-get="{% url 'sebastian-menu' %}" hx-trigger="load" hx-swap="innerHTML">
     </div>
   </div>
 </nav>
@@ -94,6 +99,14 @@
 
     form.querySelectorAll('[data-sb-pending]').forEach(function (inp) {
       if (inp.name) { params[inp.name] = ''; }
+    });
+  });
+
+  /* Update active menu item after HTMX navigation without re-fetching the menu */
+  document.body.addEventListener('htmx:pushUrl', function () {
+    var path = window.location.pathname;
+    document.querySelectorAll('#nav-menu .dropdown-item[href]').forEach(function (el) {
+      el.classList.toggle('active', el.getAttribute('href') === path);
     });
   });
 

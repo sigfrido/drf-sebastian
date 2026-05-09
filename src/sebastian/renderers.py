@@ -92,9 +92,20 @@ class SebastianHTMLRenderer(BaseRenderer):
     def _resolve_template(self, view) -> str:
         if view is None:
             return self.DEFAULT_TEMPLATE
+        # SebastianMenuView always renders with the menu fragment template
+        from .views import SebastianMenuView
+        if isinstance(view, SebastianMenuView):
+            return 'sebastian/menu.html'
         action = getattr(view, 'action', None)
         sebastian = getattr(view.__class__, 'Sebastian', None)
         if sebastian and action:
+            # Sebastian.templates dict: {'list': '...', 'detail': '...', 'form': '...'}
+            templates = getattr(sebastian, 'templates', {})
+            _key_map = {'retrieve': 'detail', 'create_form': 'form', 'update_form': 'form'}
+            key = _key_map.get(action, action)
+            if key in templates:
+                return templates[key]
+            # Legacy per-attribute override: Sebastian.retrieve_template = '...'
             override = getattr(sebastian, f'{action}_template', None)
             if override:
                 return override

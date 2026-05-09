@@ -2,7 +2,7 @@ from django.http import FileResponse
 from rest_framework import viewsets, permissions
 from rest_framework.response import Response
 from sebastian.mixins import GUIMixin, NestedGUIMixin
-from sebastian.config import FieldGroup
+from sebastian.config import FieldGroup, MenuGroup, MenuItem
 from sebastian.decorators import action
 from .models import Fornitore, Richiesta, Allegato
 from .serializers import FornitoreSerializer, RichiestaSerializer, AllegatoSerializer
@@ -28,6 +28,10 @@ class FornitoreViewSet(GUIMixin, viewsets.ModelViewSet):
     filterset_class  = FornitoreFilter
 
     class Sebastian:
+        menu = MenuGroup('Fornitori', icon='building', items=[
+            MenuItem('Elenco', action='list', icon='list-ul'),
+            MenuItem('Nuovo',  action='new',  icon='plus-circle'),
+        ])
         groups = [
             FieldGroup('anagrafica', ['ragione_sociale', 'codice_fiscale', 'attivo'],
                        label='Anagrafica'),
@@ -86,6 +90,10 @@ class RichiestaViewSet(GUIMixin, viewsets.ModelViewSet):
     filterset_class  = RichiestaFilter
 
     class Sebastian:
+        menu = MenuGroup('Richieste', icon='clipboard-check', items=[
+            MenuItem('Elenco', action='list', icon='list-ul'),
+            MenuItem('Nuova',  action='new',  icon='plus-circle', permission=(perm_is_admin,)),
+        ])
         groups = [
             FieldGroup(
                 'generale',

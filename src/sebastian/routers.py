@@ -90,7 +90,11 @@ class SebastianRouter(DefaultRouter):
 
     @property
     def urls(self):
-        return super().urls + self._nested_patterns
+        return super().urls + self._nested_patterns + self._api_menu_patterns()
+
+    def _api_menu_patterns(self):
+        from .views import SebastianMenuView
+        return [path('menu/', SebastianMenuView.as_view(), name='sebastian-api-menu')]
 
 
 # ---------------------------------------------------------------------------
@@ -115,17 +119,74 @@ class GUIRouter:
     """
 
     def __init__(self, api_router: BaseRouter):
-        self.api_router = api_router
+        self.api_router   = api_router
+        self._menu_groups = []   # resolved menu structure, built in _build_urls()
+        self._extra_urls  = []   # custom pages registered via add_page()
 
     @property
     def urls(self):
         return self._build_urls()
 
     def _build_urls(self):
-        urls = [path('', self._home_view(), name='sebastian-home')]
+        self._menu_groups = self._build_menu_groups()
+        menu_view = self._build_menu_view()
+        urls = [
+            path('', self._home_view(), name='sebastian-home'),
+            path('menu/', self._wrap(menu_view), {'format': 'html'}, name='sebastian-menu'),
+        ]
         for prefix, viewset, basename in self.api_router.registry:
             urls += self._routes_for(prefix, viewset, basename)
+        urls += self._extra_urls
         return urls
+
+    def add_page(self, url_path: str, view, name: str):
+        """Register a custom GUI page (plain Django view or DRF APIView).
+        The view receives request.sebastian_gui=True. Call before urls is accessed."""
+        self._extra_urls.append(path(url_path, self._wrap(view), name=name))
+
+    def _build_menu_groups(self) -> list:
+        """Build a resolved list of menu group dicts from Sebastian.menu declarations."""
+        groups = []
+        for _, viewset, basename in self.api_router.registry:
+            if not issubclass(viewset, GUIMixin):
+                continue
+            sebastian = getattr(viewset, 'Sebastian', None)
+            menu = getattr(sebastian, 'menu', None)
+            if menu is None:
+                continue
+            from .config import MenuGroup
+            if not isinstance(menu, MenuGroup):
+                continue
+            items = []
+            for item in menu.items:
+                if item.url_name:
+                    url_name = item.url_name
+                elif item.action == 'list':
+                    url_name = f'{basename}-gui-list'
+                elif item.action == 'new':
+                    url_name = f'{basename}-gui-new'
+                else:
+                    url_name = f'{basename}-gui-{item.action}'
+                items.append({
+                    'label':      item.label,
+                    'url_name':   url_name,
+                    'icon':       item.icon,
+                    'permission': item.permission,
+                })
+            groups.append({
+                'label':      menu.label,
+                'icon':       menu.icon,
+                'permission': menu.permission,
+                'items':      items,
+            })
+        return groups
+
+    def _build_menu_view(self):
+        """Set SebastianMenuView._menu_groups (class attr) and return as_view().
+        Both /gui/menu/ and /api/menu/ read from the same class attribute."""
+        from .views import SebastianMenuView
+        SebastianMenuView._menu_groups = self._menu_groups
+        return SebastianMenuView.as_view()
 
     def _routes_for(self, prefix, viewset, basename):
         has_gui = issubclass(viewset, GUIMixin)
@@ -294,6 +355,7 @@ class GUIRouter:
         registry = self.api_router.registry
 
         def home(request):
+            request.sebastian_gui = True
             entries = []
             for prefix, viewset, _ in registry:
                 if not issubclass(viewset, GUIMixin):
@@ -311,8 +373,7 @@ class GUIRouter:
         home.__name__ = 'sebastian_home'
         return home
 
-    @staticmethod
-    def _wrap(view):
+    def _wrap(self, view):
         def wrapped(request, *args, **kwargs):
             request.sebastian_gui = True
             return view(request, *args, **kwargs)

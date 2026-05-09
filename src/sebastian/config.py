@@ -1,5 +1,5 @@
-from dataclasses import dataclass
-from typing import Callable, Optional, Sequence, Union
+from dataclasses import dataclass, field
+from typing import Callable, List, Optional, Sequence, Union
 
 
 # Permission type: None (always allow), a single callable, or a list of callables (AND).
@@ -37,3 +37,23 @@ class FieldGroup:
 
     def is_editable(self, request, obj) -> bool:
         return _check_permission(self.edit_permission, request, obj)
+
+
+@dataclass
+class MenuItem:
+    """A single entry in a MenuGroup. Use `action` for ViewSet-relative routes
+    or `url_name` for explicit Django URL names (custom pages, external links)."""
+    label: str
+    action: str = ''       # 'list' | 'new' | non-detail @action method name
+    url_name: str = ''     # explicit URL name — for non-ViewSet pages
+    icon: str = ''
+    permission: Permission = None
+
+
+@dataclass
+class MenuGroup:
+    """A navbar dropdown contributed by a module. Declared in ViewSet.Sebastian.menu."""
+    label: str
+    icon: str = ''
+    items: List[MenuItem] = field(default_factory=list)
+    permission: Permission = None

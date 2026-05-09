@@ -364,3 +364,59 @@ class TestFieldGroupPermissions:
             r = auth_client.get(f'/gui/richieste/{richiesta.pk}/', **HTMX)
         assert r.status_code == 200
         assert b'Approva' not in r.content
+
+
+@pytest.mark.django_db
+class TestAppMenu:
+    def test_menu_endpoint_returns_json(self, auth_client):
+        r = auth_client.get('/api/menu/', HTTP_ACCEPT='application/json')
+        assert r.status_code == 200
+        assert 'menu_groups' in r.data
+        labels = [g['label'] for g in r.data['menu_groups']]
+        assert 'Fornitori' in labels
+        assert 'Richieste' in labels
+
+    def test_menu_endpoint_returns_html_fragment(self, auth_client):
+        r = auth_client.get('/gui/menu/', **GUI)
+        assert r.status_code == 200
+        # Fragment only — no full page shell
+        assert b'<!doctype' not in r.content.lower()
+        assert b'<ul' in r.content
+        assert b'Fornitori' in r.content
+        assert b'Richieste' in r.content
+
+    def test_menu_items_present_for_admin(self, auth_client):
+        r = auth_client.get('/gui/menu/', **GUI)
+        assert r.status_code == 200
+        assert b'Elenco' in r.content
+        assert b'Nuova' in r.content   # admin sees all items
+
+    def test_menu_item_permission_hidden_for_non_admin(self, regular_client):
+        with override_settings(SEBASTIAN={'HIDE_UNAUTHORIZED_ACTIONS': True}):
+            r = regular_client.get('/gui/menu/', **GUI)
+        assert r.status_code == 200
+        assert b'Richieste' in r.content   # group still visible
+        assert b'Nuova' not in r.content   # item hidden (perm_is_admin fails)
+
+    def test_menu_item_permission_disabled_for_non_admin(self, regular_client):
+        with override_settings(SEBASTIAN={'HIDE_UNAUTHORIZED_ACTIONS': False}):
+            r = regular_client.get('/gui/menu/', **GUI)
+        assert r.status_code == 200
+        assert b'Nuova' in r.content
+        assert b'disabled' in r.content
+
+    def test_menu_active_item_via_hx_current_url(self, auth_client):
+        r = auth_client.get(
+            '/gui/menu/', **GUI,
+            HTTP_HX_CURRENT_URL='http://testserver/gui/richieste/',
+        )
+        assert r.status_code == 200
+        content = r.content.decode()
+        # 'active' class should appear on the Elenco item of Richieste
+        assert 'active' in content
+
+    def test_base_template_loads_menu_via_htmx(self, auth_client):
+        r = auth_client.get('/gui/richieste/', **GUI)
+        assert r.status_code == 200
+        assert b'hx-get' in r.content
+        assert b'menu' in r.content   # hx-get points to the menu endpoint

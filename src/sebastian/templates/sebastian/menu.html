@@ -1,0 +1,30 @@
+<ul class="navbar-nav me-auto mb-2 mb-lg-0">
+  {% for group in data.menu_groups %}
+  <li class="nav-item dropdown">
+    <a class="nav-link dropdown-toggle{% if group.disabled %} disabled{% endif %}"
+       href="#" data-bs-toggle="dropdown" aria-expanded="false">
+      {% if group.icon %}<i class="bi bi-{{ group.icon }} me-1"></i>{% endif %}
+      {{ group.label }}
+    </a>
+    <ul class="dropdown-menu">
+      {% for item in group.items %}
+      <li>
+        {% if item.disabled %}
+        <span class="dropdown-item disabled">
+          {% if item.icon %}<i class="bi bi-{{ item.icon }} me-1"></i>{% endif %}
+          {{ item.label }}
+        </span>
+        {% else %}
+        <a class="dropdown-item{% if item.active %} active{% endif %}"
+           href="{{ item.url }}"
+           hx-get="{{ item.url }}" hx-target="#sebastian-content" hx-push-url="true">
+          {% if item.icon %}<i class="bi bi-{{ item.icon }} me-1"></i>{% endif %}
+          {{ item.label }}
+        </a>
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+  </li>
+  {% endfor %}
+</ul>
