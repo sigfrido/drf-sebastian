@@ -33,6 +33,12 @@ def auth_client(api_client, admin_user):
     return api_client
 
 
+@pytest.fixture
+def auth_client_regular(api_client, regular_user):
+    api_client.force_authenticate(user=regular_user)
+    return api_client
+
+
 # ── model fixtures ────────────────────────────────────────────────────────────
 
 @pytest.fixture

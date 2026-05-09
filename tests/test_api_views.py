@@ -205,3 +205,15 @@ class TestRichiestaActions:
         auth_client.post(f'/api/richieste/{richiesta.pk}/invia/')
         r = auth_client.post(f'/api/richieste/{richiesta.pk}/invia/')
         assert r.status_code == 400
+
+    def test_regular_user_edit_readonly_fields(self, auth_client_regular, richiesta):
+        r = auth_client_regular.patch(f'/api/richieste/{richiesta.pk}/',
+            {'descrizione': 'Nuova descrizione'})
+        assert r.status_code == 200
+        assert r.data['descrizione'] == 'Nuova descrizione'
+        # Now try with admin-only field
+        r = auth_client_regular.patch(f'/api/richieste/{richiesta.pk}/',
+            {'descrizione': 'Nuova descrizione', 'note_direttore': 'Questo non funzionerà'}
+        )
+        assert r.status_code == 403
+        assert 'note_direttore' in r.data['detail']

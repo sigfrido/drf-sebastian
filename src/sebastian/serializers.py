@@ -5,6 +5,7 @@ and adds GUI display helpers for RelatedField values.
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import models as django_models
 from rest_framework import serializers
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.relations import RelatedField
 
 
@@ -22,7 +23,7 @@ class NullableFileField(serializers.FileField):
         return super().to_internal_value(data)
 
 
-class GUISerializer:
+class GUISerializerMixin:
     """
     Mixin for DRF Serializers.
 
@@ -38,7 +39,8 @@ class GUISerializer:
                 return related_obj.ragione_sociale
             return super().get_sebastian_description(field_name, related_obj)
     """
-
+    # Configuration
+    SKIP_MODEL_VALIDATION = False
     # ------------------------------------------------------------------ #
     # Representation                                                       #
     # ------------------------------------------------------------------ #
@@ -74,22 +76,31 @@ class GUISerializer:
 
     def validate(self, attrs):
         attrs = super().validate(attrs)
-        # Build a scratch instance and run Model.clean() so model-level
-        # validation rules don't have to be duplicated in the serializer.
-        # We call clean() only — not full_clean() — to avoid re-running
-        # field-level DB constraints (blank/null/max_length) and unique
-        # checks that the serializer fields already handle.
-        instance = self.instance or self.Meta.model()
-        # Only proceed if the model actually overrides clean() — base Model.clean() is a no-op.
-        if type(instance).clean is django_models.Model.clean:
-            return attrs
-        for attr, value in attrs.items():
-            setattr(instance, attr, value)
-        try:
-            instance.clean()
-        except DjangoValidationError as exc:
-            errors = exc.message_dict if hasattr(exc, 'message_dict') else exc.messages
-            raise serializers.ValidationError(errors)
+        # DRF silently drops read_only and unknown fields from attrs, so we
+        # check initial_data (raw submitted payload) against our permission sets,
+        # populated by get_fields() during deserialization.
+        hidden   = getattr(self, '_permission_hidden_fields',    set())
+        readonly = getattr(self, '_permission_readonly_fields',  set())
+        for attr in self.initial_data:
+            if attr in hidden:
+                raise PermissionDenied(f"Field '{attr}' is not accessible.")
+            if attr in readonly:
+                raise PermissionDenied(f"Field '{attr}' is read-only.")
+
+        if not self.SKIP_MODEL_VALIDATION:
+            # We call clean() only — not full_clean() — to avoid re-running
+            # field-level DB constraints (blank/null/max_length) and unique
+            # checks that the serializer fields already handle.
+            instance = self.instance or self.Meta.model()
+            # Only proceed if the model actually overrides clean() — base Model.clean() is a no-op.
+            if type(instance).clean is not django_models.Model.clean:
+                for attr, value in attrs.items():
+                    setattr(instance, attr, value)
+                try:
+                    instance.clean()
+                except DjangoValidationError as exc:
+                    errors = exc.message_dict if hasattr(exc, 'message_dict') else exc.messages
+                    raise serializers.ValidationError(errors)
         return attrs
 
     # ------------------------------------------------------------------ #
@@ -106,6 +117,9 @@ class GUISerializer:
         if not groups:
             return fields
 
+        self._permission_hidden_fields   = set()
+        self._permission_readonly_fields = set()
+
         obj = getattr(self, 'instance', None)
         for group in groups:
             from sebastian.config import FieldGroup
@@ -115,10 +129,11 @@ class GUISerializer:
                 if field_name not in fields:
                     continue
                 if not group.is_visible(request, obj):
+                    self._permission_hidden_fields.add(field_name)
                     del fields[field_name]
                 elif not group.is_editable(request, obj):
+                    self._permission_readonly_fields.add(field_name)
                     fields[field_name].read_only = True
-
         return fields
 
     def _get_request_and_view(self):
