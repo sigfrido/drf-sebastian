@@ -48,18 +48,21 @@ class AllegatoSerializer(GUISerializerMixin, serializers.ModelSerializer):
 
 class RichiestaSerializer(GUISerializerMixin, serializers.ModelSerializer):
     fornitore_nome = serializers.CharField(source='fornitore.ragione_sociale', read_only=True)
-
+    num_allegati = serializers.SerializerMethodField()
     class Meta:
         model  = Richiesta
         fields = [
             'id', 'titolo', 'descrizione', 'budget', 'stato',
             'fornitore', 'fornitore_nome',
             'note_direttore', 'cig', 'motivazione',
-            'created_at', 'updated_at',
+            'created_at', 'updated_at', 'num_allegati',
         ]
-        read_only_fields = ['created_at', 'updated_at']
+        read_only_fields = ['created_at', 'updated_at', 'num_allegati']
 
     def get_sebastian_description(self, field_name, related_obj):
         if field_name == 'fornitore':
             return f'{related_obj.pk} - {related_obj.ragione_sociale} ({related_obj.codice_fiscale})'
         return super().get_sebastian_description(field_name, related_obj)
+    
+    def get_num_allegati(self, obj):
+        return obj.allegati.count()

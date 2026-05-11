@@ -4,34 +4,25 @@ from rest_framework.response import Response
 from sebastian.mixins import GUIMixin, NestedGUIMixin
 from sebastian.config import FieldGroup, MenuGroup, MenuItem
 from sebastian.decorators import action
+from sebastian.permissions import perm_fail, perm_is_admin, perm_is_action, perm_or, perm_and
 from .models import Fornitore, Richiesta, Allegato
 from .serializers import FornitoreSerializer, RichiestaSerializer, AllegatoSerializer, InviaSerializer
 from .filters import FornitoreFilter, RichiestaFilter
 
 
-def perm_fail(request, _obj):
-    return False
+# Permissions
 
-def perm_is_admin(request, _obj):
-    return request.user.is_staff
-
-
-def perm_richiesta_stato(stato):
-    def has_perm(request, _obj):
-        return _obj.stato == stato
-    return has_perm
-
-
-def perm_stato_inviata_o_approvata(request, obj):
-    if obj is None:
-        return False
-    return obj.stato in (Richiesta.Stato.INVIATA, Richiesta.Stato.APPROVATA)
-
+def perm_richiesta_stato(*stato):
+    def _has_perm(request, _obj):
+        if not _obj:
+            return False
+        return _obj.stato in stato
+    return _has_perm
 
 def perm_is_invia_action(request, obj):
     view = request.parser_context.get('view')
     return getattr(view, 'action', None) == 'invia'
-    
+
 
 class FornitoreViewSet(GUIMixin, viewsets.ModelViewSet):
     queryset         = Fornitore.objects.all()
@@ -121,8 +112,8 @@ class RichiestaViewSet(GUIMixin, viewsets.ModelViewSet):
                 'invia',
                 ['motivazione'],
                 label='Motivazione Invio',
-                visible_permission=perm_stato_inviata_o_approvata,
-                edit_permission=perm_is_invia_action,
+                visible_permission=perm_richiesta_stato(Richiesta.Stato.INVIATA, Richiesta.Stato.APPROVATA),
+                edit_permission=perm_is_action('invia'),
             ),
         ]
         inlines = [AllegatoViewSet]
