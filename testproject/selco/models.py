@@ -54,6 +54,7 @@ class Richiesta(models.Model):
     )
     note_direttore  = models.TextField(blank=True)
     cig             = models.CharField(max_length=10, blank=True)
+    motivazione     = models.TextField(blank=True)
     created_at      = models.DateTimeField(auto_now_add=True)
     updated_at      = models.DateTimeField(auto_now=True)
 

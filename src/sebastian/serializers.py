@@ -120,7 +120,10 @@ class GUISerializerMixin:
         self._permission_hidden_fields   = set()
         self._permission_readonly_fields = set()
 
-        obj = getattr(self, 'instance', None)
+        # In many=True lists the child serializer's self.instance is the full queryset,
+        # not an individual model instance — treat as no-object context.
+        raw_obj = getattr(self, 'instance', None)
+        obj = raw_obj if isinstance(raw_obj, django_models.Model) else None
         for group in groups:
             from sebastian.config import FieldGroup
             if not isinstance(group, FieldGroup):

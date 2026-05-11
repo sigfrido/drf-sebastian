@@ -81,13 +81,18 @@
 - [x] `gui_router.add_page(url_path, view, name)` — register custom pages; view receives `request.sebastian_gui = True`
 - [x] `Sebastian.templates` dict — per-ViewSet template overrides (`'list'`, `'detail'`, `'form'`); legacy `Sebastian.{action}_template` still supported
 
-## Phase 6 — Action confirmation forms
+## Phase 6 — Action confirmation forms (done)
 
-- [ ] `@action` can declare a `confirmation_serializer` in `gui_config` — a DRF serializer whose fields are collected in a modal form before the action is dispatched
-- [ ] Example use-case: workflow transition that requires a `note` (text) and an optional `destinatario` (FK to user), only shown when the WF phase is configured to accept a receiver
-- [ ] GUI flow: action button click → HTMX loads confirmation form into modal → user fills form → submit POSTs action with form data merged into the request body
-- [ ] `SebastianHTMLRenderer` detects `confirmation_serializer` in `gui_config` and adds a `confirm_form` template for the modal content
-- [ ] Confirmation forms use the same FieldGroup / field rendering pipeline as regular forms
+- [x] `@action` declares `confirmation_serializer` in `gui_config` — a plain DRF Serializer whose fields are collected in a Bootstrap modal before the action is dispatched
+- [x] Example use-case: `invia` action on `Richiesta` requires `motivazione` (TextField, saved to model) and `verifica` (BooleanField checkbox, GUI-only policy acceptance, not saved)
+- [x] GUI flow: action button `hx-get` → HTMX loads `confirm_action.html` into `#sebastian-modal` → JS shows Bootstrap modal → user fills form → `hx-post` to action URL → success `HX-Redirect` / error re-renders modal
+- [x] `SebastianHTMLRenderer` detects `data['action'] == 'confirm_action'` → renders `sebastian/confirm_action.html` (standalone, no `{% extends %}`  — always renders modal structure regardless of HTMX partial mode)
+- [x] `detail.html` checks `cfg.confirmation_serializer` first (before `action.method == 'get'`) → modal-trigger button
+- [x] `base.html` JS: `htmx:afterSwap` on `#sebastian-modal` → `new bootstrap.Modal(el).show()`
+- [x] `finalize_response` in `GUIMixin` guards `request.method != 'get'` — GET actions never get `HX-Redirect` appended
+- [x] `GUISerializerMixin.get_fields()` guards `isinstance(raw_obj, Model)` — queryset (many=True child) and None both treated as no-object context
+- [x] API path: `verifica` is GUI-only; API callers can POST `invia` without it (backward-compatible)
+- [x] Permission callables for `visible_permission` / `edit_permission` must guard `obj is None` for list/label context
 
 ## Phase 7 — Theming and template override framework
 

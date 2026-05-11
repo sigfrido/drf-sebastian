@@ -22,7 +22,7 @@ _<sup>*</sup>Replicants of API endpoints with a skin_
 
 ## Summary
 
-Sebastian is a Django/DRF snap-in that eliminates API/GUI logic duplication by auto-generating server-side HTML interfaces and interface abstraction data from DRF ViewSets and Serializers. The GUI endpoints are "replicants" of the corresponding API endpoints. Every element of the interface, even the main menu, is rendered by an API endpoint. 
+Sebastian is a Django/DRF snap-in that eliminates API/GUI logic duplication by auto-generating server-side HTML interfaces and interface abstraction data from DRF ViewSets and Serializers. The GUI endpoints are "replicants" of the corresponding API endpoints. Every element of the interface, even the main menu, is a HTML-rendered API endpoint. 
 
 Sebastian provides a declarative mapping between API endpoints and GUI elements (lists, details, forms, actions) without requiring you to write separate forms, views, or templates.
 

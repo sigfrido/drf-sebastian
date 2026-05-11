@@ -5,7 +5,7 @@ from sebastian.mixins import GUIMixin, NestedGUIMixin
 from sebastian.config import FieldGroup, MenuGroup, MenuItem
 from sebastian.decorators import action
 from .models import Fornitore, Richiesta, Allegato
-from .serializers import FornitoreSerializer, RichiestaSerializer, AllegatoSerializer
+from .serializers import FornitoreSerializer, RichiestaSerializer, AllegatoSerializer, InviaSerializer
 from .filters import FornitoreFilter, RichiestaFilter
 
 
@@ -20,6 +20,17 @@ def perm_richiesta_stato(stato):
     def has_perm(request, _obj):
         return _obj.stato == stato
     return has_perm
+
+
+def perm_stato_inviata_o_approvata(request, obj):
+    if obj is None:
+        return False
+    return obj.stato in (Richiesta.Stato.INVIATA, Richiesta.Stato.APPROVATA)
+
+
+def perm_is_invia_action(request, obj):
+    view = request.parser_context.get('view')
+    return getattr(view, 'action', None) == 'invia'
     
 
 class FornitoreViewSet(GUIMixin, viewsets.ModelViewSet):
@@ -106,28 +117,69 @@ class RichiestaViewSet(GUIMixin, viewsets.ModelViewSet):
                 label='Direzione',
                 edit_permission=(perm_is_admin, ),
             ),
+            FieldGroup(
+                'invia',
+                ['motivazione'],
+                label='Motivazione Invio',
+                visible_permission=perm_stato_inviata_o_approvata,
+                edit_permission=perm_is_invia_action,
+            ),
         ]
         inlines = [AllegatoViewSet]
 
     @action(
         detail=True,
-        methods=['post'],
+        methods=['get', 'post'],
         permission_classes=[permissions.IsAuthenticated],
         gui_config={
-            'label':    'Invia',
-            'icon':     'send',
-            'color':    'primary',
-            'confirm':  'Confermi invio della richiesta?',
-            'position': 'detail',
-            'permission' : [
-                perm_richiesta_stato(Richiesta.Stato.BOZZA),
-            ],
+            'label':                  'Invia',
+            'icon':                   'send',
+            'color':                  'primary',
+            'position':               'detail',
+            'permission':             [perm_richiesta_stato(Richiesta.Stato.BOZZA)],
+            'confirmation_serializer': InviaSerializer,
+            'action_label':           'Invia Richiesta',
         },
     )
     def invia(self, request, pk=None, **kwargs):
         instance = self.get_object()
+        parent_url = request.path.rstrip('/').rsplit('/', 1)[0] + '/'
+        if request.method == 'GET':
+            serializer = InviaSerializer(
+                {'motivazione': instance.motivazione or '', 'verifica': False}
+            )
+            return Response({
+                'serializer':   serializer,
+                'instance':     {'motivazione': instance.motivazione or '', 'verifica': False},
+                'action':       'confirm_action',
+                'action_label': 'Invia Richiesta',
+                'submit_url':   request.path,
+                'cancel_url':   parent_url,
+                'htmx_target':  '#sebastian-modal',
+            })
+        # POST
+        if getattr(request, 'sebastian_gui', False):
+            # GUI: validate full confirmation form (motivazione + verifica checkbox)
+            serializer = InviaSerializer(data=request.data)
+            if not serializer.is_valid():
+                resp = Response({
+                    'serializer':   serializer,
+                    'instance':     request.data,
+                    'action':       'confirm_action',
+                    'action_label': 'Invia Richiesta',
+                    'submit_url':   request.path,
+                    'cancel_url':   parent_url,
+                    'htmx_target':  '#sebastian-modal',
+                }, status=400)
+                resp['X-Sebastian-Form-Error'] = 'true'
+                return resp
+            motivazione = serializer.validated_data['motivazione']
+        else:
+            # API: verifica is a GUI-only policy checkbox; accept motivazione directly
+            motivazione = request.data.get('motivazione', '')
         if instance.stato != Richiesta.Stato.BOZZA:
             return Response({'detail': 'Solo le bozze possono essere inviate.'}, status=400)
+        instance.motivazione = motivazione
         instance.stato = Richiesta.Stato.INVIATA
         instance.save()
         return Response(self.get_serializer(instance).data)

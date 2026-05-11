@@ -265,15 +265,54 @@ class TestAllegatoInlineGUI:
 @pytest.mark.django_db
 class TestRichiestaActionsGUI:
     def test_gui_invia_restituisce_redirect_al_detail(self, auth_client, richiesta):
-        r = auth_client.post(f'/gui/richieste/{richiesta.pk}/invia/', **HTMX)
+        r = auth_client.post(
+            f'/gui/richieste/{richiesta.pk}/invia/',
+            {'motivazione': 'Nel budget approvato.', 'verifica': 'true'},
+            **HTMX,
+        )
         assert r.status_code == 200
         assert r['HX-Redirect'] == f'/gui/richieste/{richiesta.pk}/'
         richiesta.refresh_from_db()
         assert richiesta.stato == 'inviata'
+        assert richiesta.motivazione == 'Nel budget approvato.'
+
+    def test_gui_invia_senza_motivazione_restituisce_400(self, auth_client, richiesta):
+        """Validation error → 400 with X-Sebastian-Form-Error and re-rendered modal."""
+        r = auth_client.post(
+            f'/gui/richieste/{richiesta.pk}/invia/',
+            {'motivazione': '', 'verifica': 'true'},
+            **HTMX,
+        )
+        assert r.status_code == 400
+        assert r['X-Sebastian-Form-Error'] == 'true'
+        assert b'sb-confirm-form' in r.content
+
+    def test_gui_invia_senza_verifica_restituisce_400(self, auth_client, richiesta):
+        """verifica checkbox unchecked → validation error."""
+        r = auth_client.post(
+            f'/gui/richieste/{richiesta.pk}/invia/',
+            {'motivazione': 'ok'},  # verifica not sent → False
+            **HTMX,
+        )
+        assert r.status_code == 400
+        assert r['X-Sebastian-Form-Error'] == 'true'
+
+    def test_gui_invia_get_restituisce_modal(self, auth_client, richiesta):
+        """GET on action with confirmation_serializer → modal HTML fragment."""
+        r = auth_client.get(f'/gui/richieste/{richiesta.pk}/invia/', **HTMX)
+        assert r.status_code == 200
+        assert b'sb-confirm-modal' in r.content
+        assert b'sb-confirm-form' in r.content
+        assert b'motivazione' in r.content
+        assert b'verifica' in r.content
 
     def test_gui_approva_flow_completo(self, auth_client, richiesta):
         """Bozza → invia → approva: redirect al detail, stato finale approvata."""
-        auth_client.post(f'/gui/richieste/{richiesta.pk}/invia/', **HTMX)
+        auth_client.post(
+            f'/gui/richieste/{richiesta.pk}/invia/',
+            {'motivazione': 'ok', 'verifica': 'true'},
+            **HTMX,
+        )
         r = auth_client.post(f'/gui/richieste/{richiesta.pk}/approva/', **HTMX)
         assert r.status_code == 200
         assert r['HX-Redirect'] == f'/gui/richieste/{richiesta.pk}/'

@@ -21,6 +21,14 @@
           {% if cfg.icon %}<i class="bi bi-{{ cfg.icon }}"></i>{% endif %}
           {{ cfg.label }}
         </button>
+        {% elif cfg.confirmation_serializer %}
+        <button class="btn btn-{{ cfg.color|default:'secondary' }} btn-sm"
+                hx-get="{{ request.path }}{{ action.name }}/"
+                hx-target="#sebastian-modal"
+                hx-swap="innerHTML">
+          {% if cfg.icon %}<i class="bi bi-{{ cfg.icon }}"></i>{% endif %}
+          {{ cfg.label }}
+        </button>
         {% elif action.method == 'get' %}
         <a href="{{ request.path }}{{ action.name }}/"
            class="btn btn-{{ cfg.color|default:'secondary' }} btn-sm">

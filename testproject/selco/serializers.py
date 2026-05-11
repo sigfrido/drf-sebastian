@@ -3,6 +3,27 @@ from sebastian.serializers import GUISerializerMixin, NullableFileField
 from .models import Fornitore, Richiesta, Allegato
 
 
+class InviaSerializer(serializers.Serializer):
+    motivazione = serializers.CharField(
+        label='Motivazione',
+        required=True,
+    )
+    verifica = serializers.BooleanField(
+        label=(
+            'Ho verificato che la richiesta sia nel budget '
+            'disponibile per la mia Direzione'
+        ),
+        required=True,
+    )
+
+    def validate_verifica(self, value):
+        if not value:
+            raise serializers.ValidationError(
+                'Devi confermare la verifica prima di inviare.'
+            )
+        return value
+
+
 class FornitoreSerializer(GUISerializerMixin, serializers.ModelSerializer):
     certificazione = NullableFileField(allow_null=True, required=False)
 
@@ -26,7 +47,7 @@ class RichiestaSerializer(GUISerializerMixin, serializers.ModelSerializer):
         fields = [
             'id', 'titolo', 'descrizione', 'budget', 'stato',
             'fornitore', 'fornitore_nome',
-            'note_direttore', 'cig',
+            'note_direttore', 'cig', 'motivazione',
             'created_at', 'updated_at',
         ]
         read_only_fields = ['created_at', 'updated_at']

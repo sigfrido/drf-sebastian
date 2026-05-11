@@ -21,15 +21,21 @@ class SebastianHTMLRenderer(BaseRenderer):
         request  = renderer_context.get('request')
         response = renderer_context.get('response')
 
+        is_confirm_action = (
+            isinstance(data, dict) and data.get('action') == 'confirm_action'
+        )
         is_form_error = (
             response and response.status_code >= 400
             and isinstance(data, dict) and 'serializer' in data
+            and not is_confirm_action
         )
-        if response and response.status_code >= 400 and not is_form_error:
+        if response and response.status_code >= 400 and not is_form_error and not is_confirm_action:
             return self._render_error(data, response, request)
 
         template_name = self._resolve_template(view)
-        if is_form_error:
+        if is_confirm_action:
+            template_name = 'sebastian/confirm_action.html'
+        elif is_form_error:
             template_name = 'sebastian/form.html'
         is_htmx = bool(request and request.META.get('HTTP_HX_REQUEST'))
 

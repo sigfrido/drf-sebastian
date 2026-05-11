@@ -60,6 +60,7 @@ class GUIMixin:
             and getattr(request, 'sebastian_gui', False)
             and response.status_code == 200
             and action not in self._STANDARD_ACTIONS
+            and request.method.lower() != 'get'
             and 'HX-Redirect' not in response
         ):
             response['HX-Redirect'] = request.path.rstrip('/').rsplit('/', 1)[0] + '/'

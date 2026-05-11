@@ -113,6 +113,14 @@
       inp.removeAttribute('data-sb-pending');
     });
   });
+
+  /* Show Bootstrap modal when confirm_action.html is swapped into #sebastian-modal. */
+  document.body.addEventListener('htmx:afterSwap', function (evt) {
+    if (evt.detail.target.id === 'sebastian-modal') {
+      var el = document.getElementById('sb-confirm-modal');
+      if (el) { new bootstrap.Modal(el).show(); }
+    }
+  });
 </script>
 </body>
 </html>{% endif %}
