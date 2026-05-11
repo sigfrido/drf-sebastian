@@ -13,15 +13,22 @@ class InviaSerializer(serializers.Serializer):
             'Ho verificato che la richiesta sia nel budget '
             'disponibile per la mia Direzione'
         ),
-        required=True,
+        required=False,
+        default=False,
     )
 
-    def validate_verifica(self, value):
-        if not value:
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        richiesta = self.context.get('richiesta')
+        if richiesta is not None and richiesta.stato != Richiesta.Stato.BOZZA:
             raise serializers.ValidationError(
-                'Devi confermare la verifica prima di inviare.'
+                'Solo le bozze possono essere inviate.'
             )
-        return value
+        if not attrs.get('verifica', False):
+            raise serializers.ValidationError(
+                {'verifica': 'Devi confermare la verifica prima di inviare.'}
+            )
+        return attrs
 
 
 class FornitoreSerializer(GUISerializerMixin, serializers.ModelSerializer):

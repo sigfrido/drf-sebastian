@@ -145,12 +145,11 @@ class RichiestaViewSet(GUIMixin, viewsets.ModelViewSet):
         instance = self.get_object()
         parent_url = request.path.rstrip('/').rsplit('/', 1)[0] + '/'
         if request.method == 'GET':
-            serializer = InviaSerializer(
-                {'motivazione': instance.motivazione or '', 'verifica': False}
-            )
+            instance_data = {'motivazione': instance.motivazione or '', 'verifica': False}
+            serializer = InviaSerializer(instance_data)
             return Response({
                 'serializer':   serializer,
-                'instance':     {'motivazione': instance.motivazione or '', 'verifica': False},
+                'instance':     instance_data,
                 'action':       'confirm_action',
                 'action_label': 'Invia Richiesta',
                 'submit_url':   request.path,
@@ -160,7 +159,10 @@ class RichiestaViewSet(GUIMixin, viewsets.ModelViewSet):
         # POST
         if getattr(request, 'sebastian_gui', False):
             # GUI: validate full confirmation form (motivazione + verifica checkbox)
-            serializer = InviaSerializer(data=request.data)
+            serializer = InviaSerializer(
+                data=request.data,
+                context={**self.get_serializer_context(), 'richiesta': instance},
+            )
             if not serializer.is_valid():
                 resp = Response({
                     'serializer':   serializer,
@@ -177,8 +179,8 @@ class RichiestaViewSet(GUIMixin, viewsets.ModelViewSet):
         else:
             # API: verifica is a GUI-only policy checkbox; accept motivazione directly
             motivazione = request.data.get('motivazione', '')
-        if instance.stato != Richiesta.Stato.BOZZA:
-            return Response({'detail': 'Solo le bozze possono essere inviate.'}, status=400)
+            if instance.stato != Richiesta.Stato.BOZZA:
+                return Response({'detail': 'Solo le bozze possono essere inviate.'}, status=400)
         instance.motivazione = motivazione
         instance.stato = Richiesta.Stato.INVIATA
         instance.save()

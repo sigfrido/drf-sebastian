@@ -114,11 +114,18 @@
     });
   });
 
-  /* Show Bootstrap modal when confirm_action.html is swapped into #sebastian-modal. */
+  /* Show Bootstrap modal when confirm_action.html is swapped into #sebastian-modal.
+     Track the instance so re-renders (validation errors) dispose the old one first
+     and avoid duplicate backdrops. */
+  var _sbModal = null;
   document.body.addEventListener('htmx:afterSwap', function (evt) {
     if (evt.detail.target.id === 'sebastian-modal') {
       var el = document.getElementById('sb-confirm-modal');
-      if (el) { new bootstrap.Modal(el).show(); }
+      if (el) {
+        if (_sbModal) { try { _sbModal.dispose(); } catch (_) {} }
+        _sbModal = new bootstrap.Modal(el);
+        _sbModal.show();
+      }
     }
   });
 </script>

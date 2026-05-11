@@ -58,7 +58,11 @@ class SebastianHTMLRenderer(BaseRenderer):
             htmx_target = data['htmx_target']
         cancel_url = data.get('cancel_url', '') if isinstance(data, dict) else ''
         submit_url = data.get('submit_url', '') if isinstance(data, dict) else ''
-        form_errors = data['serializer'].errors if is_form_error else {}
+        is_serializer_error = is_form_error or (
+            is_confirm_action and response and response.status_code >= 400
+            and isinstance(data, dict) and 'serializer' in data
+        )
+        form_errors = data['serializer'].errors if is_serializer_error else {}
 
         context = {
             'data':             data,
