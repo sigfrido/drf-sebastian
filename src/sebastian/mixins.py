@@ -162,6 +162,74 @@ class GUIMixin:
             return []
         return getattr(sebastian, 'groups', [])
 
+    def confirmation_action(self, action_name, *args, **kwargs):
+        """
+        Generic GET/POST handler for @actions with gui_config['confirmation_serializer'].
+
+        GET  → {action_name}_get(instance) returns initial data dict → modal response.
+        POST GUI → validates ConfirmSerializer → {action_name}_valid(instance, serializer).
+        POST API → {action_name}_valid(instance, None).
+
+        {action_name}_valid() may return a DRFResponse to signal an error, or None/omit
+        a return to use the default (re-serialized instance detail response).
+        """
+        from django.core.exceptions import ImproperlyConfigured
+
+        method_fn  = getattr(self.__class__, action_name, None)
+        gui_config = getattr(method_fn, 'gui_config', {})
+        ConfirmSerializer = gui_config.get('confirmation_serializer')
+        if not ConfirmSerializer:
+            raise ImproperlyConfigured(
+                f"{self.__class__.__name__}.{action_name}: "
+                f"gui_config['confirmation_serializer'] is required for confirmation_action()."
+            )
+
+        valid_fn = getattr(self, f'{action_name}_valid', None)
+        if valid_fn is None or not callable(valid_fn):
+            raise ImproperlyConfigured(
+                f"{self.__class__.__name__} must define {action_name}_valid() "
+                f"to use confirmation_action()."
+            )
+
+        action_label = gui_config.get('action_label', action_name.replace('_', ' ').title())
+        instance   = self.get_object()
+        parent_url = self.request.path.rstrip('/').rsplit('/', 1)[0] + '/'
+
+        def _modal_response(serializer, instance_data, status=200):
+            resp = DRFResponse({
+                'serializer':   serializer,
+                'instance':     instance_data,
+                'action':       'confirm_action',
+                'action_label': action_label,
+                'submit_url':   self.request.path,
+                'cancel_url':   parent_url,
+                'htmx_target':  '#sebastian-modal',
+            }, status=status)
+            return resp
+
+        if self.request.method == 'GET':
+            get_fn       = getattr(self, f'{action_name}_get', None)
+            initial_data = get_fn(instance) if get_fn else {}
+            return _modal_response(ConfirmSerializer(initial_data), initial_data)
+
+        # POST ─ GUI path: full serializer validation
+        if getattr(self.request, 'sebastian_gui', False):
+            serializer = ConfirmSerializer(
+                data=self.request.data,
+                context={**self.get_serializer_context(), 'confirmation_instance': instance},
+            )
+            if not serializer.is_valid():
+                resp = _modal_response(serializer, self.request.data, status=400)
+                resp['X-Sebastian-Form-Error'] = 'true'
+                return resp
+        else:
+            serializer = None   # API callers skip GUI-only validation
+
+        result = valid_fn(instance, serializer)
+        if isinstance(result, DRFResponse):
+            return result
+        return DRFResponse(self.get_serializer(instance).data)
+
     def retrieve(self, request, *args, **kwargs):
         self._sebastian_obj = self.get_object()
         serializer = self.get_serializer(self._sebastian_obj)

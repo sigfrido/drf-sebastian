@@ -19,7 +19,7 @@ class InviaSerializer(serializers.Serializer):
 
     def validate(self, attrs):
         attrs = super().validate(attrs)
-        richiesta = self.context.get('richiesta')
+        richiesta = self.context.get('confirmation_instance')
         if richiesta is not None and richiesta.stato != Richiesta.Stato.BOZZA:
             raise serializers.ValidationError(
                 'Solo le bozze possono essere inviate.'

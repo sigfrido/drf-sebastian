@@ -141,50 +141,23 @@ class RichiestaViewSet(GUIMixin, viewsets.ModelViewSet):
             'action_label':           'Invia Richiesta',
         },
     )
-    def invia(self, request, pk=None, **kwargs):
-        instance = self.get_object()
-        parent_url = request.path.rstrip('/').rsplit('/', 1)[0] + '/'
-        if request.method == 'GET':
-            instance_data = {'motivazione': instance.motivazione or '', 'verifica': False}
-            serializer = InviaSerializer(instance_data)
-            return Response({
-                'serializer':   serializer,
-                'instance':     instance_data,
-                'action':       'confirm_action',
-                'action_label': 'Invia Richiesta',
-                'submit_url':   request.path,
-                'cancel_url':   parent_url,
-                'htmx_target':  '#sebastian-modal',
-            })
-        # POST
-        if getattr(request, 'sebastian_gui', False):
-            # GUI: validate full confirmation form (motivazione + verifica checkbox)
-            serializer = InviaSerializer(
-                data=request.data,
-                context={**self.get_serializer_context(), 'richiesta': instance},
-            )
-            if not serializer.is_valid():
-                resp = Response({
-                    'serializer':   serializer,
-                    'instance':     request.data,
-                    'action':       'confirm_action',
-                    'action_label': 'Invia Richiesta',
-                    'submit_url':   request.path,
-                    'cancel_url':   parent_url,
-                    'htmx_target':  '#sebastian-modal',
-                }, status=400)
-                resp['X-Sebastian-Form-Error'] = 'true'
-                return resp
-            motivazione = serializer.validated_data['motivazione']
-        else:
-            # API: verifica is a GUI-only policy checkbox; accept motivazione directly
-            motivazione = request.data.get('motivazione', '')
+    def invia(self, request, *args, **kwargs):
+        return self.confirmation_action('invia', *args, **kwargs)
+
+    def invia_get(self, instance):
+        return {'motivazione': instance.motivazione or '', 'verifica': False}
+
+    def invia_valid(self, instance, serializer):
+        if serializer is None:
+            # API path: stato check (GUI path handled by InviaSerializer.validate())
             if instance.stato != Richiesta.Stato.BOZZA:
                 return Response({'detail': 'Solo le bozze possono essere inviate.'}, status=400)
-        instance.motivazione = motivazione
+        instance.motivazione = (
+            serializer.validated_data['motivazione'] if serializer
+            else self.request.data.get('motivazione', '')
+        )
         instance.stato = Richiesta.Stato.INVIATA
         instance.save()
-        return Response(self.get_serializer(instance).data)
 
     @action(
         detail=True,

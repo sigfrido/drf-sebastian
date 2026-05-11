@@ -93,6 +93,8 @@
 - [x] `GUISerializerMixin.get_fields()` guards `isinstance(raw_obj, Model)` — queryset (many=True child) and None both treated as no-object context
 - [x] API path: `verifica` is GUI-only; API callers can POST `invia` without it (backward-compatible)
 - [x] Permission callables for `visible_permission` / `edit_permission` must guard `obj is None` for list/label context
+- [x] `GUIMixin.confirmation_action()` — reusable dispatcher; actions declare `{action}_get()` (initial data) and `{action}_valid()` (post-validation logic); passes `confirmation_instance` in serializer context
+- [x] `base.html` JS tracks `_sbModal` instance and calls `.dispose()` before re-creating — prevents duplicate backdrops on validation-error re-renders
 
 ## Phase 7 — Theming and template override framework
 
