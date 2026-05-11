@@ -10,6 +10,12 @@ from django.test import override_settings
 GUI = {'HTTP_ACCEPT': 'text/html'}
 HTMX = {**GUI, 'HTTP_HX_REQUEST': 'true'}
 
+SEBASTAN_HTMX = {
+    'SEBASTIAN': {
+        'TEMPLATE_PACK': 'bootstrap5',
+    }
+}
+
 
 @pytest.mark.django_db
 class TestHome:
@@ -65,6 +71,7 @@ class TestFornitoreGUIForms:
         assert r.status_code == 200
         assert b'ragione_sociale' in r.content
 
+    @override_settings(**SEBASTAN_HTMX)
     def test_create_form_has_absolute_submit_url(self, auth_client):
         r = auth_client.get('/gui/fornitori/new/', **HTMX)
         assert b'hx-post="/gui/fornitori/"' in r.content
@@ -84,6 +91,7 @@ class TestFornitoreGUIForms:
         assert r.status_code == 200
         assert b'Acme Srl' in r.content
 
+    @override_settings(**SEBASTAN_HTMX)
     def test_update_form_has_absolute_submit_url(self, auth_client, fornitore):
         r = auth_client.get(f'/gui/fornitori/{fornitore.pk}/edit/', **HTMX)
         expected = f'hx-patch="/gui/fornitori/{fornitore.pk}/"'.encode()
@@ -98,10 +106,12 @@ class TestFornitoreGUIForms:
         assert r.status_code == 200
         assert r['HX-Redirect'] == f'/gui/fornitori/{fornitore.pk}/'
 
+    @override_settings(**SEBASTAN_HTMX)
     def test_create_form_has_cancel_button(self, auth_client):
         r = auth_client.get('/gui/fornitori/new/', **HTMX)
         assert b'hx-get="/gui/fornitori/"' in r.content
 
+    @override_settings(**SEBASTAN_HTMX)
     def test_update_form_has_cancel_button(self, auth_client, fornitore):
         r = auth_client.get(f'/gui/fornitori/{fornitore.pk}/edit/', **HTMX)
         expected = f'hx-get="/gui/fornitori/{fornitore.pk}/"'.encode()
@@ -148,6 +158,7 @@ class TestFornitoreGUIDelete:
         assert 'HX-Location' not in r
         assert 'HX-Redirect' not in r
 
+    @override_settings(**SEBASTAN_HTMX)
     def test_delete_confirm_includes_str(self, auth_client, fornitore):
         """hx-confirm must contain the record's __str__."""
         r = auth_client.get('/gui/fornitori/', **HTMX)
@@ -173,6 +184,7 @@ class TestAllegatoInlineGUI:
         assert b'Documento test' in r.content
         assert b'<!doctype' not in r.content.lower()
 
+    @override_settings(**SEBASTAN_HTMX)
     def test_inline_create_form_targets_inline_div(self, auth_client, richiesta):
         r = auth_client.get(
             f'/gui/richieste/{richiesta.pk}/allegati/new/', **HTMX
@@ -180,6 +192,7 @@ class TestAllegatoInlineGUI:
         assert r.status_code == 200
         assert b'hx-target="#inline-allegati"' in r.content
 
+    @override_settings(**SEBASTAN_HTMX)
     def test_inline_create_uses_absolute_url(self, auth_client, richiesta):
         r = auth_client.get(
             f'/gui/richieste/{richiesta.pk}/allegati/new/', **HTMX
@@ -208,6 +221,7 @@ class TestAllegatoInlineGUI:
         assert b'Documento test' not in r.content
         assert b'<!doctype' not in r.content.lower()
 
+    @override_settings(**SEBASTAN_HTMX)
     def test_inline_edit_form_targets_inline_div(self, auth_client, richiesta, allegato):
         r = auth_client.get(
             f'/gui/richieste/{richiesta.pk}/allegati/{allegato.pk}/edit/', **HTMX
@@ -264,6 +278,10 @@ class TestAllegatoInlineGUI:
 
 @pytest.mark.django_db
 class TestRichiestaActionsGUI:
+
+    def setUp(self):
+        pass
+
     def test_gui_invia_restituisce_redirect_al_detail(self, auth_client, richiesta):
         r = auth_client.post(
             f'/gui/richieste/{richiesta.pk}/invia/',
@@ -276,6 +294,7 @@ class TestRichiestaActionsGUI:
         assert richiesta.stato == 'inviata'
         assert richiesta.motivazione == 'Nel budget approvato.'
 
+    @override_settings(**SEBASTAN_HTMX)
     def test_gui_invia_senza_motivazione_restituisce_400(self, auth_client, richiesta):
         """Validation error → 400 with X-Sebastian-Form-Error and re-rendered modal."""
         r = auth_client.post(
@@ -287,6 +306,7 @@ class TestRichiestaActionsGUI:
         assert r['X-Sebastian-Form-Error'] == 'true'
         assert b'sb-confirm-form' in r.content
 
+    @override_settings(**SEBASTAN_HTMX)
     def test_gui_invia_senza_verifica_restituisce_400(self, auth_client, richiesta):
         """verifica checkbox unchecked → validation error."""
         r = auth_client.post(
@@ -297,6 +317,7 @@ class TestRichiestaActionsGUI:
         assert r.status_code == 400
         assert r['X-Sebastian-Form-Error'] == 'true'
 
+    @override_settings(**SEBASTAN_HTMX)
     def test_gui_invia_get_restituisce_modal(self, auth_client, richiesta):
         """GET on action with confirmation_serializer → modal HTML fragment."""
         r = auth_client.get(f'/gui/richieste/{richiesta.pk}/invia/', **HTMX)
@@ -456,6 +477,7 @@ class TestAppMenu:
         # The matching dropdown item must also be active
         assert 'dropdown-item active' in content
 
+    @override_settings(**SEBASTAN_HTMX)
     def test_base_template_loads_menu_via_htmx(self, auth_client):
         r = auth_client.get('/gui/richieste/', **GUI)
         assert r.status_code == 200

@@ -29,7 +29,7 @@ class GUIMixin:
 
     _STANDARD_ACTIONS = frozenset([
         'list', 'create', 'retrieve', 'update', 'partial_update', 'destroy',
-        'create_form', 'update_form',
+        'create_form', 'update_form', 'delete_confirm',
     ])
 
     # ------------------------------------------------------------------ #
@@ -95,10 +95,18 @@ class GUIMixin:
             return super().update(request, *args, **kwargs)
         partial = kwargs.pop('partial', False)
         instance = self.get_object()
-        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        data = request.data
+        if partial and not request.META.get('HTTP_HX_REQUEST'):
+            # Plain form: browser sends '' for unselected file inputs; strip them so
+            # partial=True can ignore unchanged file fields instead of failing validation.
+            data = data.copy()
+            for key in [k for k, v in list(data.items()) if v == '' and k not in request.FILES]:
+                data.pop(key)
+        instance_data = self.get_serializer(instance).data
+        serializer = self.get_serializer(instance, data=data, partial=partial)
         if not serializer.is_valid():
             resp = DRFResponse(
-                {'serializer': serializer, 'instance': serializer.data, 'action': 'update',
+                {'serializer': serializer, 'instance': instance_data, 'action': 'update',
                  'submit_url': request.path, 'cancel_url': request.path,
                  'htmx_target': '#sebastian-content'},
                 status=400,
@@ -108,9 +116,14 @@ class GUIMixin:
         self.perform_update(serializer)
         if getattr(instance, '_prefetched_objects_cache', None):
             instance._prefetched_objects_cache = {}
-        resp = DRFResponse(serializer.data, status=200)
-        resp['HX-Redirect'] = request.path
-        return resp
+        if request.META.get('HTTP_HX_REQUEST'):
+            resp = DRFResponse(serializer.data, status=200)
+            resp['HX-Redirect'] = request.path
+            return resp
+        # Plain pack (no HTMX): POST to /edit/ — redirect to detail page
+        from django.http import HttpResponseRedirect
+        detail_url = request.path.rstrip('/').rsplit('/', 1)[0] + '/'
+        return HttpResponseRedirect(detail_url)
 
     def destroy(self, request, *args, **kwargs):
         response = super().destroy(request, *args, **kwargs)
@@ -140,11 +153,40 @@ class GUIMixin:
         """Return an HTML form pre-filled with an existing instance's data."""
         instance = self.get_object()
         serializer = self.get_serializer(instance)
-        submit_url = request.path.rstrip('/').rsplit('/', 1)[0] + '/'
+        detail_url = request.path.rstrip('/').rsplit('/', 1)[0] + '/'
+        # HTMX pack fetches the form via hx-get (HX-Request header present) and
+        # hx-patch-es to the detail URL.  Plain pack: browser GET, POST to /edit/.
+        if request.META.get('HTTP_HX_REQUEST'):
+            submit_url = detail_url
+        else:
+            submit_url = request.path  # /edit/ URL, mapped POST → partial_update
         return DRFResponse({
             'serializer': serializer, 'instance': serializer.data, 'action': 'update',
-            'submit_url': submit_url, 'cancel_url': submit_url,
+            'submit_url': submit_url, 'cancel_url': detail_url,
             'htmx_target': '#sebastian-content',
+        })
+
+    def delete_confirm(self, request, *args, **kwargs):
+        """GET: confirmation page.  POST: perform delete, redirect to parent list."""
+        instance = self.get_object()
+        if request.method == 'POST':
+            self.perform_destroy(instance)
+            from django.http import HttpResponseRedirect
+            path = request.path.rstrip('/')
+            if getattr(self.__class__, '_sebastian_is_nested', False):
+                # Nested: strip /delete/, /{pk}/, /{mountpoint}/ → parent detail URL
+                redirect_url = path.rsplit('/', 3)[0] + '/'
+            else:
+                # Top-level: strip /delete/, /{pk}/ → list URL
+                redirect_url = path.rsplit('/', 2)[0] + '/'
+            return HttpResponseRedirect(redirect_url)
+        # GET: render confirm page
+        serializer = self.get_serializer(instance)
+        cancel_url = request.path.rstrip('/').rsplit('/', 1)[0] + '/'
+        return DRFResponse({
+            'action': 'delete_confirm',
+            'instance': serializer.data,
+            'cancel_url': cancel_url,
         })
 
     # ------------------------------------------------------------------ #
@@ -340,6 +382,11 @@ class NestedGUIMixin(GUIMixin):
             resp['X-Sebastian-Form-Error'] = 'true'
             return resp
         self.perform_create(serializer)
+        if not request.META.get('HTTP_HX_REQUEST'):
+            from django.http import HttpResponseRedirect
+            list_path  = self._inline_list_path()
+            parent_url = list_path.rstrip('/').rsplit('/', 1)[0] + '/'
+            return HttpResponseRedirect(parent_url)
         self.action = 'list'
         request._request.path = self._inline_list_path()
         return self.list(request, *args, **kwargs)
@@ -349,14 +396,24 @@ class NestedGUIMixin(GUIMixin):
             return UpdateModelMixin.update(self, request, *args, **kwargs)
         partial = kwargs.pop('partial', False)
         instance = self.get_object()
-        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        data = request.data
+        if partial and not request.META.get('HTTP_HX_REQUEST'):
+            data = data.copy()
+            for key in [k for k, v in list(data.items()) if v == '' and k not in request.FILES]:
+                data.pop(key)
+        container    = self._inline_container_id()
+        list_path    = self._inline_list_path()
+        parent_url   = list_path.rstrip('/').rsplit('/', 1)[0] + '/'
+        instance_data = self.get_serializer(instance).data
+        is_htmx      = bool(request.META.get('HTTP_HX_REQUEST'))
+        submit_url   = f'{list_path}{instance.pk}/' if is_htmx else request.path
+        cancel_url   = list_path if is_htmx else parent_url
+        serializer = self.get_serializer(instance, data=data, partial=partial)
         if not serializer.is_valid():
-            container = self._inline_container_id()
-            list_path = self._inline_list_path()
             resp = DRFResponse(
-                {'serializer': serializer, 'instance': serializer.data, 'action': 'update',
-                 'htmx_target': f'#{container}', 'cancel_url': list_path,
-                 'submit_url': f'{list_path}{instance.pk}/'},
+                {'serializer': serializer, 'instance': instance_data, 'action': 'update',
+                 'htmx_target': f'#{container}', 'cancel_url': cancel_url,
+                 'submit_url': submit_url},
                 status=400,
             )
             resp['X-Sebastian-Form-Error'] = 'true'
@@ -364,6 +421,11 @@ class NestedGUIMixin(GUIMixin):
         self.perform_update(serializer)
         if getattr(instance, '_prefetched_objects_cache', None):
             instance._prefetched_objects_cache = {}
+        if not request.META.get('HTTP_HX_REQUEST'):
+            from django.http import HttpResponseRedirect
+            list_path  = self._inline_list_path()
+            parent_url = list_path.rstrip('/').rsplit('/', 1)[0] + '/'
+            return HttpResponseRedirect(parent_url)
         self.action = 'list'
         request._request.path = self._inline_list_path()
         return self.list(request, *args, **kwargs)
@@ -389,13 +451,21 @@ class NestedGUIMixin(GUIMixin):
         serializer = self.get_serializer(instance)
         container  = self._inline_container_id()
         list_path  = self._inline_list_path()
+        parent_url = list_path.rstrip('/').rsplit('/', 1)[0] + '/'
+        detail_url = f'{list_path}{instance.pk}/'
+        if request.META.get('HTTP_HX_REQUEST'):
+            submit_url = detail_url
+            cancel_url = list_path
+        else:
+            submit_url = request.path  # /edit/ URL → POST maps to partial_update
+            cancel_url = parent_url
         return DRFResponse({
             'serializer':  serializer,
             'instance':    serializer.data,
             'action':      'update',
             'htmx_target': f'#{container}',
-            'cancel_url':  list_path,
-            'submit_url':  f'{list_path}{instance.pk}/',
+            'cancel_url':  cancel_url,
+            'submit_url':  submit_url,
         })
 
     def _child_model(self):

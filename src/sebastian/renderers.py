@@ -1,5 +1,6 @@
 from django.template.loader import render_to_string
 from rest_framework.renderers import BaseRenderer
+from . import app_settings
 
 
 class SebastianHTMLRenderer(BaseRenderer):
@@ -7,13 +8,14 @@ class SebastianHTMLRenderer(BaseRenderer):
     format = 'html'
     charset = 'utf-8'
 
-    ACTION_TEMPLATES = {
-        'list':        'sebastian/list.html',
-        'retrieve':    'sebastian/detail.html',
-        'create_form': 'sebastian/form.html',
-        'update_form': 'sebastian/form.html',
+    ACTION_TEMPLATE_SUFFIXES = {
+        'list':           'list.html',
+        'retrieve':       'detail.html',
+        'create_form':    'form.html',
+        'update_form':    'form.html',
+        'delete_confirm': 'delete_confirm.html',
     }
-    DEFAULT_TEMPLATE = 'sebastian/detail.html'
+    DEFAULT_TEMPLATE_SUFFIX = 'detail.html'
 
     def render(self, data, accepted_media_type=None, renderer_context=None):
         renderer_context = renderer_context or {}
@@ -32,11 +34,13 @@ class SebastianHTMLRenderer(BaseRenderer):
         if response and response.status_code >= 400 and not is_form_error and not is_confirm_action:
             return self._render_error(data, response, request)
 
-        template_name = self._resolve_template(view)
+        pack      = app_settings.template_pack()
+        skin_name = app_settings.skin()
+        template_name = self._resolve_template(view, pack)
         if is_confirm_action:
-            template_name = 'sebastian/confirm_action.html'
+            template_name = f'sebastian/{pack}/confirm_action.html'
         elif is_form_error:
-            template_name = 'sebastian/form.html'
+            template_name = f'sebastian/{pack}/form.html'
         is_htmx = bool(request and request.META.get('HTTP_HX_REQUEST'))
 
         # Unpack DRF paginated response so templates always get a plain list
@@ -64,29 +68,43 @@ class SebastianHTMLRenderer(BaseRenderer):
         )
         form_errors = data['serializer'].errors if is_serializer_error else {}
 
+        from django.urls import reverse, NoReverseMatch
+        try:
+            menu_url = reverse('sebastian-menu')
+        except NoReverseMatch:
+            menu_url = ''
+
         context = {
-            'data':             data,
-            'items':            items,
-            'pagination':       pagination,
-            'is_htmx':          is_htmx,
-            'is_inline':        is_inline,
-            'list_level':       2 if is_inline else 1,
-            'htmx_target':      htmx_target,
-            'cancel_url':       cancel_url,
-            'submit_url':       submit_url,
-            'view':             view,
-            'request':          request,
-            'response':         response,
-            'sebastian_config': getattr(view.__class__, 'Sebastian', None) if view else None,
-            'field_labels':     self._get_field_labels(view),
-            'filter_form':      self._get_filter_form(view, request),
-            'inlines':          self._get_inlines(view),
-            'form_errors':      form_errors,
+            'data':               data,
+            'items':              items,
+            'pagination':         pagination,
+            'is_htmx':            is_htmx,
+            'is_inline':          is_inline,
+            'list_level':         2 if is_inline else 1,
+            'htmx_target':        htmx_target,
+            'cancel_url':         cancel_url,
+            'submit_url':         submit_url,
+            'view':               view,
+            'request':            request,
+            'response':           response,
+            'sebastian_config':   getattr(view.__class__, 'Sebastian', None) if view else None,
+            'field_labels':       self._get_field_labels(view),
+            'filter_form':        self._get_filter_form(view, request),
+            'inlines':            self._get_inlines(view),
+            'form_errors':        form_errors,
+            'pack_name':          pack,
+            'pack_base':          f'sebastian/{pack}/base.html',
+            'skin_name':          skin_name,
+            'skin_head':          f'sebastian/skins/{skin_name}/_skin.html',
+            'menu_url':           menu_url,
+            'file_field_template': f'sebastian/{pack}/_file_field.html',
         }
 
         return render_to_string(template_name, context, request=request)
 
     def _render_error(self, data, response, request) -> str:
+        pack = app_settings.template_pack()
+        skin_name = app_settings.skin()
         alert_map = {400: 'warning', 403: 'danger', 404: 'warning'}
         alert_class = alert_map.get(response.status_code, 'danger')
         detail = ''
@@ -94,18 +112,24 @@ class SebastianHTMLRenderer(BaseRenderer):
             detail = data.get('detail', '') or data.get('message', '')
         if not detail:
             detail = f'Errore {response.status_code}'
-        return render_to_string('sebastian/error.html', {
-            'error_detail': str(detail),
-            'alert_class': alert_class,
+        return render_to_string(f'sebastian/{pack}/error.html', {
+            'error_detail':    str(detail),
+            'alert_class':     alert_class,
+            'pack_name':       pack,
+            'pack_base':       f'sebastian/{pack}/base.html',
+            'skin_name':       skin_name,
+            'skin_head':       f'sebastian/skins/{skin_name}/_skin.html',
         }, request=request)
 
-    def _resolve_template(self, view) -> str:
+    def _resolve_template(self, view, pack: str = None) -> str:
+        if pack is None:
+            pack = app_settings.template_pack()
         if view is None:
-            return self.DEFAULT_TEMPLATE
+            return f'sebastian/{pack}/{self.DEFAULT_TEMPLATE_SUFFIX}'
         # SebastianMenuView always renders with the menu fragment template
         from .views import SebastianMenuView
         if isinstance(view, SebastianMenuView):
-            return 'sebastian/menu.html'
+            return f'sebastian/{pack}/menu.html'
         action = getattr(view, 'action', None)
         sebastian = getattr(view.__class__, 'Sebastian', None)
         if sebastian and action:
@@ -119,7 +143,8 @@ class SebastianHTMLRenderer(BaseRenderer):
             override = getattr(sebastian, f'{action}_template', None)
             if override:
                 return override
-        return self.ACTION_TEMPLATES.get(action, self.DEFAULT_TEMPLATE)
+        suffix = self.ACTION_TEMPLATE_SUFFIXES.get(action, self.DEFAULT_TEMPLATE_SUFFIX)
+        return f'sebastian/{pack}/{suffix}'
 
     def _get_field_labels(self, view) -> dict:
         if not view:

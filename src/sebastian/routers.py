@@ -222,9 +222,15 @@ class GUIRouter:
         if has_gui:
             routes.append(path(
                 f'{prefix}/<pk>/edit/',
-                self._wrap(viewset.as_view({'get': 'update_form'})),
+                self._wrap(viewset.as_view({'get': 'update_form', 'post': 'partial_update'})),
                 kw,
                 name=f'{basename}-gui-edit',
+            ))
+            routes.append(path(
+                f'{prefix}/<pk>/delete/',
+                self._wrap(viewset.as_view({'get': 'delete_confirm', 'post': 'delete_confirm'})),
+                kw,
+                name=f'{basename}-gui-delete',
             ))
 
         # Mirror @actions with gui_config
@@ -310,9 +316,15 @@ class GUIRouter:
             if has_gui:
                 routes.append(path(
                     f'{nested_prefix}/<pk>/edit/',
-                    self._wrap(inline_vs.as_view({'get': 'update_form'})),
+                    self._wrap(inline_vs.as_view({'get': 'update_form', 'post': 'partial_update'})),
                     kw,
                     name=f'{nested_base}-edit',
+                ))
+                routes.append(path(
+                    f'{nested_prefix}/<pk>/delete/',
+                    self._wrap(inline_vs.as_view({'get': 'delete_confirm', 'post': 'delete_confirm'})),
+                    kw,
+                    name=f'{nested_base}-delete',
                 ))
 
             # Mirror @actions with gui_config on the nested viewset
@@ -351,11 +363,19 @@ class GUIRouter:
 
     def _home_view(self):
         from django.shortcuts import render as django_render
+        from django.urls import reverse, NoReverseMatch
+        from . import app_settings
 
         registry = self.api_router.registry
 
         def home(request):
             request.sebastian_gui = True
+            pack      = app_settings.template_pack()
+            skin_name = app_settings.skin()
+            try:
+                menu_url = reverse('sebastian-menu')
+            except NoReverseMatch:
+                menu_url = ''
             entries = []
             for prefix, viewset, _ in registry:
                 if not issubclass(viewset, GUIMixin):
@@ -368,7 +388,15 @@ class GUIRouter:
                     label = prefix.replace('-', ' ').title()
                     icon  = 'table'
                 entries.append({'prefix': prefix, 'label': label, 'icon': icon, 'url': f'{prefix}/'})
-            return django_render(request, 'sebastian/home.html', {'entries': entries})
+            return django_render(request, f'sebastian/{pack}/home.html', {
+                'entries':           entries,
+                'pack_name':         pack,
+                'pack_base':         f'sebastian/{pack}/base.html',
+                'skin_name':         skin_name,
+                'skin_head':         f'sebastian/skins/{skin_name}/_skin.html',
+                'menu_url':          menu_url,
+                'file_field_template': f'sebastian/{pack}/_file_field.html',
+            })
 
         home.__name__ = 'sebastian_home'
         return home

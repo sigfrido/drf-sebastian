@@ -1,0 +1,107 @@
+{% extends pack_base %}
+{% load sebastian_tags %}
+
+{% block title %}Detail{% endblock %}
+
+{% block content %}
+{% with groups=sebastian_config.groups %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4><a href="..">{{ view.get_view_name }}</a> — Detail</h4>
+  <div class="btn-group">
+    <a href="{{ request.path }}edit/"
+       class="btn btn-outline-primary btn-sm">
+      {% icon "pencil" %} Modifica
+    </a>
+    {% for action in view.get_available_actions %}
+      {% with cfg=action.gui_config %}
+        {% if cfg.position != 'list' %}
+        {% if action.disabled %}
+        <button class="btn btn-{{ cfg.color|default:'secondary' }} btn-sm" disabled>
+          {% if cfg.icon %}{% icon cfg.icon %}{% endif %}
+          {{ cfg.label }}
+        </button>
+        {% elif cfg.confirmation_serializer %}
+        <button class="btn btn-{{ cfg.color|default:'secondary' }} btn-sm"
+                hx-get="{{ request.path }}{{ action.name }}/"
+                hx-target="#sebastian-modal"
+                hx-swap="innerHTML">
+          {% if cfg.icon %}{% icon cfg.icon %}{% endif %}
+          {{ cfg.label }}
+        </button>
+        {% elif action.method == 'get' %}
+        <a href="{{ request.path }}{{ action.name }}/"
+           class="btn btn-{{ cfg.color|default:'secondary' }} btn-sm">
+          {% if cfg.icon %}{% icon cfg.icon %}{% endif %}
+          {{ cfg.label }}
+        </a>
+        {% else %}
+        <button class="btn btn-{{ cfg.color|default:'secondary' }} btn-sm"
+                hx-post="{{ request.path }}{{ action.name }}/"
+                hx-target="#sebastian-content"
+                {% if cfg.confirm %}hx-confirm="{{ cfg.confirm }}"{% endif %}>
+          {% if cfg.icon %}{% icon cfg.icon %}{% endif %}
+          {{ cfg.label }}
+        </button>
+        {% endif %}
+        {% endif %}
+      {% endwith %}
+    {% endfor %}
+  </div>
+</div>
+
+{% if groups %}
+{# --- FieldGroup tabs --- #}
+<ul class="nav nav-tabs mb-3" role="tablist">
+  {% for group in groups %}
+  <li class="nav-item" role="presentation">
+    <button class="nav-link {% if forloop.first %}active{% endif %}"
+            data-bs-toggle="tab"
+            data-bs-target="#tab-{{ group.name }}"
+            type="button">
+      {{ group.label|default:group.name }}
+    </button>
+  </li>
+  {% endfor %}
+</ul>
+
+<div class="tab-content mb-4">
+  {% for group in groups %}
+  <div class="tab-pane fade {% if forloop.first %}show active{% endif %}"
+       id="tab-{{ group.name }}">
+    <dl class="row">
+      {% for field_name in group.fields %}
+      <dt class="col-sm-3">{{ field_labels|get_item:field_name|default:field_name }}</dt>
+      <dd class="col-sm-9">{{ data|display_value:field_name }}</dd>
+      {% endfor %}
+    </dl>
+  </div>
+  {% endfor %}
+</div>
+
+{% else %}
+{# No groups — flat display #}
+<dl class="row mb-4">
+  {% for key in data|data_keys %}
+  <dt class="col-sm-3">{{ field_labels|get_item:key|default:key }}</dt>
+  <dd class="col-sm-9">{{ data|display_value:key }}</dd>
+  {% endfor %}
+</dl>
+{% endif %}
+
+{# --- Inline sections (NestedGUIMixin viewsets) --- #}
+{% for inline in inlines %}
+<div class="mt-3 border-top pt-3">
+  <h6 class="mb-2 text-muted text-uppercase" style="font-size:.75rem;letter-spacing:.05em">
+    {{ inline.label }}
+  </h6>
+  <div id="inline-{{ inline.mountpoint }}"
+       hx-get="{{ request.path }}{{ inline.mountpoint }}/"
+       hx-trigger="load">
+    <p class="text-muted small">Caricamento…</p>
+  </div>
+</div>
+{% endfor %}
+
+{% endwith %}
+{% endblock %}

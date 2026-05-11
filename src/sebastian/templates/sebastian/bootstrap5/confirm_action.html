@@ -1,0 +1,85 @@
+{% load sebastian_tags %}
+<div class="modal fade" id="sb-confirm-modal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title">
+          {{ data.action_label|default:"Conferma" }}
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body">
+        {% if form_errors.non_field_errors %}
+        <div class="alert alert-danger mb-3">
+          <ul class="mb-0">
+            {% for error in form_errors.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+          </ul>
+        </div>
+        {% endif %}
+
+        <form id="sb-confirm-form"
+              hx-post="{{ submit_url }}"
+              hx-target="#sebastian-modal"
+              hx-swap="innerHTML"
+              enctype="multipart/form-data">
+          {% csrf_token %}
+
+          {% for field_name, field in data.serializer.fields.items %}
+          {% if not field.read_only %}
+          {% if field|input_type == 'checkbox' %}
+          <div class="form-check mb-3">
+            <input type="checkbox"
+                   class="form-check-input{% with field_errors=form_errors|get_item:field_name %}{% if field_errors %} is-invalid{% endif %}{% endwith %}"
+                   id="id_{{ field_name }}"
+                   name="{{ field_name }}"
+                   value="true"
+                   {% if data.instance %}{% if data.instance|get_item:field_name %}checked{% endif %}{% endif %}>
+            <label class="form-check-label" for="id_{{ field_name }}">
+              {{ field.label|default:field_name }}
+              {% if field.required %}<span class="text-danger">*</span>{% endif %}
+            </label>
+            {% with field_errors=form_errors|get_item:field_name %}
+            {% if field_errors %}
+            <div class="invalid-feedback d-block">
+              {% for e in field_errors %}{{ e }}{% if not forloop.last %} {% endif %}{% endfor %}
+            </div>
+            {% endif %}
+            {% endwith %}
+          </div>
+          {% else %}
+          <div class="mb-3">
+            <label class="form-label" for="id_{{ field_name }}">
+              {{ field.label|default:field_name }}
+              {% if field.required %}<span class="text-danger">*</span>{% endif %}
+            </label>
+            <input type="{{ field|input_type }}"
+                   class="form-control{% with field_errors=form_errors|get_item:field_name %}{% if field_errors %} is-invalid{% endif %}{% endwith %}"
+                   id="id_{{ field_name }}"
+                   name="{{ field_name }}"
+                   value="{% if data.instance %}{{ data.instance|get_item:field_name }}{% endif %}"
+                   {% if field.required %}required{% endif %}>
+            {% with field_errors=form_errors|get_item:field_name %}
+            {% if field_errors %}
+            <div class="invalid-feedback">
+              {% for e in field_errors %}{{ e }}{% if not forloop.last %} {% endif %}{% endfor %}
+            </div>
+            {% endif %}
+            {% endwith %}
+          </div>
+          {% endif %}
+          {% endif %}
+          {% endfor %}
+
+        </form>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annulla</button>
+        <button type="submit" form="sb-confirm-form" class="btn btn-primary">Conferma</button>
+      </div>
+
+    </div>
+  </div>
+</div>

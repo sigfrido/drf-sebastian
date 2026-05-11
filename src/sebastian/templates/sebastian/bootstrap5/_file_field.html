@@ -1,0 +1,44 @@
+{% load sebastian_tags %}
+{% with current=instance|get_item:field_name %}
+<div class="mb-3">
+  <label class="form-label" for="id_{{ field_name }}">
+    {{ field.label|default:field_name }}
+    {% if field.required and not current %}<span class="text-danger">*</span>{% endif %}
+  </label>
+
+  {% if action == 'update' and current %}
+  {# edit mode: show existing filename, optional replacement input #}
+  <div class="d-flex align-items-center gap-2 mb-1" id="sb-file-badge-{{ field_name }}">
+    <span class="badge bg-light text-dark border fw-normal text-truncate" style="max-width:18rem"
+          title="{{ current|filename }}">
+      {% icon "paperclip" %} {{ current|filename }}
+    </span>
+    {% if field.allow_null %}
+    <button type="button"
+            class="btn btn-outline-danger btn-sm flex-shrink-0"
+            onclick="sbFileClear('{{ field_name }}')"
+            title="Rimuovi file">
+      {% icon "x-lg" %}
+    </button>
+    {% endif %}
+  </div>
+  <input type="file"
+         class="form-control form-control-sm sb-file-input"
+         id="id_{{ field_name }}"
+         name="{{ field_name }}">
+  <div class="form-text">Seleziona un file per sostituire quello attuale.</div>
+
+  {% else %}
+  {# create mode, or edit with no existing file #}
+  <input type="file"
+         class="form-control sb-file-input"
+         id="id_{{ field_name }}"
+         name="{{ field_name }}"
+         {% if field.required and not current %}required{% endif %}>
+  {% endif %}
+
+  {% if field.help_text %}
+  <div class="form-text">{{ field.help_text }}</div>
+  {% endif %}
+</div>
+{% endwith %}

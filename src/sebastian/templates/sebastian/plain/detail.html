@@ -1,0 +1,72 @@
+{% extends pack_base %}
+{% load sebastian_tags %}
+
+{% block title %}Detail{% endblock %}
+
+{% block content %}
+{% with groups=sebastian_config.groups %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4><a href="..">{{ view.get_view_name }}</a> — Detail</h4>
+  <div class="btn-group">
+    <a href="{{ request.path }}edit/"
+       class="btn btn-outline-primary btn-sm">
+      {% icon "pencil" %} Modifica
+    </a>
+    {% for action in view.get_available_actions %}
+      {% with cfg=action.gui_config %}
+        {% if cfg.position != 'list' %}
+        {% if action.disabled %}
+        <button class="btn btn-{{ cfg.color|default:'secondary' }} btn-sm" disabled>
+          {% if cfg.icon %}{% icon cfg.icon %}{% endif %}
+          {{ cfg.label }}
+        </button>
+        {% else %}
+        <a href="{{ request.path }}{{ action.name }}/"
+           class="btn btn-{{ cfg.color|default:'secondary' }} btn-sm">
+          {% if cfg.icon %}{% icon cfg.icon %}{% endif %}
+          {{ cfg.label }}
+        </a>
+        {% endif %}
+        {% endif %}
+      {% endwith %}
+    {% endfor %}
+  </div>
+</div>
+
+{% if groups %}
+{# --- FieldGroup accordion (no JS needed) --- #}
+{% for group in groups %}
+<details {% if forloop.first %}open{% endif %} class="mb-3 border rounded p-3">
+  <summary class="fw-semibold mb-2" style="cursor:pointer">{{ group.label|default:group.name }}</summary>
+  <dl class="row mb-0">
+    {% for field_name in group.fields %}
+    <dt class="col-sm-3">{{ field_labels|get_item:field_name|default:field_name }}</dt>
+    <dd class="col-sm-9">{{ data|display_value:field_name }}</dd>
+    {% endfor %}
+  </dl>
+</details>
+{% endfor %}
+
+{% else %}
+{# No groups — flat display #}
+<dl class="row mb-4">
+  {% for key in data|data_keys %}
+  <dt class="col-sm-3">{{ field_labels|get_item:key|default:key }}</dt>
+  <dd class="col-sm-9">{{ data|display_value:key }}</dd>
+  {% endfor %}
+</dl>
+{% endif %}
+
+{# --- Inline sections: rendered server-side via include_resource --- #}
+{% for inline in inlines %}
+<div class="mt-3 border-top pt-3">
+  <h6 class="mb-2 text-muted text-uppercase" style="font-size:.75rem;letter-spacing:.05em">
+    {{ inline.label }}
+  </h6>
+  {% include_resource request.path|add:inline.mountpoint|add:"/" %}
+</div>
+{% endfor %}
+
+{% endwith %}
+{% endblock %}

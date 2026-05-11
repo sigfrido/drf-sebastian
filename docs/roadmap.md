@@ -96,13 +96,15 @@
 - [x] `GUIMixin.confirmation_action()` — reusable dispatcher; actions declare `{action}_get()` (initial data) and `{action}_valid()` (post-validation logic); passes `confirmation_instance` in serializer context
 - [x] `base.html` JS tracks `_sbModal` instance and calls `.dispose()` before re-creating — prevents duplicate backdrops on validation-error re-renders
 
-## Phase 7 — Theming and template override framework
+## Phase 7 — Template packs, skins, and non-HTMX pack (done)
 
-- [ ] `SEBASTIAN['TEMPLATE_PACK']` setting selects a subdirectory under `sebastian/templates/` (default: `bootstrap5`)
-- [ ] All templates moved into `sebastian/templates/bootstrap5/`; existing imports updated
-- [ ] Management command `sebastian_templates` copies the active pack's templates into the project's `templates/sebastian/` directory for per-project customization
-- [ ] CSS custom-property hooks (`--sb-primary`, `--sb-font`, etc.) injected in `base.html` and driven by `SEBASTIAN['THEME']` dict
-- [ ] Documentation of the override points: which blocks exist in each template, which context variables are always available
+- [x] Template pack system: all templates live under `sebastian/{pack_name}/`; active pack set via `SEBASTIAN['TEMPLATE_PACK']` (default `bootstrap5`); users can add packs in their own project's `templates/` directory
+- [x] Non-HTMX `plain` pack: `{% include_resource url %}` template tag calls a Django URL server-side (synchronous) and returns the rendered HTML fragment — replaces `hx-get` inline loads
+- [x] Skin system: skin = CSS/icon library combination defined as a `sebastian/skins/{skin_name}/_skin.html` fragment injected via `{% include skin_head %}`; configured via `SEBASTIAN['SKIN']`; decoupled from pack structure
+- [x] `{% icon name %}` template tag: renders the correct icon HTML based on the active skin (e.g. Bootstrap Icons, FontAwesome), keeping templates skin-agnostic
+- [x] Plain pack plain-form correctness: `/edit/` URL mapped `POST → partial_update`; empty file inputs stripped before validation so partial updates don't fail on unchanged file fields; error re-render shows existing instance data (not submitted data)
+- [x] Plain pack navigation: after nested create/update/delete, redirect to parent detail page (not inline list); cancel on nested edit forms goes to parent detail
+- [x] Plain pack field groups: `<details>`/`<summary>` accordion replaces Bootstrap tab JS in both `form.html` and `detail.html`; zero JavaScript required; first group open by default
 
 ## Phase 8 — BPM/SELCO integration
 

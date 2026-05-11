@@ -1,0 +1,31 @@
+{% load sebastian_tags %}
+<ul class="navbar-nav me-auto mb-2 mb-lg-0">
+  {% for group in data.menu_groups %}
+  <li class="nav-item dropdown">
+    <a class="nav-link dropdown-toggle{% if group.disabled %} disabled{% endif %}{% if group.active %} active{% endif %}"
+       href="#" data-bs-toggle="dropdown" aria-expanded="false">
+      {% if group.icon %}{% icon group.icon "me-1" %}{% endif %}
+      {{ group.label }}
+    </a>
+    <ul class="dropdown-menu">
+      {% for item in group.items %}
+      <li>
+        {% if item.disabled %}
+        <span class="dropdown-item disabled">
+          {% if item.icon %}{% icon item.icon "me-1" %}{% endif %}
+          {{ item.label }}
+        </span>
+        {% else %}
+        <a class="dropdown-item{% if item.active %} active{% endif %}"
+           href="{{ item.url }}"
+           hx-get="{{ item.url }}" hx-target="#sebastian-content" hx-push-url="true">
+          {% if item.icon %}{% icon item.icon "me-1" %}{% endif %}
+          {{ item.label }}
+        </a>
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+  </li>
+  {% endfor %}
+</ul>

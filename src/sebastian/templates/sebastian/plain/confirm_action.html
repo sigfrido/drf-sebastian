@@ -1,0 +1,72 @@
+{% extends pack_base %}
+{% load sebastian_tags %}
+
+{% block title %}{{ data.action_label|default:"Conferma" }}{% endblock %}
+
+{% block content %}
+<h4>{{ data.action_label|default:"Conferma" }}</h4>
+
+{% if form_errors.non_field_errors %}
+<div class="alert alert-danger mb-3">
+  <ul class="mb-0">
+    {% for error in form_errors.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+<form method="post" action="{{ submit_url }}" enctype="multipart/form-data">
+  {% csrf_token %}
+
+  {% for field_name, field in data.serializer.fields.items %}
+  {% if not field.read_only %}
+  {% if field|input_type == 'checkbox' %}
+  <div class="form-check mb-3">
+    <input type="checkbox"
+           class="form-check-input{% with field_errors=form_errors|get_item:field_name %}{% if field_errors %} is-invalid{% endif %}{% endwith %}"
+           id="id_{{ field_name }}"
+           name="{{ field_name }}"
+           value="true"
+           {% if data.instance %}{% if data.instance|get_item:field_name %}checked{% endif %}{% endif %}>
+    <label class="form-check-label" for="id_{{ field_name }}">
+      {{ field.label|default:field_name }}
+      {% if field.required %}<span class="text-danger">*</span>{% endif %}
+    </label>
+    {% with field_errors=form_errors|get_item:field_name %}
+    {% if field_errors %}
+    <div class="invalid-feedback d-block">
+      {% for e in field_errors %}{{ e }}{% if not forloop.last %} {% endif %}{% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+  </div>
+  {% else %}
+  <div class="mb-3">
+    <label class="form-label" for="id_{{ field_name }}">
+      {{ field.label|default:field_name }}
+      {% if field.required %}<span class="text-danger">*</span>{% endif %}
+    </label>
+    <input type="{{ field|input_type }}"
+           class="form-control{% with field_errors=form_errors|get_item:field_name %}{% if field_errors %} is-invalid{% endif %}{% endwith %}"
+           id="id_{{ field_name }}"
+           name="{{ field_name }}"
+           value="{% if data.instance %}{{ data.instance|get_item:field_name }}{% endif %}"
+           {% if field.required %}required{% endif %}>
+    {% with field_errors=form_errors|get_item:field_name %}
+    {% if field_errors %}
+    <div class="invalid-feedback">
+      {% for e in field_errors %}{{ e }}{% if not forloop.last %} {% endif %}{% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+  </div>
+  {% endif %}
+  {% endif %}
+  {% endfor %}
+
+  <div class="d-flex gap-2 mt-3">
+    <button type="submit" class="btn btn-primary">Conferma</button>
+    <a href="{{ cancel_url }}" class="btn btn-outline-secondary">Annulla</a>
+  </div>
+
+</form>
+{% endblock %}

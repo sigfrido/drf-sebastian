@@ -1,7 +1,21 @@
 from django import template
+from django.utils.safestring import mark_safe
 from rest_framework import serializers as drf_serializers
 
 register = template.Library()
+
+_ICON_RENDERERS = {
+    'bi': lambda n, cls: f'<i class="bi bi-{n}{" " + cls if cls else ""}"></i>',
+    'fa': lambda n, cls: f'<i class="fa-solid fa-{n}{" " + cls if cls else ""}"></i>',
+}
+
+
+@register.simple_tag(takes_context=True)
+def icon(context, name, extra_class=''):
+    """Render an icon for the active skin. Usage: {% icon "name" %} or {% icon name "extra-class" %}"""
+    skin = context.get('skin_name', 'bootstrap5-bi')
+    key = 'fa' if 'fa' in skin else 'bi'
+    return mark_safe(_ICON_RENDERERS[key](name, extra_class))
 
 
 @register.filter
@@ -90,3 +104,35 @@ def field_value(instance, field_name: str):
 def sebastian_version():
     from sebastian import __version__
     return __version__
+
+
+@register.simple_tag(takes_context=True)
+def include_resource(context, url):
+    """
+    Server-side GET to a Django GUI URL. Returns the rendered HTML fragment.
+    Used by the 'plain' pack to replace hx-get inline loads with synchronous includes.
+    Sets HTTP_HX_REQUEST so the inner render returns just the content block.
+    """
+    from django.test import RequestFactory as DjangoRF
+    from django.urls import resolve, Resolver404
+
+    if not url:
+        return ''
+    request = context.get('request')
+    try:
+        match = resolve(url)
+    except Resolver404:
+        return mark_safe(f'<!-- include_resource: no route for {url} -->')
+
+    sub = DjangoRF().get(url, HTTP_HX_REQUEST='1')
+    sub.user    = getattr(request, 'user', None)
+    sub.session = getattr(request, 'session', {})
+    sub.sebastian_gui = True
+
+    try:
+        resp = match.func(sub, *match.args, **match.kwargs)
+        if hasattr(resp, 'render'):
+            resp.render()
+        return mark_safe(resp.content.decode('utf-8'))
+    except Exception as exc:
+        return mark_safe(f'<!-- include_resource error: {exc} -->')

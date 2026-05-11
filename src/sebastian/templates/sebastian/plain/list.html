@@ -1,0 +1,108 @@
+{% extends pack_base %}
+{% load sebastian_tags %}
+
+{% block title %}{{ view.get_view_name }} — Lista{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4>{{ view.get_view_name }}</h4>
+  <a href="{{ request.path }}new/" class="btn btn-primary btn-sm">
+    {% icon "plus-lg" %} Nuovo
+  </a>
+</div>
+
+{% if filter_form %}
+<form class="row g-2 mb-3" method="get" action="{{ request.path }}">
+  {% for field in filter_form %}
+  <div class="col-auto">
+    <label class="form-label small mb-1" for="{{ field.id_for_label }}">{{ field.label }}</label>
+    {{ field }}
+  </div>
+  {% endfor %}
+  <div class="col-auto align-self-end">
+    <button type="submit" class="btn btn-outline-secondary btn-sm">Filtra</button>
+    <a href="{{ request.path }}" class="btn btn-link btn-sm">Cancella</a>
+  </div>
+</form>
+{% endif %}
+
+{% if items %}
+<div class="table-responsive list-level{{ list_level }}">
+  <table class="table table-hover table-sm">
+    <thead class="table-light">
+      <tr>
+        {% for key in items.0|data_keys %}
+        <th>{{ field_labels|get_item:key|default:key }}</th>
+        {% endfor %}
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in items %}
+      <tr>
+        {% for key in items.0|data_keys %}
+        <td>{{ item|display_value:key }}</td>
+        {% endfor %}
+        <td class="text-end text-nowrap">
+          {% if not is_inline %}
+          <a href="{{ request.path }}{{ item.id }}/"
+             class="btn btn-outline-secondary btn-sm">
+            {% icon "eye" %}
+          </a>
+          {% endif %}
+          {% for action in view.get_available_actions %}
+            {% with cfg=action.gui_config %}
+              {% if cfg.position == 'list' or cfg.position == 'both' %}
+                {% if action.disabled %}
+                <button class="btn btn-{{ cfg.color|default:'secondary' }} btn-sm" disabled>
+                  {% if cfg.icon %}{% icon cfg.icon %}{% endif %}
+                  {{ cfg.label }}
+                </button>
+                {% else %}
+                <a href="{{ request.path }}{{ item.id }}/{{ action.name }}/"
+                   class="btn btn-{{ cfg.color|default:'secondary' }} btn-sm">
+                  {% if cfg.icon %}{% icon cfg.icon %}{% endif %}
+                  {{ cfg.label }}
+                </a>
+                {% endif %}
+              {% endif %}
+            {% endwith %}
+          {% endfor %}
+          <a href="{{ request.path }}{{ item.id }}/edit/"
+             class="btn btn-outline-primary btn-sm">
+            {% icon "pencil" %}
+          </a>
+          <a href="{{ request.path }}{{ item.id }}/delete/"
+             class="btn btn-outline-danger btn-sm">
+            {% icon "trash" %}
+          </a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if pagination %}
+<div class="d-flex justify-content-between align-items-center mt-2">
+  <small class="text-muted">{{ pagination.count }} record</small>
+  <div>
+    {% if pagination.previous %}
+    <a href="{{ pagination.previous }}" class="btn btn-outline-secondary btn-sm">
+      {% icon "chevron-left" %}
+    </a>
+    {% endif %}
+    {% if pagination.next %}
+    <a href="{{ pagination.next }}" class="btn btn-outline-secondary btn-sm">
+      {% icon "chevron-right" %}
+    </a>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+{% else %}
+<p class="text-muted">Nessun record trovato.</p>
+{% endif %}
+
+{% endblock %}

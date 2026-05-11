@@ -1,0 +1,183 @@
+{% extends pack_base %}
+{% load sebastian_tags %}
+
+{% block title %}
+  {% if data.action == 'create' %}New{% else %}Edit{% endif %}
+{% endblock %}
+
+{% block content %}
+{% with action=data.action instance=data.instance serializer=data.serializer %}
+
+<h4>
+  {{ view.get_view_name }} —
+  {% if action == 'create' %}New{% else %}Edit{% endif %}
+</h4>
+
+{% if form_errors.non_field_errors %}
+<div class="alert alert-danger mb-3">
+  <ul class="mb-0">
+    {% for error in form_errors.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+<form method="post"
+      {% if action == 'create' %}hx-post="{% if submit_url %}{{ submit_url }}{% else %}../{% endif %}"
+      {% else %}hx-patch="{% if submit_url %}{{ submit_url }}{% else %}../{% endif %}"{% endif %}
+      hx-target="{{ htmx_target }}"
+      enctype="multipart/form-data">
+  {% csrf_token %}
+
+  {% with groups=sebastian_config.groups %}
+  {% if groups %}
+
+  <ul class="nav nav-tabs mb-3" role="tablist">
+    {% for group in groups %}
+    {% if group.fields %}
+    <li class="nav-item">
+      <button class="nav-link {% if forloop.first %}active{% endif %}"
+              data-bs-toggle="tab"
+              data-bs-target="#ftab-{{ group.name }}"
+              type="button">
+        {{ group.label|default:group.name }}
+      </button>
+    </li>
+    {% endif %}
+    {% endfor %}
+  </ul>
+
+  <div class="tab-content mb-3">
+    {% for group in groups %}
+    {% if group.fields %}
+    <div class="tab-pane fade {% if forloop.first %}show active{% endif %}"
+         id="ftab-{{ group.name }}">
+      {% for field_name in group.fields %}
+        {% with field=serializer.fields|get_item:field_name %}
+        {% if field and not field.read_only %}
+        {% if field|input_type == 'checkbox' %}
+        <div class="form-check mb-3">
+          <input type="checkbox"
+                 class="form-check-input"
+                 id="id_{{ field_name }}"
+                 name="{{ field_name }}"
+                 value="true"
+                 {% if instance %}{% if instance|get_item:field_name %}checked{% endif %}{% endif %}>
+          <label class="form-check-label" for="id_{{ field_name }}">
+            {{ field.label|default:field_name }}
+          </label>
+          {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+        </div>
+        {% elif field|input_type == 'file' %}
+        {% include file_field_template with field_name=field_name field=field action=action instance=instance %}
+        {% else %}
+        <div class="mb-3">
+          <label class="form-label" for="id_{{ field_name }}">
+            {{ field.label|default:field_name }}
+            {% if field.required %}<span class="text-danger">*</span>{% endif %}
+          </label>
+
+          {% if field.choices %}
+          <select class="form-select" id="id_{{ field_name }}" name="{{ field_name }}"
+                  {% if field.required %}required{% endif %}>
+            <option value="">---------</option>
+            {% for val, lbl in field.choices.items %}
+            <option value="{{ val }}"
+              {% if instance %}{% if instance|get_item:field_name == val %}selected{% endif %}{% endif %}>
+              {{ lbl }}
+            </option>
+            {% endfor %}
+          </select>
+          {% else %}
+          <input type="{{ field|input_type }}"
+                 class="form-control"
+                 id="id_{{ field_name }}"
+                 name="{{ field_name }}"
+                 value="{% if instance %}{{ instance|get_item:field_name }}{% endif %}"
+                 {% if field.required %}required{% endif %}>
+          {% endif %}
+
+          {% if field.help_text %}
+          <div class="form-text">{{ field.help_text }}</div>
+          {% endif %}
+          {% with field_errors=form_errors|get_item:field_name %}
+          {% if field_errors %}
+          <div class="invalid-feedback d-block">
+            {% for e in field_errors %}{{ e }}{% if not forloop.last %} {% endif %}{% endfor %}
+          </div>
+          {% endif %}
+          {% endwith %}
+        </div>
+        {% endif %}
+        {% elif field and field.read_only %}
+        <div class="mb-3">
+          <label class="form-label text-muted">{{ field.label|default:field_name }}</label>
+          <p class="form-control-plaintext">
+            {% if instance %}{{ instance|get_item:field_name }}{% endif %}
+          </p>
+        </div>
+        {% endif %}
+        {% endwith %}
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% endfor %}
+  </div>
+
+  {% else %}
+  {# No groups — render all writable fields flat #}
+  {% for field_name, field in serializer.fields.items %}
+  {% if not field.read_only %}
+  {% if field|input_type == 'checkbox' %}
+  <div class="form-check mb-3">
+    <input type="checkbox"
+           class="form-check-input"
+           id="id_{{ field_name }}"
+           name="{{ field_name }}"
+           value="true"
+           {% if instance %}{% if instance|get_item:field_name %}checked{% endif %}{% endif %}>
+    <label class="form-check-label" for="id_{{ field_name }}">{{ field.label|default:field_name }}</label>
+  </div>
+  {% elif field|input_type == 'file' %}
+  {% include file_field_template with field_name=field_name field=field action=action instance=instance %}
+  {% else %}
+  <div class="mb-3">
+    <label class="form-label" for="id_{{ field_name }}">
+      {{ field.label|default:field_name }}
+      {% if field.required %}<span class="text-danger">*</span>{% endif %}
+    </label>
+    <input type="{{ field|input_type }}"
+           class="form-control"
+           id="id_{{ field_name }}"
+           name="{{ field_name }}"
+           value="{% if instance %}{{ instance|get_item:field_name }}{% endif %}"
+           {% if field.required %}required{% endif %}>
+  {% with field_errors=form_errors|get_item:field_name %}
+  {% if field_errors %}
+  <div class="invalid-feedback d-block">
+    {% for e in field_errors %}{{ e }}{% if not forloop.last %} {% endif %}{% endfor %}
+  </div>
+  {% endif %}
+  {% endwith %}
+  </div>
+  {% endif %}
+  {% endif %}
+  {% endfor %}
+  {% endif %}
+  {% endwith %}
+
+  <div class="d-flex gap-2">
+    <button type="submit" class="btn btn-primary">Save</button>
+    {% if cancel_url %}
+    <button type="button"
+            hx-get="{{ cancel_url }}"
+            hx-target="{{ htmx_target }}"
+            {% if not is_inline %}hx-push-url="{{ cancel_url }}"{% endif %}
+            class="btn btn-outline-secondary">Cancel</button>
+    {% else %}
+    <a href="{{ request.path }}../" class="btn btn-outline-secondary">Cancel</a>
+    {% endif %}
+  </div>
+
+</form>
+{% endwith %}
+{% endblock %}
