@@ -1,0 +1,49 @@
+:root {
+  --sb-navbar-height: 56px;
+  --sb-navbar-bg: #212529;
+  --sb-navbar-fg: #ffffff;
+  --sb-detail-title-size: 1.25rem;
+  --sb-detail-title-weight: 600;
+  --sb-subform-header-bg: #f8f9fa;
+  --sb-field-label-color: #6c757d;
+  --sb-field-label-size: 0.85rem;
+}
+
+/* ── Navbar ─────────────────────────────────────────────── */
+.sb-navbar {
+  background: var(--sb-navbar-bg);
+  color: var(--sb-navbar-fg);
+}
+
+/* ── Detail / form headings ──────────────────────────────── */
+.sb-detail-title {
+  font-size: var(--sb-detail-title-size);
+  font-weight: var(--sb-detail-title-weight);
+}
+
+/* ── Field labels ────────────────────────────────────────── */
+.sb-field-label {
+  color: var(--sb-field-label-color);
+  font-size: var(--sb-field-label-size);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+/* ── Subform / inline table ──────────────────────────────── */
+.sb-subform-title {
+  font-weight: 600;
+  font-size: 1rem;
+  border-bottom: 1px solid #dee2e6;
+  padding-bottom: 0.4rem;
+  margin-bottom: 0.75rem;
+}
+
+.sb-subform-table thead {
+  background: var(--sb-subform-header-bg);
+}
+
+/* ── Icon helpers ────────────────────────────────────────── */
+.sb-icon {
+  vertical-align: -0.125em;
+}

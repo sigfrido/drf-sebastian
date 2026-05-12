@@ -9,12 +9,11 @@ class SebastianHTMLRenderer(BaseRenderer):
     charset = 'utf-8'
 
     ACTION_TEMPLATE_SUFFIXES = {
-        'list':           'list.html',
-        'retrieve':       'detail.html',
-        'create_form':    'form.html',
-        'update_form':    'form.html',
-        'delete_confirm':       'delete_confirm.html',
-        'action_confirm_page':  'action_confirm.html',
+        'list':        'list.html',
+        'retrieve':    'detail.html',
+        'create_form': 'form.html',
+        'update_form': 'form.html',
+        'confirm':     'confirm.html',
     }
     DEFAULT_TEMPLATE_SUFFIX = 'detail.html'
 
@@ -24,22 +23,23 @@ class SebastianHTMLRenderer(BaseRenderer):
         request  = renderer_context.get('request')
         response = renderer_context.get('response')
 
-        is_confirm_action = (
-            isinstance(data, dict) and data.get('action') == 'confirm_action'
+        is_confirm = (
+            isinstance(data, dict) and data.get('action') == 'confirm'
+            and 'confirm_prompt' in data
         )
         is_form_error = (
             response and response.status_code >= 400
             and isinstance(data, dict) and 'serializer' in data
-            and not is_confirm_action
+            and not is_confirm
         )
-        if response and response.status_code >= 400 and not is_form_error and not is_confirm_action:
+        if response and response.status_code >= 400 and not is_form_error and not is_confirm:
             return self._render_error(data, response, request)
 
         pack      = app_settings.template_pack()
         skin_name = app_settings.skin()
         template_name = self._resolve_template(view, pack)
-        if is_confirm_action:
-            template_name = f'sebastian/{pack}/confirm_action.html'
+        if is_confirm:
+            template_name = f'sebastian/{pack}/confirm.html'
         elif is_form_error:
             template_name = f'sebastian/{pack}/form.html'
         is_htmx = bool(request and request.META.get('HTTP_HX_REQUEST'))
@@ -64,10 +64,19 @@ class SebastianHTMLRenderer(BaseRenderer):
         cancel_url = data.get('cancel_url', '') if isinstance(data, dict) else ''
         submit_url = data.get('submit_url', '') if isinstance(data, dict) else ''
         is_serializer_error = is_form_error or (
-            is_confirm_action and response and response.status_code >= 400
-            and isinstance(data, dict) and 'serializer' in data
+            is_confirm and response and response.status_code >= 400
+            and isinstance(data, dict) and 'confirm_serializer' in data
+            and data.get('confirm_serializer') is not None
         )
-        form_errors = data['serializer'].errors if is_serializer_error else {}
+        if is_serializer_error:
+            if 'serializer' in data:
+                form_errors = data['serializer'].errors
+            elif 'confirm_serializer' in data and data['confirm_serializer'] is not None:
+                form_errors = data['confirm_serializer'].errors
+            else:
+                form_errors = {}
+        else:
+            form_errors = {}
 
         from django.urls import reverse, NoReverseMatch
         try:
@@ -96,7 +105,6 @@ class SebastianHTMLRenderer(BaseRenderer):
             'pack_name':          pack,
             'pack_base':          f'sebastian/{pack}/base.html',
             'skin_name':          skin_name,
-            'skin_head':          f'sebastian/skins/{skin_name}/_skin.html',
             'menu_url':           menu_url,
             'file_field_template': f'sebastian/{pack}/_file_field.html',
         }
@@ -119,7 +127,6 @@ class SebastianHTMLRenderer(BaseRenderer):
             'pack_name':       pack,
             'pack_base':       f'sebastian/{pack}/base.html',
             'skin_name':       skin_name,
-            'skin_head':       f'sebastian/skins/{skin_name}/_skin.html',
         }, request=request)
 
     def _resolve_template(self, view, pack: str = None) -> str:

@@ -5,12 +5,18 @@
 
       <div class="modal-header">
         <h5 class="modal-title">
-          {{ data.action_label|default:"Conferma" }}
+          {% if data.confirm_icon %}{% icon data.confirm_icon %} {% endif %}Conferma
         </h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
 
       <div class="modal-body">
+        {% if data.confirm_prompt %}
+        <div class="alert alert-{{ data.confirm_style|default:'primary' }} mb-3">
+          {{ data.confirm_prompt }}
+        </div>
+        {% endif %}
+
         {% if form_errors.non_field_errors %}
         <div class="alert alert-danger mb-3">
           <ul class="mb-0">
@@ -20,13 +26,14 @@
         {% endif %}
 
         <form id="sb-confirm-form"
-              hx-post="{{ submit_url }}"
+              hx-post="{{ data.action_url }}"
               hx-target="#sebastian-modal"
               hx-swap="innerHTML"
               enctype="multipart/form-data">
           {% csrf_token %}
 
-          {% for field_name, field in data.serializer.fields.items %}
+          {% if data.confirm_serializer %}
+          {% for field_name, field in data.confirm_serializer.fields.items %}
           {% if not field.read_only %}
           {% if field|input_type == 'checkbox' %}
           <div class="form-check mb-3">
@@ -71,13 +78,17 @@
           {% endif %}
           {% endif %}
           {% endfor %}
+          {% endif %}
 
         </form>
       </div>
 
       <div class="modal-footer">
         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annulla</button>
-        <button type="submit" form="sb-confirm-form" class="btn btn-primary">Conferma</button>
+        <button type="submit" form="sb-confirm-form"
+                class="btn btn-{{ data.confirm_style|default:'primary' }}">
+          {% if data.confirm_icon %}{% icon data.confirm_icon %} {% endif %}Conferma
+        </button>
       </div>
 
     </div>

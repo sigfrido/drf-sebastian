@@ -159,11 +159,19 @@ class TestFornitoreGUIDelete:
         assert 'HX-Redirect' not in r
 
     @override_settings(**SEBASTAN_HTMX)
-    def test_delete_confirm_includes_str(self, auth_client, fornitore):
-        """hx-confirm must contain the record's __str__."""
+    def test_delete_button_links_to_confirm_url(self, auth_client, fornitore):
+        """Delete button in list uses hx-get to load the confirm modal."""
         r = auth_client.get('/gui/fornitori/', **HTMX)
-        expected = f'Eliminare Fornitore: {fornitore}'.encode()
+        expected = f'/gui/fornitori/{fornitore.pk}/delete/'.encode()
         assert expected in r.content
+
+    @override_settings(**SEBASTAN_HTMX)
+    def test_delete_confirm_page_contains_str(self, auth_client, fornitore):
+        """GET /delete/ shows confirmation modal with the object's __str__ in the prompt."""
+        r = auth_client.get(f'/gui/fornitori/{fornitore.pk}/delete/', **HTMX)
+        assert r.status_code == 200
+        assert b'sb-confirm-modal' in r.content
+        assert str(fornitore).encode() in r.content
 
 
 @pytest.mark.django_db
@@ -319,8 +327,8 @@ class TestRichiestaActionsGUI:
 
     @override_settings(**SEBASTAN_HTMX)
     def test_gui_invia_get_restituisce_modal(self, auth_client, richiesta):
-        """GET on action with confirmation_serializer → modal HTML fragment."""
-        r = auth_client.get(f'/gui/richieste/{richiesta.pk}/invia/', **HTMX)
+        """GET /invia/confirm/ → modal HTML fragment with serializer fields."""
+        r = auth_client.get(f'/gui/richieste/{richiesta.pk}/invia/confirm/', **HTMX)
         assert r.status_code == 200
         assert b'sb-confirm-modal' in r.content
         assert b'sb-confirm-form' in r.content

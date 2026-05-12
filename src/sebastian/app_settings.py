@@ -19,3 +19,18 @@ def skin() -> str:
 
 def available_packs() -> list:
     return _sebastian('AVAILABLE_PACKS', ['htmx', 'plain'])
+
+
+_DEFAULT_HTMX_PACKS = ['htmx']
+
+
+def pack_uses_htmx() -> bool:
+    return template_pack() in _sebastian('HTMX_PACKS', _DEFAULT_HTMX_PACKS)
+
+
+def confirm_actions() -> bool:
+    return _sebastian('CONFIRM_ACTIONS', False)
+
+
+def confirm_deletions() -> bool:
+    return _sebastian('CONFIRM_DELETIONS', True)

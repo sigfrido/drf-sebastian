@@ -21,9 +21,14 @@
           {% if cfg.icon %}{% icon cfg.icon %}{% endif %}
           {{ cfg.label }}
         </button>
-        {% elif action.method == 'post' and not cfg.confirmation_serializer %}
-        {% if cfg.confirm %}
+        {% elif cfg.confirmation %}
         <a href="{{ request.path }}{{ action.name }}/confirm/"
+           class="btn btn-{{ cfg.color|default:'secondary' }} btn-sm">
+          {% if cfg.icon %}{% icon cfg.icon %}{% endif %}
+          {{ cfg.label }}
+        </a>
+        {% elif action.method == 'get' %}
+        <a href="{{ request.path }}{{ action.name }}/"
            class="btn btn-{{ cfg.color|default:'secondary' }} btn-sm">
           {% if cfg.icon %}{% icon cfg.icon %}{% endif %}
           {{ cfg.label }}
@@ -36,13 +41,6 @@
             {{ cfg.label }}
           </button>
         </form>
-        {% endif %}
-        {% else %}
-        <a href="{{ request.path }}{{ action.name }}/"
-           class="btn btn-{{ cfg.color|default:'secondary' }} btn-sm">
-          {% if cfg.icon %}{% icon cfg.icon %}{% endif %}
-          {{ cfg.label }}
-        </a>
         {% endif %}
         {% endif %}
       {% endwith %}

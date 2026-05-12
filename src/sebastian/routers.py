@@ -228,8 +228,8 @@ class GUIRouter:
             ))
             routes.append(path(
                 f'{prefix}/<pk>/delete/',
-                self._wrap(viewset.as_view({'get': 'delete_confirm', 'post': 'delete_confirm'})),
-                kw,
+                self._wrap(viewset.as_view({'get': 'confirm', 'post': 'confirm'})),
+                {**kw, '_confirm_type': 'delete'},
                 name=f'{basename}-gui-delete',
             ))
 
@@ -251,13 +251,12 @@ class GUIRouter:
                     kw,
                     name=f'{basename}-gui-{attr_name}',
                 ))
-                # Confirmation page for POST-only actions that declare confirm text
-                # (plain pack uses this instead of hx-confirm JS dialog)
-                if gui_config.get('confirm') and not gui_config.get('confirmation_serializer'):
+                # Confirmation page for actions that declare any confirmation config
+                if gui_config.get('confirmation'):
                     routes.append(path(
                         f'{prefix}/<pk>/{url_path}/confirm/',
-                        self._wrap(viewset.as_view({'get': 'action_confirm_page'})),
-                        {**kw, '_confirm_action': attr_name},
+                        self._wrap(viewset.as_view({'get': 'confirm'})),
+                        {**kw, '_confirm_type': 'action', '_confirm_action': attr_name},
                         name=f'{basename}-gui-{attr_name}-confirm',
                     ))
             else:
@@ -332,8 +331,8 @@ class GUIRouter:
                 ))
                 routes.append(path(
                     f'{nested_prefix}/<pk>/delete/',
-                    self._wrap(inline_vs.as_view({'get': 'delete_confirm', 'post': 'delete_confirm'})),
-                    kw,
+                    self._wrap(inline_vs.as_view({'get': 'confirm', 'post': 'confirm'})),
+                    {**kw, '_confirm_type': 'delete'},
                     name=f'{nested_base}-delete',
                 ))
 
@@ -403,7 +402,6 @@ class GUIRouter:
                 'pack_name':         pack,
                 'pack_base':         f'sebastian/{pack}/base.html',
                 'skin_name':         skin_name,
-                'skin_head':         f'sebastian/skins/{skin_name}/_skin.html',
                 'menu_url':          menu_url,
                 'file_field_template': f'sebastian/{pack}/_file_field.html',
             })

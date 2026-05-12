@@ -123,17 +123,24 @@ class RichiestaViewSet(GUIMixin, viewsets.ModelViewSet):
         methods=['get', 'post'],
         permission_classes=[permissions.IsAuthenticated],
         gui_config={
-            'label':                  'Invia',
-            'icon':                   'send',
-            'color':                  'primary',
-            'position':               'detail',
-            'permission':             [perm_richiesta_stato(Richiesta.Stato.BOZZA)],
-            'confirmation_serializer': InviaSerializer,
-            'action_label':           'Invia Richiesta',
+            'label':      'Invia',
+            'icon':       'send',
+            'color':      'primary',
+            'position':   'detail',
+            'permission': [perm_richiesta_stato(Richiesta.Stato.BOZZA)],
+            'confirmation': {
+                'prompt':     'Inviare $OBJECT?',
+                'serializer': InviaSerializer,
+                'icon':       'send',
+                'style':      'primary',
+            },
         },
     )
     def invia(self, request, *args, **kwargs):
-        return self.confirmation_action('invia', *args, **kwargs)
+        instance = self.get_object()
+        if request.method == 'GET':
+            return Response(self.get_serializer(instance).data)
+        return self._post_confirmation_action('invia', instance)
 
     def invia_get(self, instance):
         return {'motivazione': instance.motivazione or '', 'verifica': False}
@@ -155,15 +162,19 @@ class RichiestaViewSet(GUIMixin, viewsets.ModelViewSet):
         methods=['post'],
         permission_classes=[permissions.IsAdminUser],
         gui_config={
-            'label':      'Approva',
-            'icon':       'check-circle',
-            'color':      'success',
-            'confirm':    'Confermi approvazione?',
-            'position':   'detail',
+            'label':    'Approva',
+            'icon':     'check-circle',
+            'color':    'success',
+            'position': 'detail',
             'permission': [
                 perm_is_admin,
                 perm_richiesta_stato(Richiesta.Stato.INVIATA),
             ],
+            'confirmation': {
+                'prompt': 'Confermi approvazione di $OBJECT?',
+                'icon':   'check-circle',
+                'style':  'success',
+            },
         },
     )
     def approva(self, request, pk=None, **kwargs):

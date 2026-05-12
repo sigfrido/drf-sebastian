@@ -21,9 +21,9 @@
           {% if cfg.icon %}{% icon cfg.icon %}{% endif %}
           {{ cfg.label }}
         </button>
-        {% elif cfg.confirmation_serializer %}
+        {% elif cfg.confirmation %}
         <button class="btn btn-{{ cfg.color|default:'secondary' }} btn-sm"
-                hx-get="{{ request.path }}{{ action.name }}/"
+                hx-get="{{ request.path }}{{ action.name }}/confirm/"
                 hx-target="#sebastian-modal"
                 hx-swap="innerHTML">
           {% if cfg.icon %}{% icon cfg.icon %}{% endif %}
@@ -38,8 +38,7 @@
         {% else %}
         <button class="btn btn-{{ cfg.color|default:'secondary' }} btn-sm"
                 hx-post="{{ request.path }}{{ action.name }}/"
-                hx-target="#sebastian-content"
-                {% if cfg.confirm %}hx-confirm="{{ cfg.confirm }}"{% endif %}>
+                hx-target="#sebastian-content">
           {% if cfg.icon %}{% icon cfg.icon %}{% endif %}
           {{ cfg.label }}
         </button>

@@ -4,7 +4,7 @@ from rest_framework import renderers as drf_renderers
 from rest_framework.mixins import CreateModelMixin, UpdateModelMixin
 from rest_framework.response import Response as DRFResponse
 
-from .app_settings import hide_unauthorized_actions
+from .app_settings import hide_unauthorized_actions, pack_uses_htmx, confirm_deletions
 from .config import _check_permission
 from .renderers import SebastianHTMLRenderer
 
@@ -29,7 +29,7 @@ class GUIMixin:
 
     _STANDARD_ACTIONS = frozenset([
         'list', 'create', 'retrieve', 'update', 'partial_update', 'destroy',
-        'create_form', 'update_form', 'delete_confirm', 'action_confirm_page',
+        'create_form', 'update_form', 'confirm',
     ])
 
     # ------------------------------------------------------------------ #
@@ -105,9 +105,8 @@ class GUIMixin:
             return super().update(request, *args, **kwargs)
         partial = kwargs.pop('partial', False)
         instance = self.get_object()
-        from . import app_settings
         data = request.data
-        if partial and app_settings.template_pack() == 'plain':
+        if partial and not pack_uses_htmx():
             # Plain form: browser sends '' for unselected file inputs; strip them so
             # partial=True can ignore unchanged file fields instead of failing validation.
             # Exception: if a _clear_{field} checkbox was checked, keep the empty string
@@ -136,7 +135,6 @@ class GUIMixin:
             resp = DRFResponse(serializer.data, status=200)
             resp['HX-Redirect'] = request.path
             return resp
-        # Plain pack (no HTMX): POST to /edit/ — redirect to detail page
         from django.http import HttpResponseRedirect
         detail_url = request.path.rstrip('/').rsplit('/', 1)[0] + '/'
         return HttpResponseRedirect(detail_url)
@@ -170,10 +168,9 @@ class GUIMixin:
         instance = self.get_object()
         serializer = self.get_serializer(instance)
         detail_url = request.path.rstrip('/').rsplit('/', 1)[0] + '/'
-        # Plain pack POSTs to /edit/ (mapped → partial_update); all other packs
+        # Non-HTMX packs POST to /edit/ (mapped → partial_update); HTMX packs
         # use hx-patch to the detail URL regardless of how the form was loaded.
-        from . import app_settings
-        if app_settings.template_pack() == 'plain':
+        if not pack_uses_htmx():
             submit_url = request.path
         else:
             submit_url = detail_url
@@ -183,46 +180,210 @@ class GUIMixin:
             'htmx_target': '#sebastian-content',
         })
 
-    def delete_confirm(self, request, *args, **kwargs):
-        """GET: confirmation page.  POST: perform delete, redirect to parent list."""
-        instance = self.get_object()
-        if request.method == 'POST':
-            self.perform_destroy(instance)
-            from django.http import HttpResponseRedirect
-            path = request.path.rstrip('/')
-            if getattr(self.__class__, '_sebastian_is_nested', False):
-                # Nested: strip /delete/, /{pk}/, /{mountpoint}/ → parent detail URL
-                redirect_url = path.rsplit('/', 3)[0] + '/'
-            else:
-                # Top-level: strip /delete/, /{pk}/ → list URL
-                redirect_url = path.rsplit('/', 2)[0] + '/'
-            return HttpResponseRedirect(redirect_url)
-        # GET: render confirm page
-        serializer = self.get_serializer(instance)
-        cancel_url = request.path.rstrip('/').rsplit('/', 1)[0] + '/'
-        return DRFResponse({
-            'action': 'delete_confirm',
-            'instance': serializer.data,
-            'cancel_url': cancel_url,
-        })
+    # ------------------------------------------------------------------ #
+    # Unified confirmation handler                                        #
+    # ------------------------------------------------------------------ #
 
-    def action_confirm_page(self, request, *args, **kwargs):
-        """GET: server-side confirmation page for POST actions with a confirm text."""
-        action_name = self.kwargs.get('_confirm_action', '')
-        method      = getattr(self.__class__, action_name, None)
-        confirm_text = getattr(method, 'gui_config', {}).get('confirm', '')
-        instance    = self.get_object()
-        serializer  = self.get_serializer(instance)
-        # action_url = strip /confirm/ → the POST target
-        action_url  = request.path.rstrip('/').rsplit('/', 1)[0] + '/'
-        cancel_url  = action_url.rstrip('/').rsplit('/', 1)[0] + '/'
-        return DRFResponse({
-            'action':        'action_confirm_page',
-            'confirm_text':  confirm_text,
-            'action_url':    action_url,
-            'cancel_url':    cancel_url,
-            'instance':      serializer.data,
-        })
+    @staticmethod
+    def _resolve_confirmation(conf, action_name='', instance=None):
+        """
+        Resolve a confirmation config dict into normalized fields.
+
+        conf — dict with keys: prompt, serializer, icon, style, confirm (bool shortcut)
+        Returns a dict with: prompt, icon, style, serializer_class
+        or None if no confirmation is needed (confirm=False or empty config).
+        """
+        if not conf:
+            return None
+        confirm_flag = conf.get('confirm')
+        if confirm_flag is False:
+            return None
+        prompt = conf.get('prompt', '')
+        if not prompt and confirm_flag is True:
+            prompt = 'Eseguire $ACTION su $OBJECT?' if action_name else 'Confermare?'
+        # Substitute $OBJECT / $ACTION
+        if instance is not None:
+            prompt = prompt.replace('$OBJECT', str(instance))
+        if action_name:
+            prompt = prompt.replace('$ACTION', action_name)
+        return {
+            'prompt':           prompt,
+            'icon':             conf.get('icon', ''),
+            'style':            conf.get('style', 'primary'),
+            'serializer_class': conf.get('serializer'),
+        }
+
+    def confirm(self, request, *args, **kwargs):
+        """
+        Unified GET/POST handler for all confirmation flows:
+        - DELETE (via /{pk}/delete/)
+        - @action with confirmation config (via /{pk}/{action}/confirm/ for GET,
+          /{pk}/{action}/ for POST)
+
+        URL kwargs:
+            _confirm_type  = 'delete' | 'action'
+            _confirm_action = action name (for type='action')
+        """
+        confirm_type   = self.kwargs.get('_confirm_type', 'delete')
+        action_name    = self.kwargs.get('_confirm_action', '')
+        instance       = self.get_object()
+        instance_label = str(instance)
+
+        if confirm_type == 'delete':
+            sebastian  = getattr(self.__class__, 'Sebastian', None)
+            delete_cfg = getattr(sebastian, 'delete_action', None)
+            if delete_cfg is not None:
+                raw_conf = delete_cfg.get('confirmation', {})
+            elif confirm_deletions():
+                raw_conf = {'prompt': 'Eliminare $OBJECT?', 'icon': 'trash', 'style': 'danger'}
+            else:
+                raw_conf = {}
+            resolved = self._resolve_confirmation(raw_conf, '', instance) if raw_conf else None
+
+            if request.method == 'POST':
+                self.perform_destroy(instance)
+                return self._do_delete_redirect(request)
+
+            # GET: show confirmation page
+            serializer = self.get_serializer(instance)
+            cancel_url = request.path.rstrip('/').rsplit('/', 1)[0] + '/'
+            return DRFResponse({
+                'action':             'confirm',
+                'confirm_prompt':     resolved['prompt'] if resolved else '',
+                'confirm_icon':       resolved['icon']   if resolved else 'trash',
+                'confirm_style':      resolved['style']  if resolved else 'danger',
+                'confirm_serializer': None,
+                'form_errors':        {},
+                'action_url':         request.path,
+                'cancel_url':         cancel_url,
+                'instance':           serializer.data,
+            })
+
+        # confirm_type == 'action'
+        method_fn   = getattr(self.__class__, action_name, None)
+        gui_config  = getattr(method_fn, 'gui_config', {})
+        conf        = gui_config.get('confirmation', {})
+        ConfSerializer = conf.get('serializer')
+        action_label   = gui_config.get('label', action_name.replace('_', ' ').title())
+        resolved       = self._resolve_confirmation(conf, action_label, instance)
+
+        # POST target = strip /confirm/ suffix → action URL
+        action_url = request.path.rstrip('/').rsplit('/', 1)[0] + '/'
+        cancel_url = action_url.rstrip('/').rsplit('/', 1)[0] + '/'
+
+        def _confirm_response(serializer_instance, status=200):
+            resp = DRFResponse({
+                'action':             'confirm',
+                'confirm_prompt':     resolved['prompt'] if resolved else '',
+                'confirm_icon':       resolved['icon']   if resolved else '',
+                'confirm_style':      resolved['style']  if resolved else 'primary',
+                'confirm_serializer': serializer_instance,
+                'form_errors':        {},
+                'action_url':         action_url,
+                'cancel_url':         cancel_url,
+                'instance':           self.get_serializer(instance).data,
+                'htmx_target':        '#sebastian-modal',
+            }, status=status)
+            return resp
+
+        if request.method == 'GET':
+            get_fn       = getattr(self, f'{action_name}_get', None)
+            initial_data = get_fn(instance) if get_fn else {}
+            serializer_instance = ConfSerializer(initial_data) if ConfSerializer else None
+            return _confirm_response(serializer_instance)
+
+        # POST — validate confirmation serializer if present
+        if ConfSerializer and getattr(request, 'sebastian_gui', False):
+            serializer_instance = ConfSerializer(
+                data=request.data,
+                context={**self.get_serializer_context(), 'confirmation_instance': instance},
+            )
+            if not serializer_instance.is_valid():
+                resp = _confirm_response(serializer_instance, status=400)
+                resp['X-Sebastian-Form-Error'] = 'true'
+                return resp
+        else:
+            serializer_instance = None
+
+        valid_fn = getattr(self, f'{action_name}_valid', None)
+        if valid_fn is None:
+            raise ImproperlyConfigured(
+                f"{self.__class__.__name__} must define {action_name}_valid() "
+                f"for confirmation actions."
+            )
+        result = valid_fn(instance, serializer_instance)
+        if isinstance(result, DRFResponse):
+            return result
+        return DRFResponse(self.get_serializer(instance).data)
+
+    def _do_delete_redirect(self, request):
+        """Return the appropriate redirect after a successful delete."""
+        path = request.path.rstrip('/')
+        if getattr(self.__class__, '_sebastian_is_nested', False):
+            redirect_url = path.rsplit('/', 3)[0] + '/'
+        else:
+            redirect_url = path.rsplit('/', 2)[0] + '/'
+        if request.META.get('HTTP_HX_REQUEST'):
+            resp = DRFResponse({}, status=200)
+            resp['HX-Redirect'] = redirect_url
+            return resp
+        from django.http import HttpResponseRedirect
+        return HttpResponseRedirect(redirect_url)
+
+    def _post_confirmation_action(self, action_name, instance=None):
+        """
+        Handle the POST side of a confirmation action.
+
+        Validates the confirmation serializer (if declared in gui_config['confirmation'])
+        for GUI requests, then calls {action_name}_valid(instance, serializer).
+        On validation failure in GUI context, returns a confirm-style 400 response that
+        re-renders the modal/page with field errors.
+
+        Use this from your action method's body (POST path only):
+            def my_action(self, request, *args, **kwargs):
+                return self._post_confirmation_action('my_action')
+        """
+        if instance is None:
+            instance = self.get_object()
+        method_fn   = getattr(self.__class__, action_name, None)
+        gui_config  = getattr(method_fn, 'gui_config', {})
+        conf        = gui_config.get('confirmation', {})
+        ConfSerializer = conf.get('serializer')
+        valid_fn    = getattr(self, f'{action_name}_valid', None)
+        if valid_fn is None:
+            raise ImproperlyConfigured(
+                f"{self.__class__.__name__} must define {action_name}_valid() "
+                f"for confirmation actions."
+            )
+        if ConfSerializer and getattr(self.request, 'sebastian_gui', False):
+            serializer_instance = ConfSerializer(
+                data=self.request.data,
+                context={**self.get_serializer_context(), 'confirmation_instance': instance},
+            )
+            if not serializer_instance.is_valid():
+                action_label = gui_config.get('label', action_name.replace('_', ' ').title())
+                resolved     = self._resolve_confirmation(conf, action_label, instance)
+                cancel_url   = self.request.path.rstrip('/').rsplit('/', 1)[0] + '/'
+                resp = DRFResponse({
+                    'action':             'confirm',
+                    'confirm_prompt':     resolved['prompt'] if resolved else '',
+                    'confirm_icon':       resolved['icon']   if resolved else '',
+                    'confirm_style':      resolved['style']  if resolved else 'primary',
+                    'confirm_serializer': serializer_instance,
+                    'form_errors':        {},
+                    'action_url':         self.request.path,
+                    'cancel_url':         cancel_url,
+                    'instance':           self.get_serializer(instance).data,
+                    'htmx_target':        '#sebastian-modal',
+                }, status=400)
+                resp['X-Sebastian-Form-Error'] = 'true'
+                return resp
+        else:
+            serializer_instance = None
+        result = valid_fn(instance, serializer_instance)
+        if isinstance(result, DRFResponse):
+            return result
+        return DRFResponse(self.get_serializer(instance).data)
 
     # ------------------------------------------------------------------ #
     # Sebastian metadata helpers                                          #
@@ -238,74 +399,6 @@ class GUIMixin:
         if not sebastian:
             return []
         return getattr(sebastian, 'groups', [])
-
-    def confirmation_action(self, action_name, *args, **kwargs):
-        """
-        Generic GET/POST handler for @actions with gui_config['confirmation_serializer'].
-
-        GET  → {action_name}_get(instance) returns initial data dict → modal response.
-        POST GUI → validates ConfirmSerializer → {action_name}_valid(instance, serializer).
-        POST API → {action_name}_valid(instance, None).
-
-        {action_name}_valid() may return a DRFResponse to signal an error, or None/omit
-        a return to use the default (re-serialized instance detail response).
-        """
-        from django.core.exceptions import ImproperlyConfigured
-
-        method_fn  = getattr(self.__class__, action_name, None)
-        gui_config = getattr(method_fn, 'gui_config', {})
-        ConfirmSerializer = gui_config.get('confirmation_serializer')
-        if not ConfirmSerializer:
-            raise ImproperlyConfigured(
-                f"{self.__class__.__name__}.{action_name}: "
-                f"gui_config['confirmation_serializer'] is required for confirmation_action()."
-            )
-
-        valid_fn = getattr(self, f'{action_name}_valid', None)
-        if valid_fn is None or not callable(valid_fn):
-            raise ImproperlyConfigured(
-                f"{self.__class__.__name__} must define {action_name}_valid() "
-                f"to use confirmation_action()."
-            )
-
-        action_label = gui_config.get('action_label', action_name.replace('_', ' ').title())
-        instance   = self.get_object()
-        parent_url = self.request.path.rstrip('/').rsplit('/', 1)[0] + '/'
-
-        def _modal_response(serializer, instance_data, status=200):
-            resp = DRFResponse({
-                'serializer':   serializer,
-                'instance':     instance_data,
-                'action':       'confirm_action',
-                'action_label': action_label,
-                'submit_url':   self.request.path,
-                'cancel_url':   parent_url,
-                'htmx_target':  '#sebastian-modal',
-            }, status=status)
-            return resp
-
-        if self.request.method == 'GET':
-            get_fn       = getattr(self, f'{action_name}_get', None)
-            initial_data = get_fn(instance) if get_fn else {}
-            return _modal_response(ConfirmSerializer(initial_data), initial_data)
-
-        # POST ─ GUI path: full serializer validation
-        if getattr(self.request, 'sebastian_gui', False):
-            serializer = ConfirmSerializer(
-                data=self.request.data,
-                context={**self.get_serializer_context(), 'confirmation_instance': instance},
-            )
-            if not serializer.is_valid():
-                resp = _modal_response(serializer, self.request.data, status=400)
-                resp['X-Sebastian-Form-Error'] = 'true'
-                return resp
-        else:
-            serializer = None   # API callers skip GUI-only validation
-
-        result = valid_fn(instance, serializer)
-        if isinstance(result, DRFResponse):
-            return result
-        return DRFResponse(self.get_serializer(instance).data)
 
     def retrieve(self, request, *args, **kwargs):
         self._sebastian_obj = self.get_object()
@@ -431,8 +524,7 @@ class NestedGUIMixin(GUIMixin):
             return UpdateModelMixin.update(self, request, *args, **kwargs)
         partial = kwargs.pop('partial', False)
         instance = self.get_object()
-        from . import app_settings
-        is_plain     = app_settings.template_pack() == 'plain'
+        is_plain     = not pack_uses_htmx()
         data = request.data
         if partial and is_plain:
             data = data.copy()
@@ -493,8 +585,7 @@ class NestedGUIMixin(GUIMixin):
         list_path  = self._inline_list_path()
         parent_url = list_path.rstrip('/').rsplit('/', 1)[0] + '/'
         detail_url = f'{list_path}{instance.pk}/'
-        from . import app_settings
-        if app_settings.template_pack() == 'plain':
+        if not pack_uses_htmx():
             submit_url = request.path  # /edit/ URL → POST maps to partial_update
             cancel_url = parent_url
         else:

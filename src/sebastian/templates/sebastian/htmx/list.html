@@ -64,6 +64,14 @@
                   {% if cfg.icon %}{% icon cfg.icon %}{% endif %}
                   {{ cfg.label }}
                 </button>
+                {% elif cfg.confirmation %}
+                <button hx-get="{{ request.path }}{{ item.id }}/{{ action.name }}/confirm/"
+                        hx-target="#sebastian-modal"
+                        hx-swap="innerHTML"
+                        class="btn btn-{{ cfg.color|default:'secondary' }} btn-sm">
+                  {% if cfg.icon %}{% icon cfg.icon %}{% endif %}
+                  {{ cfg.label }}
+                </button>
                 {% elif action.method == 'get' %}
                 <a href="{{ request.path }}{{ item.id }}/{{ action.name }}/"
                    class="btn btn-{{ cfg.color|default:'secondary' }} btn-sm">
@@ -73,7 +81,6 @@
                 {% else %}
                 <button hx-post="{{ request.path }}{{ item.id }}/{{ action.name }}/"
                         hx-target="{{ htmx_target }}"
-                        {% if cfg.confirm %}hx-confirm="{{ cfg.confirm }}"{% endif %}
                         class="btn btn-{{ cfg.color|default:'secondary' }} btn-sm">
                   {% if cfg.icon %}{% icon cfg.icon %}{% endif %}
                   {{ cfg.label }}
@@ -87,9 +94,9 @@
              class="btn btn-outline-primary btn-sm">
             {% icon "pencil" %}
           </a>
-          <button hx-delete="{{ request.path }}{{ item.id }}/"
-                  hx-target="{{ htmx_target }}"
-                  hx-confirm="Eliminare {{ view.get_view_name }}: {{ item|get_item:'sebastian__str' }}?"
+          <button hx-get="{{ request.path }}{{ item.id }}/delete/"
+                  hx-target="#sebastian-modal"
+                  hx-swap="innerHTML"
                   class="btn btn-outline-danger btn-sm">
             {% icon "trash" %}
           </button>

@@ -1,10 +1,17 @@
 {% extends pack_base %}
 {% load sebastian_tags %}
 
-{% block title %}{{ data.action_label|default:"Conferma" }}{% endblock %}
+{% block title %}Conferma{% endblock %}
 
 {% block content %}
-<h4>{{ data.action_label|default:"Conferma" }}</h4>
+<div class="mb-4">
+  {% if data.confirm_prompt %}
+  <div class="alert alert-{{ data.confirm_style|default:'primary' }}">
+    {% if data.confirm_icon %}{% icon data.confirm_icon %} {% endif %}
+    {{ data.confirm_prompt }}
+  </div>
+  {% endif %}
+</div>
 
 {% if form_errors.non_field_errors %}
 <div class="alert alert-danger mb-3">
@@ -14,10 +21,11 @@
 </div>
 {% endif %}
 
-<form method="post" action="{{ submit_url }}" enctype="multipart/form-data">
+<form method="post" action="{{ data.action_url }}" enctype="multipart/form-data">
   {% csrf_token %}
 
-  {% for field_name, field in data.serializer.fields.items %}
+  {% if data.confirm_serializer %}
+  {% for field_name, field in data.confirm_serializer.fields.items %}
   {% if not field.read_only %}
   {% if field|input_type == 'checkbox' %}
   <div class="form-check mb-3">
@@ -62,11 +70,13 @@
   {% endif %}
   {% endif %}
   {% endfor %}
+  {% endif %}
 
-  <div class="d-flex gap-2 mt-3">
-    <button type="submit" class="btn btn-primary">Conferma</button>
-    <a href="{{ cancel_url }}" class="btn btn-outline-secondary">Annulla</a>
+  <div class="d-flex gap-2">
+    <button type="submit" class="btn btn-{{ data.confirm_style|default:'primary' }}">
+      {% if data.confirm_icon %}{% icon data.confirm_icon %} {% endif %}Conferma
+    </button>
+    <a href="{{ data.cancel_url }}" class="btn btn-outline-secondary">Annulla</a>
   </div>
-
 </form>
 {% endblock %}
