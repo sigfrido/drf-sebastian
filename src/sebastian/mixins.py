@@ -105,8 +105,9 @@ class GUIMixin:
             return super().update(request, *args, **kwargs)
         partial = kwargs.pop('partial', False)
         instance = self.get_object()
+        from . import app_settings
         data = request.data
-        if partial and not request.META.get('HTTP_HX_REQUEST'):
+        if partial and app_settings.template_pack() == 'plain':
             # Plain form: browser sends '' for unselected file inputs; strip them so
             # partial=True can ignore unchanged file fields instead of failing validation.
             # Exception: if a _clear_{field} checkbox was checked, keep the empty string
@@ -169,12 +170,13 @@ class GUIMixin:
         instance = self.get_object()
         serializer = self.get_serializer(instance)
         detail_url = request.path.rstrip('/').rsplit('/', 1)[0] + '/'
-        # HTMX pack fetches the form via hx-get (HX-Request header present) and
-        # hx-patch-es to the detail URL.  Plain pack: browser GET, POST to /edit/.
-        if request.META.get('HTTP_HX_REQUEST'):
-            submit_url = detail_url
+        # Plain pack POSTs to /edit/ (mapped → partial_update); all other packs
+        # use hx-patch to the detail URL regardless of how the form was loaded.
+        from . import app_settings
+        if app_settings.template_pack() == 'plain':
+            submit_url = request.path
         else:
-            submit_url = request.path  # /edit/ URL, mapped POST → partial_update
+            submit_url = detail_url
         return DRFResponse({
             'serializer': serializer, 'instance': serializer.data, 'action': 'update',
             'submit_url': submit_url, 'cancel_url': detail_url,
@@ -429,8 +431,10 @@ class NestedGUIMixin(GUIMixin):
             return UpdateModelMixin.update(self, request, *args, **kwargs)
         partial = kwargs.pop('partial', False)
         instance = self.get_object()
+        from . import app_settings
+        is_plain     = app_settings.template_pack() == 'plain'
         data = request.data
-        if partial and not request.META.get('HTTP_HX_REQUEST'):
+        if partial and is_plain:
             data = data.copy()
             for key in [k for k, v in list(data.items())
                         if v == '' and k not in request.FILES
@@ -440,9 +444,9 @@ class NestedGUIMixin(GUIMixin):
         list_path    = self._inline_list_path()
         parent_url   = list_path.rstrip('/').rsplit('/', 1)[0] + '/'
         instance_data = self.get_serializer(instance).data
-        is_htmx      = bool(request.META.get('HTTP_HX_REQUEST'))
-        submit_url   = f'{list_path}{instance.pk}/' if is_htmx else request.path
-        cancel_url   = list_path if is_htmx else parent_url
+        detail_url   = f'{list_path}{instance.pk}/'
+        submit_url   = request.path if is_plain else detail_url
+        cancel_url   = parent_url if is_plain else list_path
         serializer = self.get_serializer(instance, data=data, partial=partial)
         if not serializer.is_valid():
             merged = {**instance_data, **{k: v for k, v in data.items()}}
@@ -489,12 +493,13 @@ class NestedGUIMixin(GUIMixin):
         list_path  = self._inline_list_path()
         parent_url = list_path.rstrip('/').rsplit('/', 1)[0] + '/'
         detail_url = f'{list_path}{instance.pk}/'
-        if request.META.get('HTTP_HX_REQUEST'):
-            submit_url = detail_url
-            cancel_url = list_path
-        else:
+        from . import app_settings
+        if app_settings.template_pack() == 'plain':
             submit_url = request.path  # /edit/ URL → POST maps to partial_update
             cancel_url = parent_url
+        else:
+            submit_url = detail_url
+            cancel_url = list_path
         return DRFResponse({
             'serializer':  serializer,
             'instance':    serializer.data,
