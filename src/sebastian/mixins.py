@@ -29,7 +29,7 @@ class GUIMixin:
 
     _STANDARD_ACTIONS = frozenset([
         'list', 'create', 'retrieve', 'update', 'partial_update', 'destroy',
-        'create_form', 'update_form', 'delete_confirm',
+        'create_form', 'update_form', 'delete_confirm', 'action_confirm_page',
     ])
 
     # ------------------------------------------------------------------ #
@@ -64,6 +64,15 @@ class GUIMixin:
             and 'HX-Redirect' not in response
         ):
             response['HX-Redirect'] = request.path.rstrip('/').rsplit('/', 1)[0] + '/'
+        # Plain pack: convert HX-Redirect into a real HTTP redirect (no HTMX to follow the header).
+        if (
+            isinstance(response, DRFResponse)
+            and getattr(request, 'sebastian_gui', False)
+            and not request.META.get('HTTP_HX_REQUEST')
+            and 'HX-Redirect' in response
+        ):
+            from django.http import HttpResponseRedirect
+            return HttpResponseRedirect(response['HX-Redirect'])
         return response
 
     # ------------------------------------------------------------------ #
@@ -77,6 +86,7 @@ class GUIMixin:
         if not serializer.is_valid():
             resp = DRFResponse(
                 {'serializer': serializer, 'action': 'create',
+                 'instance': dict(request.data),
                  'submit_url': request.path, 'cancel_url': request.path,
                  'htmx_target': '#sebastian-content'},
                 status=400,
@@ -99,14 +109,19 @@ class GUIMixin:
         if partial and not request.META.get('HTTP_HX_REQUEST'):
             # Plain form: browser sends '' for unselected file inputs; strip them so
             # partial=True can ignore unchanged file fields instead of failing validation.
+            # Exception: if a _clear_{field} checkbox was checked, keep the empty string
+            # so NullableFileField can convert it to None (explicit clear).
             data = data.copy()
-            for key in [k for k, v in list(data.items()) if v == '' and k not in request.FILES]:
+            for key in [k for k, v in list(data.items())
+                        if v == '' and k not in request.FILES
+                        and f'_clear_{k}' not in request.POST]:
                 data.pop(key)
         instance_data = self.get_serializer(instance).data
         serializer = self.get_serializer(instance, data=data, partial=partial)
         if not serializer.is_valid():
+            merged = {**instance_data, **{k: v for k, v in data.items()}}
             resp = DRFResponse(
-                {'serializer': serializer, 'instance': instance_data, 'action': 'update',
+                {'serializer': serializer, 'instance': merged, 'action': 'update',
                  'submit_url': request.path, 'cancel_url': request.path,
                  'htmx_target': '#sebastian-content'},
                 status=400,
@@ -187,6 +202,24 @@ class GUIMixin:
             'action': 'delete_confirm',
             'instance': serializer.data,
             'cancel_url': cancel_url,
+        })
+
+    def action_confirm_page(self, request, *args, **kwargs):
+        """GET: server-side confirmation page for POST actions with a confirm text."""
+        action_name = self.kwargs.get('_confirm_action', '')
+        method      = getattr(self.__class__, action_name, None)
+        confirm_text = getattr(method, 'gui_config', {}).get('confirm', '')
+        instance    = self.get_object()
+        serializer  = self.get_serializer(instance)
+        # action_url = strip /confirm/ → the POST target
+        action_url  = request.path.rstrip('/').rsplit('/', 1)[0] + '/'
+        cancel_url  = action_url.rstrip('/').rsplit('/', 1)[0] + '/'
+        return DRFResponse({
+            'action':        'action_confirm_page',
+            'confirm_text':  confirm_text,
+            'action_url':    action_url,
+            'cancel_url':    cancel_url,
+            'instance':      serializer.data,
         })
 
     # ------------------------------------------------------------------ #
@@ -399,7 +432,9 @@ class NestedGUIMixin(GUIMixin):
         data = request.data
         if partial and not request.META.get('HTTP_HX_REQUEST'):
             data = data.copy()
-            for key in [k for k, v in list(data.items()) if v == '' and k not in request.FILES]:
+            for key in [k for k, v in list(data.items())
+                        if v == '' and k not in request.FILES
+                        and f'_clear_{k}' not in request.POST]:
                 data.pop(key)
         container    = self._inline_container_id()
         list_path    = self._inline_list_path()
@@ -410,8 +445,9 @@ class NestedGUIMixin(GUIMixin):
         cancel_url   = list_path if is_htmx else parent_url
         serializer = self.get_serializer(instance, data=data, partial=partial)
         if not serializer.is_valid():
+            merged = {**instance_data, **{k: v for k, v in data.items()}}
             resp = DRFResponse(
-                {'serializer': serializer, 'instance': instance_data, 'action': 'update',
+                {'serializer': serializer, 'instance': merged, 'action': 'update',
                  'htmx_target': f'#{container}', 'cancel_url': cancel_url,
                  'submit_url': submit_url},
                 status=400,

@@ -465,6 +465,7 @@ class TestAppMenu:
         assert b'Nuova' in r.content
         assert b'disabled' in r.content
 
+    @override_settings(**SEBASTAN_HTMX)
     def test_menu_active_item_via_hx_current_url(self, auth_client):
         r = auth_client.get(
             '/gui/menu/', **GUI,

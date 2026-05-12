@@ -238,7 +238,8 @@ class GUIRouter:
             method = getattr(viewset, attr_name, None)
             if not callable(method) or not hasattr(method, 'mapping'):
                 continue
-            if not getattr(method, 'gui_config', {}):
+            gui_config = getattr(method, 'gui_config', {})
+            if not gui_config:
                 continue
             url_path = getattr(method, 'url_path', attr_name)
             detail   = getattr(method, 'detail', True)
@@ -250,6 +251,15 @@ class GUIRouter:
                     kw,
                     name=f'{basename}-gui-{attr_name}',
                 ))
+                # Confirmation page for POST-only actions that declare confirm text
+                # (plain pack uses this instead of hx-confirm JS dialog)
+                if gui_config.get('confirm') and not gui_config.get('confirmation_serializer'):
+                    routes.append(path(
+                        f'{prefix}/<pk>/{url_path}/confirm/',
+                        self._wrap(viewset.as_view({'get': 'action_confirm_page'})),
+                        {**kw, '_confirm_action': attr_name},
+                        name=f'{basename}-gui-{attr_name}-confirm',
+                    ))
             else:
                 routes.append(path(
                     f'{prefix}/{url_path}/',

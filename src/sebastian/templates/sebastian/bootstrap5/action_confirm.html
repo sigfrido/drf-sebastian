@@ -1,0 +1,19 @@
+{% extends pack_base %}
+{% load sebastian_tags %}
+
+{% block title %}Conferma{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+  <h4>Conferma azione</h4>
+  <p class="lead">{{ data.confirm_text }}</p>
+</div>
+
+<div class="d-flex gap-2">
+  <form method="post" action="{{ data.action_url }}">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-primary">Conferma</button>
+  </form>
+  <a href="{{ data.cancel_url }}" class="btn btn-outline-secondary">Annulla</a>
+</div>
+{% endblock %}

@@ -13,7 +13,8 @@ class SebastianHTMLRenderer(BaseRenderer):
         'retrieve':       'detail.html',
         'create_form':    'form.html',
         'update_form':    'form.html',
-        'delete_confirm': 'delete_confirm.html',
+        'delete_confirm':       'delete_confirm.html',
+        'action_confirm_page':  'action_confirm.html',
     }
     DEFAULT_TEMPLATE_SUFFIX = 'detail.html'
 

@@ -124,7 +124,8 @@ def include_resource(context, url):
     except Resolver404:
         return mark_safe(f'<!-- include_resource: no route for {url} -->')
 
-    sub = DjangoRF().get(url, HTTP_HX_REQUEST='1')
+    current_url = request.build_absolute_uri() if request else ''
+    sub = DjangoRF().get(url, HTTP_HX_REQUEST='1', HTTP_HX_CURRENT_URL=current_url)
     sub.user    = getattr(request, 'user', None)
     sub.session = getattr(request, 'session', {})
     sub.sebastian_gui = True

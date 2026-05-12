@@ -1,30 +1,55 @@
 {% load sebastian_tags %}
+<style>
+.sb-nav-group { position: relative; }
+.sb-nav-group details > summary { list-style: none; cursor: pointer; }
+.sb-nav-group details > summary::-webkit-details-marker { display: none; }
+.sb-nav-group details > summary.active { border-bottom: 2px solid #fff; }
+.sb-submenu .dropdown-item.active { background-color: #e9ecef; color: #212529; }
+.sb-nav-group details[open] > .sb-submenu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 1050;
+  min-width: 10rem;
+  background: #fff;
+  border: 1px solid rgba(0,0,0,.15);
+  border-radius: .375rem;
+  padding: .5rem 0;
+  box-shadow: 0 .5rem 1rem rgba(0,0,0,.15);
+}
+</style>
 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
   {% for group in data.menu_groups %}
-  <li class="nav-item dropdown">
-    <a class="nav-link dropdown-toggle{% if group.disabled %} disabled{% endif %}{% if group.active %} active{% endif %}"
-       href="#">
-      {% if group.icon %}{% icon group.icon "me-1" %}{% endif %}
-      {{ group.label }}
-    </a>
-    <ul class="dropdown-menu">
-      {% for item in group.items %}
-      <li>
-        {% if item.disabled %}
-        <span class="dropdown-item disabled">
-          {% if item.icon %}{% icon item.icon "me-1" %}{% endif %}
-          {{ item.label }}
-        </span>
-        {% else %}
-        <a class="dropdown-item{% if item.active %} active{% endif %}"
-           href="{{ item.url }}">
-          {% if item.icon %}{% icon item.icon "me-1" %}{% endif %}
-          {{ item.label }}
-        </a>
-        {% endif %}
-      </li>
-      {% endfor %}
-    </ul>
+  <li class="nav-item sb-nav-group">
+    <details>
+      <summary class="nav-link{% if group.disabled %} disabled{% endif %}{% if group.active %} active{% endif %}">
+        {% if group.icon %}{% icon group.icon "me-1" %}{% endif %}
+        {{ group.label }}
+      </summary>
+      <ul class="list-unstyled mb-0 sb-submenu">
+        {% for item in group.items %}
+        <li>
+          {% if item.disabled %}
+          <span class="dropdown-item disabled">
+            {% if item.icon %}{% icon item.icon "me-1" %}{% endif %}
+            {{ item.label }}
+          </span>
+          {% else %}
+          <a class="dropdown-item{% if item.active %} active{% endif %}"
+             href="{{ item.url }}">
+            {% if item.icon %}{% icon item.icon "me-1" %}{% endif %}
+            {{ item.label }}
+          </a>
+          {% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+    </details>
   </li>
   {% endfor %}
 </ul>
+<script>
+document.querySelectorAll('.sb-nav-group details').forEach(function(d){
+  d.addEventListener('mouseleave', function(){ d.removeAttribute('open'); });
+});
+</script>

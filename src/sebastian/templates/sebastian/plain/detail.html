@@ -21,6 +21,22 @@
           {% if cfg.icon %}{% icon cfg.icon %}{% endif %}
           {{ cfg.label }}
         </button>
+        {% elif action.method == 'post' and not cfg.confirmation_serializer %}
+        {% if cfg.confirm %}
+        <a href="{{ request.path }}{{ action.name }}/confirm/"
+           class="btn btn-{{ cfg.color|default:'secondary' }} btn-sm">
+          {% if cfg.icon %}{% icon cfg.icon %}{% endif %}
+          {{ cfg.label }}
+        </a>
+        {% else %}
+        <form method="post" action="{{ request.path }}{{ action.name }}/" style="display:inline">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-{{ cfg.color|default:'secondary' }} btn-sm">
+            {% if cfg.icon %}{% icon cfg.icon %}{% endif %}
+            {{ cfg.label }}
+          </button>
+        </form>
+        {% endif %}
         {% else %}
         <a href="{{ request.path }}{{ action.name }}/"
            class="btn btn-{{ cfg.color|default:'secondary' }} btn-sm">

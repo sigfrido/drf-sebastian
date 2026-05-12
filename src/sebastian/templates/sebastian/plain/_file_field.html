@@ -7,12 +7,22 @@
   </label>
 
   {% if action == 'update' and current %}
-  <div class="mb-1" id="sb-file-badge-{{ field_name }}">
+  <div class="mb-1">
     <span class="badge bg-light text-dark border fw-normal text-truncate" style="max-width:18rem"
           title="{{ current|filename }}">
       {% icon "paperclip" %} {{ current|filename }}
     </span>
   </div>
+  {% if field.allow_null %}
+  <div class="form-check mb-1">
+    <input type="checkbox" class="form-check-input"
+           id="id__clear_{{ field_name }}"
+           name="_clear_{{ field_name }}" value="1">
+    <label class="form-check-label text-danger" for="id__clear_{{ field_name }}">
+      Elimina file
+    </label>
+  </div>
+  {% endif %}
   <input type="file"
          class="form-control form-control-sm"
          id="id_{{ field_name }}"
