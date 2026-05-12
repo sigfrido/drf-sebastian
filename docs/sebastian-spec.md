@@ -462,7 +462,7 @@ class RichiestaViewSet(GUIMixin, viewsets.ModelViewSet):
 ```python
 SEBASTIAN = {
     'FRONTEND_MODE': 'server',
-    'TEMPLATE_PACK': 'bootstrap5',
+    'TEMPLATE_PACK': 'htmx',
 }
 ```
 
@@ -494,7 +494,7 @@ SEBASTIAN = {
     'FRONTEND_MODE': 'server',        # 'server' | 'spa'
 
     # Template settings
-    'TEMPLATE_PACK':  'bootstrap5',   # 'bootstrap5' | 'tailwind' | 'custom'
+    'TEMPLATE_PACK':  'htmx',   # 'htmx' | 'plain' | [ 'custom']
     'BASE_TEMPLATE':  'sebastian/base.html',
 
     # UI defaults

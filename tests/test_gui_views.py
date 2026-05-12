@@ -12,7 +12,7 @@ HTMX = {**GUI, 'HTTP_HX_REQUEST': 'true'}
 
 SEBASTAN_HTMX = {
     'SEBASTIAN': {
-        'TEMPLATE_PACK': 'bootstrap5',
+        'TEMPLATE_PACK': 'htmx',
     }
 }
 

@@ -98,7 +98,7 @@
 
 ## Phase 7 — Template packs, skins, and non-HTMX pack (done)
 
-- [x] Template pack system: all templates live under `sebastian/{pack_name}/`; active pack set via `SEBASTIAN['TEMPLATE_PACK']` (default `bootstrap5`); users can add packs in their own project's `templates/` directory
+- [x] Template pack system: all templates live under `sebastian/{pack_name}/`; active pack set via `SEBASTIAN['TEMPLATE_PACK']` (default `htmx`); users can add packs in their own project's `templates/` directory
 - [x] Non-HTMX `plain` pack: `{% include_resource url %}` template tag calls a Django URL server-side (synchronous) and returns the rendered HTML fragment — replaces `hx-get` inline loads
 - [x] Skin system: skin = CSS/icon library combination defined as a `sebastian/skins/{skin_name}/_skin.html` fragment injected via `{% include skin_head %}`; configured via `SEBASTIAN['SKIN']`; decoupled from pack structure
 - [x] `{% icon name %}` template tag: renders the correct icon HTML based on the active skin (e.g. Bootstrap Icons, FontAwesome), keeping templates skin-agnostic

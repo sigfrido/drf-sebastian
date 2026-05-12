@@ -74,7 +74,7 @@ REST_FRAMEWORK = {
 }
 
 SEBASTIAN = {
-    'TEMPLATE_PACK': 'bootstrap5',
+    'TEMPLATE_PACK': 'htmx',
     # 'TEMPLATE_PACK': 'plain',
     'DEFAULT_PAGE_SIZE': 25,
     'HIDE_UNAUTHORIZED_ACTIONS': False, # Disable instead

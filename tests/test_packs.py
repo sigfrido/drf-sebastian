@@ -29,11 +29,11 @@ class TestPackContext:
         # — if we got here without TemplateDoesNotExist, the pack resolved correctly
         assert b'Fornitor' in r.content or b'fornitor' in r.content.lower()
 
-    def test_bootstrap5_is_default_pack(self, auth_client):
-        """Default pack renders Bootstrap-linked HTML."""
+    def test_htmx_is_default_pack(self, auth_client):
+        """Default pack renders HTMX HTML."""
         r = auth_client.get('/gui/fornitori/', **GUI)
         assert r.status_code == 200
-        assert b'bootstrap' in r.content.lower()
+        assert b'hx-target' in r.content.lower()
 
     def test_bootstrap5_skin_fragment_included(self, auth_client):
         """Skin fragment CDN links appear in the full-page response."""
@@ -164,9 +164,17 @@ class TestViewsetTemplateOverride:
         original = getattr(getattr(FornitoreViewSet, 'Sebastian', None), 'templates', {})
         # Use the existing flat legacy template as the override target
         try:
-            FornitoreViewSet.Sebastian.templates = {'list': 'sebastian/list.html'}
-            r = auth_client.get('/gui/fornitori/', **HTMX)
-            assert r.status_code == 200
-            assert b'Acme Srl' in r.content
+            # Ensure active pack is 'plain'
+            with PLAIN_SETTINGS:
+                r = auth_client.get('/gui/fornitori/', **HTMX)
+                assert r.status_code == 200
+                assert b'Acme Srl' in r.content
+                # plain does not use HTMX
+                assert b'hx-target' not in r.content
+                FornitoreViewSet.Sebastian.templates = {'list': 'sebastian/htmx/list.html'}
+                r = auth_client.get('/gui/fornitori/', **HTMX)
+                assert r.status_code == 200
+                assert b'Acme Srl' in r.content
+                assert b'hx-target' in r.content
         finally:
             FornitoreViewSet.Sebastian.templates = original

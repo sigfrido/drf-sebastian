@@ -10,7 +10,7 @@ def hide_unauthorized_actions() -> bool:
 
 
 def template_pack() -> str:
-    return _sebastian('TEMPLATE_PACK', 'bootstrap5')
+    return _sebastian('TEMPLATE_PACK', 'htmx')
 
 
 def skin() -> str:
@@ -18,4 +18,4 @@ def skin() -> str:
 
 
 def available_packs() -> list:
-    return _sebastian('AVAILABLE_PACKS', ['bootstrap5', 'plain'])
+    return _sebastian('AVAILABLE_PACKS', ['htmx', 'plain'])
