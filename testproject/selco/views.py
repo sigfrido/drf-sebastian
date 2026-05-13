@@ -30,6 +30,7 @@ class FornitoreViewSet(GUIMixin, viewsets.ModelViewSet):
     filterset_class  = FornitoreFilter
 
     class Sebastian:
+        label = 'Fornitori'
         menu = MenuGroup('Fornitori', icon='building', items=[
             MenuItem('Elenco', action='list', icon='list-ul'),
             MenuItem('Nuovo',  action='new',  icon='plus-circle'),
@@ -92,6 +93,7 @@ class RichiestaViewSet(GUIMixin, viewsets.ModelViewSet):
     filterset_class  = RichiestaFilter
 
     class Sebastian:
+        label = 'Richieste'
         menu = MenuGroup('Richieste', icon='clipboard-check', items=[
             MenuItem('Elenco', action='list', icon='list-ul'),
             MenuItem('Nuova',  action='new',  icon='plus-circle', permission=(perm_is_admin,)),

@@ -32,6 +32,12 @@ class GUIMixin:
         'create_form', 'update_form', 'confirm',
     ])
 
+    def get_view_name(self):
+        label = ''
+        if hasattr(self, 'Sebastian'):
+            label = getattr(self.Sebastian, 'label')
+        return label or super().get_view_name()
+    
     # ------------------------------------------------------------------ #
     # Request lifecycle                                                    #
     # ------------------------------------------------------------------ #

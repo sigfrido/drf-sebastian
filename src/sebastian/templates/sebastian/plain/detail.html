@@ -75,9 +75,6 @@
 {# --- Inline sections: rendered server-side via include_resource --- #}
 {% for inline in inlines %}
 <div class="mt-3 border-top pt-3">
-  <h6 class="mb-2 text-muted text-uppercase" style="font-size:.75rem;letter-spacing:.05em">
-    {{ inline.label }}
-  </h6>
   {% include_resource request.path|add:inline.mountpoint|add:"/" %}
 </div>
 {% endfor %}
