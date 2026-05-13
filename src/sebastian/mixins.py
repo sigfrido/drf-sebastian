@@ -1,5 +1,6 @@
 from django.core.exceptions import ImproperlyConfigured
 from django.shortcuts import get_object_or_404
+from django.http import FileResponse
 from rest_framework import renderers as drf_renderers
 from rest_framework.mixins import CreateModelMixin, UpdateModelMixin
 from rest_framework.response import Response as DRFResponse
@@ -390,6 +391,17 @@ class GUIMixin:
         if isinstance(result, DRFResponse):
             return result
         return DRFResponse(self.get_serializer(instance).data)
+
+    
+    # ------------------------------------------------------------------ #
+    # Helper methods
+    # ------------------------------------------------------------------ #
+    def download_action(self, field_name, request, pk=None, **kwargs):
+        """Called by actions which download file fields"""
+        instance = self.get_object()
+        field = getattr(instance, field_name)
+        filename = field.name.split('/')[-1]
+        return FileResponse(field.open('rb'), as_attachment=True, filename=filename)
 
     # ------------------------------------------------------------------ #
     # Sebastian metadata helpers                                          #

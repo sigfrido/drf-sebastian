@@ -46,16 +46,15 @@ class FornitoreViewSet(GUIMixin, viewsets.ModelViewSet):
         methods=['get'],
         permission_classes=[permissions.IsAuthenticated],
         gui_config={
-            'label':    'Scarica',
+            'label':    '', # icon-only
             'icon':     'download',
             'color':    'outline-secondary',
             'position': 'both',
+            'link_field':  'certificazione',
         },
     )
     def download(self, request, pk=None, **kwargs):
-        instance = self.get_object()
-        filename = instance.certificazione.name.split('/')[-1]
-        return FileResponse(instance.certificazione.open('rb'), as_attachment=True, filename=filename)
+        return self.download_action('certificazione', request, pk, **kwargs)
 
 
 
@@ -75,16 +74,15 @@ class AllegatoViewSet(NestedGUIMixin, viewsets.ModelViewSet):
         methods=['get'],
         permission_classes=[permissions.IsAuthenticated],
         gui_config={
-            'label':    'Scarica',
+            'label':    '', # incon only 'Scarica',
             'icon':     'download',
             'color':    'outline-secondary',
             'position': 'list',
+            'link_field':  'file',
         },
     )
     def download(self, request, pk=None, **kwargs):
-        instance = self.get_object()
-        filename = instance.file.name.split('/')[-1]
-        return FileResponse(instance.file.open('rb'), as_attachment=True, filename=filename)
+        return self.download_action('file', request, pk, **kwargs)
 
 
 class RichiestaViewSet(GUIMixin, viewsets.ModelViewSet):
