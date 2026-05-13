@@ -265,7 +265,6 @@ class TestAllegatoInlineGUI:
     def test_download_button_visible_in_inline_list(self, auth_client, richiesta, allegato):
         r = auth_client.get(f'/gui/richieste/{richiesta.pk}/allegati/', **HTMX)
         assert r.status_code == 200
-        assert b'Scarica' in r.content
         assert f'/gui/richieste/{richiesta.pk}/allegati/{allegato.pk}/download/'.encode() in r.content
 
     def test_download_returns_file(self, auth_client, richiesta, allegato):

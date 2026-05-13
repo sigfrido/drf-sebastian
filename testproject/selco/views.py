@@ -50,6 +50,7 @@ class FornitoreViewSet(GUIMixin, viewsets.ModelViewSet):
             'icon':     'download',
             'color':    'outline-secondary',
             'position': 'both',
+            'hint': 'Scarica la certificazione',
             'link_field':  'certificazione',
         },
     )

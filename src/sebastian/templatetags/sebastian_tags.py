@@ -100,6 +100,22 @@ def field_value(instance, field_name: str):
     return getattr(instance, field_name, '')
 
 
+@register.simple_tag(takes_context=True)
+def get_link_action(context, field_name):
+    """
+    Return the first available action whose gui_config['link_field'] matches field_name,
+    or None if no such action exists. Used by detail/list templates to render inline
+    file-download links directly on the field value instead of in the action button group.
+    """
+    view = context.get('view')
+    if not view:
+        return None
+    for action_dict in view.get_available_actions():
+        if action_dict.get('gui_config', {}).get('link_field') == field_name:
+            return action_dict
+    return None
+
+
 @register.simple_tag
 def sebastian_version():
     from sebastian import __version__

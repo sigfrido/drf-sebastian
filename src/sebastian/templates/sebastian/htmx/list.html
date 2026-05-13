@@ -47,7 +47,26 @@
       {% for item in items %}
       <tr>
         {% for key in items.0|data_keys %}
-        <td>{{ item|display_value:key }}</td>
+        {% get_link_action key as link_action %}
+        <td>
+          {% if link_action and not link_action.disabled %}
+          {% with cfg=link_action.gui_config fv=item|display_value:key %}
+          {% if fv %}
+            {% if cfg.icon or cfg.label %}
+            {{ fv }}
+            <a href="{{ request.path }}{{ item.id }}/{{ link_action.name }}/"
+               class="btn btn-{{ cfg.color|default:'outline-secondary' }} btn-sm ms-1"
+               title="{{ cfg.hint|default:cfg.label|default:link_action.name }}">
+              {% if cfg.icon %}{% icon cfg.icon %}{% endif %}{{ cfg.label }}
+            </a>
+            {% else %}
+            <a href="{{ request.path }}{{ item.id }}/{{ link_action.name }}/"
+               title="{{ cfg.hint|default:link_action.name }}">{{ fv|filename }}</a>
+            {% endif %}
+          {% else %}—{% endif %}
+          {% endwith %}
+          {% else %}{{ item|display_value:key }}{% endif %}
+        </td>
         {% endfor %}
         <td class="text-end text-nowrap">
           {% if not is_inline %}
@@ -59,8 +78,10 @@
           {% for action in view.get_available_actions %}
             {% with cfg=action.gui_config %}
               {% if cfg.position == 'list' or cfg.position == 'both' %}
+              {% if not cfg.link_field %}
                 {% if action.disabled %}
-                <button class="btn btn-{{ cfg.color|default:'secondary' }} btn-sm" disabled>
+                <button class="btn btn-{{ cfg.color|default:'secondary' }} btn-sm" disabled
+                        title="{{ cfg.hint|default:cfg.label|default:action.name }}">
                   {% if cfg.icon %}{% icon cfg.icon %}{% endif %}
                   {{ cfg.label }}
                 </button>
@@ -68,24 +89,28 @@
                 <button hx-get="{{ request.path }}{{ item.id }}/{{ action.name }}/confirm/"
                         hx-target="#sebastian-modal"
                         hx-swap="innerHTML"
-                        class="btn btn-{{ cfg.color|default:'secondary' }} btn-sm">
+                        class="btn btn-{{ cfg.color|default:'secondary' }} btn-sm"
+                        title="{{ cfg.hint|default:cfg.label|default:action.name }}">
                   {% if cfg.icon %}{% icon cfg.icon %}{% endif %}
                   {{ cfg.label }}
                 </button>
                 {% elif action.method == 'get' %}
                 <a href="{{ request.path }}{{ item.id }}/{{ action.name }}/"
-                   class="btn btn-{{ cfg.color|default:'secondary' }} btn-sm">
+                   class="btn btn-{{ cfg.color|default:'secondary' }} btn-sm"
+                   title="{{ cfg.hint|default:cfg.label|default:action.name }}">
                   {% if cfg.icon %}{% icon cfg.icon %}{% endif %}
                   {{ cfg.label }}
                 </a>
                 {% else %}
                 <button hx-post="{{ request.path }}{{ item.id }}/{{ action.name }}/"
                         hx-target="{{ htmx_target }}"
-                        class="btn btn-{{ cfg.color|default:'secondary' }} btn-sm">
+                        class="btn btn-{{ cfg.color|default:'secondary' }} btn-sm"
+                        title="{{ cfg.hint|default:cfg.label|default:action.name }}">
                   {% if cfg.icon %}{% icon cfg.icon %}{% endif %}
                   {{ cfg.label }}
                 </button>
                 {% endif %}
+              {% endif %}
               {% endif %}
             {% endwith %}
           {% endfor %}
