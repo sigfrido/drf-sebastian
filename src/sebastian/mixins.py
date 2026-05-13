@@ -43,19 +43,20 @@ class GUIMixin:
     # Request lifecycle                                                    #
     # ------------------------------------------------------------------ #
 
+    def get_renderers(self):
+        # For API routes (no sebastian_gui flag), never render HTML — always JSON.
+        # The flag is set on the Django request by GUIRouter._wrap() before dispatch,
+        # transferred to the DRF request in initialize_request() below.
+        if not getattr(self.request, 'sebastian_gui', False):
+            return [drf_renderers.JSONRenderer()]
+        return super().get_renderers()
+
     def initialize_request(self, request, *args, **kwargs):
         drf_request = super().initialize_request(request, *args, **kwargs)
         # Transfer flag set by GUIRouter's URL kwargs wrapper (django request → drf request)
         if getattr(request, 'sebastian_gui', False):
             drf_request.sebastian_gui = True
         return drf_request
-
-    def initial(self, request, *args, **kwargs):
-        super().initial(request, *args, **kwargs)
-        # After content negotiation, flag HTML responses (A + B from design)
-        if getattr(request, 'accepted_renderer', None):
-            if request.accepted_renderer.format == 'html':
-                request.sebastian_gui = True
 
     def finalize_response(self, request, response, *args, **kwargs):
         response = super().finalize_response(request, response, *args, **kwargs)
@@ -421,7 +422,26 @@ class GUIMixin:
     def retrieve(self, request, *args, **kwargs):
         self._sebastian_obj = self.get_object()
         serializer = self.get_serializer(self._sebastian_obj)
-        return DRFResponse(serializer.data)
+        if getattr(request, 'sebastian_gui', False):
+            return DRFResponse(serializer.data)
+        # API path: append inline data for each NestedGUIMixin declared in Sebastian.inlines
+        data = dict(serializer.data)
+        sebastian = getattr(self.__class__, 'Sebastian', None)
+        for inline_cls in getattr(sebastian, 'inlines', []):
+            if not getattr(inline_cls, 'inline_in_api', True):
+                continue
+            mp = getattr(inline_cls, 'mountpoint', '')
+            if not mp:
+                continue
+            child_model = inline_cls.queryset.model
+            parent_model = type(self._sebastian_obj)
+            for f in child_model._meta.get_fields():
+                if hasattr(f, 'related_model') and f.related_model == parent_model:
+                    qs = child_model._default_manager.filter(**{f.name: self._sebastian_obj})
+                    ctx = self.get_serializer_context()
+                    data[mp] = inline_cls.serializer_class(qs, many=True, context=ctx).data
+                    break
+        return DRFResponse(data)
 
     def get_available_actions(self):
         """
@@ -488,6 +508,7 @@ class NestedGUIMixin(GUIMixin):
 
     _sebastian_is_nested = True
     parent_field = ''  # FK on this model to parent; auto-detected if blank
+    inline_in_api = True # Rendered inline this viewset in parent serialized data
 
     # ------------------------------------------------------------------ #
     # Inline helpers                                                       #

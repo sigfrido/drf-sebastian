@@ -86,6 +86,11 @@ class SebastianMenuView(APIView):
     permission_classes = []   # authentication enforced per-project; menu may be public
     _menu_groups: list = []
 
+    def get_renderers(self):
+        if not getattr(self.request, 'sebastian_gui', False):
+            return [drf_renderers.JSONRenderer()]
+        return super().get_renderers()
+
     def get(self, request, *args, **kwargs):
         current_url = request.META.get('HTTP_HX_CURRENT_URL', '')
         # Strip scheme+host from absolute HTMX URL so we can match against reverse() paths

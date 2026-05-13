@@ -1,4 +1,3 @@
-from django.http import FileResponse
 from rest_framework import viewsets, permissions
 from rest_framework.response import Response
 from sebastian.mixins import GUIMixin, NestedGUIMixin

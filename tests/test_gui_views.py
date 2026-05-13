@@ -491,3 +491,43 @@ class TestAppMenu:
         assert r.status_code == 200
         assert b'hx-get' in r.content
         assert b'menu' in r.content   # hx-get points to the menu endpoint
+
+
+@pytest.mark.django_db
+class TestAPIBehaviour:
+    """API endpoints always return JSON; detail includes inline data."""
+
+    def test_api_list_returns_json_from_browser(self, auth_client):
+        r = auth_client.get('/api/richieste/', HTTP_ACCEPT='text/html,*/*;q=0.8')
+        assert r.status_code == 200
+        assert r['Content-Type'].startswith('application/json')
+
+    def test_api_detail_returns_json_from_browser(self, auth_client, richiesta):
+        r = auth_client.get(f'/api/richieste/{richiesta.pk}/', HTTP_ACCEPT='text/html,*/*;q=0.8')
+        assert r.status_code == 200
+        assert r['Content-Type'].startswith('application/json')
+
+    def test_api_menu_returns_json_from_browser(self, auth_client):
+        r = auth_client.get('/api/menu/', HTTP_ACCEPT='text/html,*/*;q=0.8')
+        assert r.status_code == 200
+        assert r['Content-Type'].startswith('application/json')
+        assert 'menu_groups' in r.data
+
+    def test_api_detail_includes_inline_data(self, auth_client, richiesta, allegato):
+        r = auth_client.get(f'/api/richieste/{richiesta.pk}/')
+        assert r.status_code == 200
+        assert 'allegati' in r.data
+        assert len(r.data['allegati']) == 1
+        assert r.data['allegati'][0]['id'] == allegato.pk
+
+    def test_api_detail_inline_in_api_false_excluded(self, auth_client, richiesta):
+        from selco.views import RichiestaViewSet
+        inline_cls = RichiestaViewSet.Sebastian.inlines[0]
+        original = inline_cls.inline_in_api
+        try:
+            inline_cls.inline_in_api = False
+            r = auth_client.get(f'/api/richieste/{richiesta.pk}/')
+            assert r.status_code == 200
+            assert 'allegati' not in r.data
+        finally:
+            inline_cls.inline_in_api = original
