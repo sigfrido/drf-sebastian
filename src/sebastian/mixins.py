@@ -419,6 +419,53 @@ class GUIMixin:
             return []
         return getattr(sebastian, 'groups', [])
 
+    def filter_queryset(self, queryset):
+        queryset = super().filter_queryset(queryset)
+        sebastian = getattr(self.__class__, 'Sebastian', None)
+        ordering_decl = getattr(sebastian, 'ordering', None)
+        if not ordering_decl:
+            return queryset
+        allowed_values = {f for f, _ in ordering_decl}  # includes sign (e.g. '-created_at')
+        max_n = getattr(sebastian, 'max_ordering_fields', 3)
+        params = self.request.query_params
+        # HTMX pack sends ?ordering=f1,-f2; plain pack sends ?ordering_1=f1&ordering_2=-f2
+        ordering_param = params.get('ordering', '')
+        if ordering_param:
+            raw = [f.strip() for f in ordering_param.split(',') if f.strip()]
+        else:
+            raw = []
+            for i in range(1, max_n + 1):
+                val = params.get(f'ordering_{i}', '')
+                if val:
+                    raw.append(val)
+        valid = [f for f in raw if f in allowed_values][:max_n]
+        if valid:
+            queryset = queryset.order_by(*valid)
+        elif getattr(self.request, 'sebastian_gui', False):
+            # In GUI mode the ordering widget owns all sorting.  When nothing is
+            # selected (valid is empty) override the model's Meta.ordering so the
+            # list matches the widget's empty state rather than a hidden default.
+            queryset = queryset.order_by()
+        return queryset
+
+    def standard_typeahead(self, filter, order_by=None, get_description=None):
+        """Helper for @typeahead actions. Returns Response([{value, label}, ...])."""
+        qs = self.get_queryset()
+        if isinstance(filter, dict):
+            qs = qs.filter(**filter)
+        else:
+            qs = qs.filter(filter)
+        if order_by:
+            qs = qs.order_by(*[f.strip() for f in order_by.split(',')])
+        action_fn = getattr(self.__class__, getattr(self, 'action', ''), None)
+        max_results = getattr(action_fn, 'max_results', 100)
+        qs = qs[:max_results]
+        if get_description:
+            items = [{'value': obj.pk, 'label': get_description(obj)} for obj in qs]
+        else:
+            items = [{'value': obj.pk, 'label': str(obj)} for obj in qs]
+        return DRFResponse(items)
+
     def retrieve(self, request, *args, **kwargs):
         self._sebastian_obj = self.get_object()
         serializer = self.get_serializer(self._sebastian_obj)

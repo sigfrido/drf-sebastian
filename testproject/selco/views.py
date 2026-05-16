@@ -2,7 +2,7 @@ from rest_framework import viewsets, permissions
 from rest_framework.response import Response
 from sebastian.mixins import GUIMixin, NestedGUIMixin
 from sebastian.config import FieldGroup, MenuGroup, MenuItem
-from sebastian.decorators import action
+from sebastian.decorators import action, typeahead
 from sebastian.permissions import perm_fail, perm_is_admin, perm_is_action, perm_or, perm_and
 from .models import Fornitore, Richiesta, Allegato
 from .serializers import FornitoreSerializer, RichiestaSerializer, AllegatoSerializer, InviaSerializer
@@ -39,6 +39,21 @@ class FornitoreViewSet(GUIMixin, viewsets.ModelViewSet):
                        label='Anagrafica'),
             FieldGroup('documenti', ['certificazione'], label='Documenti'),
         ]
+        ordering = (
+            ('ragione_sociale',  'Ragione Sociale ↑'),
+            ('-ragione_sociale', 'Ragione Sociale ↓'),
+            ('attivo',           'Attivo ↑'),
+            ('-attivo',          'Attivo ↓'),
+        )
+        max_ordering_fields = 2
+
+    @typeahead(typeahead_chars=2, max_results=50)
+    def fornitori_typeahead(self, request):
+        q = request.query_params.get('q', '')
+        return self.standard_typeahead(
+            filter={'ragione_sociale__icontains': q},
+            order_by='ragione_sociale',
+        )
 
     @action(
         detail=True,
@@ -92,6 +107,12 @@ class RichiestaViewSet(GUIMixin, viewsets.ModelViewSet):
 
     class Sebastian:
         label = 'Richieste'
+        typeahead_fields = {
+            'fornitore': {
+                'url':             '/api/fornitori/fornitori_typeahead/',
+                'typeahead_chars': 2,
+            }
+        }
         menu = MenuGroup('Richieste', icon='clipboard-check', items=[
             MenuItem('Elenco', action='list', icon='list-ul'),
             MenuItem('Nuova',  action='new',  icon='plus-circle', permission=(perm_is_admin,)),

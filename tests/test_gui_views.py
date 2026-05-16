@@ -531,3 +531,74 @@ class TestAPIBehaviour:
             assert 'allegati' not in r.data
         finally:
             inline_cls.inline_in_api = original
+
+
+@pytest.mark.django_db
+class TestOrdering:
+    """Ordering widget and queryset filter."""
+
+    def test_ordering_widget_present_when_configured(self, auth_client):
+        r = auth_client.get('/gui/fornitori/', **GUI)
+        assert r.status_code == 200
+        assert b'sb-ordering' in r.content
+        assert b'Ragione Sociale' in r.content
+
+    def test_ordering_applies_to_queryset(self, auth_client):
+        from selco.models import Fornitore
+        Fornitore.objects.create(ragione_sociale='Zeta Srl',  codice_fiscale='11111111111', attivo=True)
+        Fornitore.objects.create(ragione_sociale='Alpha Srl', codice_fiscale='22222222222', attivo=True)
+        r = auth_client.get('/api/fornitori/?ordering=ragione_sociale')
+        assert r.status_code == 200
+        items = r.data.get('results', r.data) if isinstance(r.data, dict) else r.data
+        names = [item['ragione_sociale'] for item in items]
+        assert names == sorted(names)
+
+    def test_ordering_descending(self, auth_client):
+        from selco.models import Fornitore
+        Fornitore.objects.create(ragione_sociale='Zeta Srl',  codice_fiscale='11111111111', attivo=True)
+        Fornitore.objects.create(ragione_sociale='Alpha Srl', codice_fiscale='22222222222', attivo=True)
+        r = auth_client.get('/api/fornitori/?ordering=-ragione_sociale')
+        assert r.status_code == 200
+        items = r.data.get('results', r.data) if isinstance(r.data, dict) else r.data
+        names = [item['ragione_sociale'] for item in items]
+        assert names == sorted(names, reverse=True)
+
+    def test_ordering_rejects_undeclared_field(self, auth_client):
+        from selco.models import Fornitore
+        Fornitore.objects.create(ragione_sociale='Zeta Srl',  codice_fiscale='11111111111', attivo=True)
+        # 'codice_fiscale' is not in Sebastian.ordering → ignored, default ordering used
+        r = auth_client.get('/api/fornitori/?ordering=codice_fiscale')
+        assert r.status_code == 200  # no error, just falls back to default
+
+    def test_plain_pack_ordering_slots(self, auth_client):
+        with override_settings(SEBASTIAN={'TEMPLATE_PACK': 'plain'}):
+            r = auth_client.get('/gui/fornitori/', **GUI)
+        assert r.status_code == 200
+        assert b'ordering_1' in r.content
+
+
+@pytest.mark.django_db
+class TestTypeahead:
+    """@typeahead endpoint and widget rendering."""
+
+    def test_typeahead_endpoint_returns_json_list(self, auth_client, fornitore):
+        r = auth_client.get('/api/fornitori/fornitori_typeahead/?q=')
+        assert r.status_code == 200
+        assert isinstance(r.data, list)
+        assert r.data[0]['value'] == fornitore.pk
+        assert 'label' in r.data[0]
+
+    def test_typeahead_endpoint_filters_by_q(self, auth_client):
+        from selco.models import Fornitore
+        Fornitore.objects.create(ragione_sociale='Acme Corp', codice_fiscale='11111111111', attivo=True)
+        Fornitore.objects.create(ragione_sociale='Beta Inc',  codice_fiscale='22222222222', attivo=True)
+        r = auth_client.get('/api/fornitori/fornitori_typeahead/?q=acm')
+        assert r.status_code == 200
+        assert len(r.data) == 1
+        assert 'Acme' in r.data[0]['label']
+
+    def test_typeahead_widget_present_in_form(self, auth_client, richiesta):
+        r = auth_client.get(f'/gui/richieste/{richiesta.pk}/edit/', **GUI)
+        assert r.status_code == 200
+        assert b'sb-typeahead' in r.content
+        assert b'fornitori_typeahead' in r.content

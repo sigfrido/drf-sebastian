@@ -14,11 +14,27 @@
   </a>
 </div>
 
-{% if filter_form %}
+{% if filter_form or ordering_config %}
 <form class="row g-2 mb-3"
+      id="sb-filter-form"
       hx-get="{{ request.path }}"
       hx-target="#sebastian-content"
       hx-push-url="true">
+  {% if ordering_config %}
+  <div class="col-auto">
+    <label class="form-label small mb-1">Ordina per</label>
+    <select class="form-select form-select-sm sb-ordering"
+            data-max-items="{{ ordering_config.max_n }}"
+            data-current="{{ ordering_config.ordering_param }}"
+            placeholder="Ordina per…">
+      {% for value, label in ordering_config.fields %}
+      <option value="{{ value }}">{{ label }}</option>
+      {% endfor %}
+    </select>
+    <input type="hidden" name="ordering" id="sb-ordering-value"
+           value="{{ ordering_config.ordering_param }}">
+  </div>
+  {% endif %}
   {% for field in filter_form %}
   <div class="col-auto">
     <label class="form-label small mb-1" for="{{ field.id_for_label }}">{{ field.label }}</label>

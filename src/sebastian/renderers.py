@@ -84,6 +84,7 @@ class SebastianHTMLRenderer(BaseRenderer):
         except NoReverseMatch:
             menu_url = ''
 
+        sebastian_config = getattr(view.__class__, 'Sebastian', None) if view else None
         context = {
             'data':               data,
             'items':              items,
@@ -97,9 +98,12 @@ class SebastianHTMLRenderer(BaseRenderer):
             'view':               view,
             'request':            request,
             'response':           response,
-            'sebastian_config':   getattr(view.__class__, 'Sebastian', None) if view else None,
+            'sebastian_config':   sebastian_config,
             'field_labels':       self._get_field_labels(view),
             'filter_form':        self._get_filter_form(view, request),
+            'ordering_config':    self._get_ordering_config(view, request),
+            'typeahead_fields':   getattr(sebastian_config, 'typeahead_fields', {}) or {},
+            'cascading_fields':   getattr(sebastian_config, 'cascading_fields', []) or [],
             'inlines':            self._get_inlines(view),
             'form_errors':        form_errors,
             'pack_name':          pack,
@@ -182,6 +186,32 @@ class SebastianHTMLRenderer(BaseRenderer):
             except Exception:
                 pass
         return None
+
+    def _get_ordering_config(self, view, request):
+        if not view or not request:
+            return None
+        sebastian = getattr(view.__class__, 'Sebastian', None)
+        ordering_decl = getattr(sebastian, 'ordering', None)
+        if not ordering_decl:
+            return None
+        max_n = getattr(sebastian, 'max_ordering_fields', 3)
+        params = request.query_params
+        ordering_param = params.get('ordering', '')
+        if ordering_param:
+            current = [f.strip() for f in ordering_param.split(',') if f.strip()]
+        else:
+            current = []
+            for i in range(1, max_n + 1):
+                val = params.get(f'ordering_{i}', '')
+                if val:
+                    current.append(val)
+        slots = [current[i] if i < len(current) else '' for i in range(max_n)]
+        return {
+            'fields':         list(ordering_decl),
+            'max_n':          max_n,
+            'slots':          slots,
+            'ordering_param': ','.join(current),
+        }
 
     def _get_inlines(self, view) -> list:
         """Return a normalized list of {mountpoint, label} for each inline in Sebastian.inlines."""

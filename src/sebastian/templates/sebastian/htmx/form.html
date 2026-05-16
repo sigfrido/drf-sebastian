@@ -25,7 +25,8 @@
       {% if action == 'create' %}hx-post="{% if submit_url %}{{ submit_url }}{% else %}../{% endif %}"
       {% else %}hx-patch="{% if submit_url %}{{ submit_url }}{% else %}../{% endif %}"{% endif %}
       hx-target="{{ htmx_target }}"
-      enctype="multipart/form-data">
+      enctype="multipart/form-data"
+      {% if cascading_fields %}data-cascade-groups="{{ cascading_fields|json }}"{% endif %}>
   {% csrf_token %}
 
   {% with groups=sebastian_config.groups %}
@@ -76,7 +77,21 @@
             {% if field.required %}<span class="text-danger">*</span>{% endif %}
           </label>
 
+          {% with ta=typeahead_fields|get_item:field_name %}
           {% if field.choices %}
+          {% if ta %}
+          <select class="form-select sb-typeahead" id="id_{{ field_name }}" name="{{ field_name }}"
+                  data-typeahead-url="{{ ta.url }}"
+                  data-typeahead-chars="{{ ta.typeahead_chars|default:2 }}"
+                  {% if cascading_fields %}data-cascade-field="{{ field_name }}"{% endif %}
+                  {% if field.required %}required{% endif %}>
+            {% if instance|get_item:field_name %}
+            <option value="{{ instance|get_item:field_name }}" selected>
+              {{ instance|display_value:field_name }}
+            </option>
+            {% endif %}
+          </select>
+          {% else %}
           <select class="form-select" id="id_{{ field_name }}" name="{{ field_name }}"
                   {% if field.required %}required{% endif %}>
             <option value="">---------</option>
@@ -87,6 +102,7 @@
             </option>
             {% endfor %}
           </select>
+          {% endif %}
           {% else %}
           <input type="{{ field|input_type }}"
                  class="form-control"
@@ -95,6 +111,7 @@
                  value="{% if instance %}{{ instance|get_item:field_name }}{% endif %}"
                  {% if field.required %}required{% endif %}>
           {% endif %}
+          {% endwith %}
 
           {% if field.help_text %}
           <div class="form-text">{{ field.help_text }}</div>
@@ -145,12 +162,39 @@
       {{ field.label|default:field_name }}
       {% if field.required %}<span class="text-danger">*</span>{% endif %}
     </label>
+    {% with ta=typeahead_fields|get_item:field_name %}
+    {% if field.choices and ta %}
+    <select class="form-select sb-typeahead" id="id_{{ field_name }}" name="{{ field_name }}"
+            data-typeahead-url="{{ ta.url }}"
+            data-typeahead-chars="{{ ta.typeahead_chars|default:2 }}"
+            {% if cascading_fields %}data-cascade-field="{{ field_name }}"{% endif %}
+            {% if field.required %}required{% endif %}>
+      {% if instance|get_item:field_name %}
+      <option value="{{ instance|get_item:field_name }}" selected>
+        {{ instance|display_value:field_name }}
+      </option>
+      {% endif %}
+    </select>
+    {% elif field.choices %}
+    <select class="form-select" id="id_{{ field_name }}" name="{{ field_name }}"
+            {% if field.required %}required{% endif %}>
+      <option value="">---------</option>
+      {% for val, lbl in field.choices.items %}
+      <option value="{{ val }}"
+        {% if instance %}{% if instance|get_item:field_name == val %}selected{% endif %}{% endif %}>
+        {{ lbl }}
+      </option>
+      {% endfor %}
+    </select>
+    {% else %}
     <input type="{{ field|input_type }}"
            class="form-control"
            id="id_{{ field_name }}"
            name="{{ field_name }}"
            value="{% if instance %}{{ instance|get_item:field_name }}{% endif %}"
            {% if field.required %}required{% endif %}>
+    {% endif %}
+    {% endwith %}
   {% with field_errors=form_errors|get_item:field_name %}
   {% if field_errors %}
   <div class="invalid-feedback d-block">

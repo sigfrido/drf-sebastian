@@ -116,6 +116,13 @@ def get_link_action(context, field_name):
     return None
 
 
+@register.filter
+def json(value) -> str:
+    """Serialize a Python value to a JSON string safe for use in HTML data attributes."""
+    import json as _json
+    return mark_safe(_json.dumps(value, ensure_ascii=False))
+
+
 @register.simple_tag
 def sebastian_version():
     from sebastian import __version__

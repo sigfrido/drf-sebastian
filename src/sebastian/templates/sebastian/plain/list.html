@@ -11,8 +11,27 @@
   </a>
 </div>
 
-{% if filter_form %}
+{% if filter_form or ordering_config %}
 <form class="row g-2 mb-3" method="get" action="{{ request.path }}">
+  {% if ordering_config %}
+  {% for i in ordering_config.slots %}
+  {% with slot_idx=forloop.counter slot_val=i %}
+  <div class="col-auto">
+    {% if forloop.first %}
+    <label class="form-label small mb-1">Ordina per</label>
+    {% else %}
+    <label class="form-label small mb-1">Poi per</label>
+    {% endif %}
+    <select class="form-select form-select-sm" name="ordering_{{ slot_idx }}">
+      <option value="">---</option>
+      {% for value, label in ordering_config.fields %}
+      <option value="{{ value }}" {% if slot_val == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  {% endwith %}
+  {% endfor %}
+  {% endif %}
   {% for field in filter_form %}
   <div class="col-auto">
     <label class="form-label small mb-1" for="{{ field.id_for_label }}">{{ field.label }}</label>
