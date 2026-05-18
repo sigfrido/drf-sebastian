@@ -448,7 +448,7 @@ class GUIMixin:
             queryset = queryset.order_by()
         return queryset
 
-    def standard_typeahead(self, filter, order_by=None, get_description=None):
+    def standard_typeahead(self, filter, order_by=None, get_description=str):
         """Helper for @typeahead actions. Returns Response([{value, label}, ...])."""
         qs = self.get_queryset()
         if isinstance(filter, dict):
@@ -460,10 +460,7 @@ class GUIMixin:
         action_fn = getattr(self.__class__, getattr(self, 'action', ''), None)
         max_results = getattr(action_fn, 'max_results', 100)
         qs = qs[:max_results]
-        if get_description:
-            items = [{'value': obj.pk, 'label': get_description(obj)} for obj in qs]
-        else:
-            items = [{'value': obj.pk, 'label': str(obj)} for obj in qs]
+        items = [{'value': obj.pk, 'label': get_description(obj)} for obj in qs]
         return DRFResponse(items)
 
     def retrieve(self, request, *args, **kwargs):

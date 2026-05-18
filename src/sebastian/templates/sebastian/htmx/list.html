@@ -9,6 +9,7 @@
   <a href="{{ request.path }}new/"
      hx-get="{{ request.path }}new/"
      hx-target="{{ htmx_target }}"
+     hx-push-url="true"
      class="btn btn-primary btn-sm">
     {% icon "plus-lg" %} Nuovo
   </a>
@@ -21,8 +22,8 @@
       hx-target="#sebastian-content"
       hx-push-url="true">
   {% if ordering_config %}
-  <div class="col-auto">
-    <label class="form-label small mb-1">Ordina per</label>
+  <div class="col-auto d-flex align-items-center gap-1">
+    <label class="col-form-label col-form-label-sm text-nowrap">Ordinamento</label>
     <select class="form-select form-select-sm sb-ordering"
             data-max-items="{{ ordering_config.max_n }}"
             data-current="{{ ordering_config.ordering_param }}"
@@ -36,9 +37,9 @@
   </div>
   {% endif %}
   {% for field in filter_form %}
-  <div class="col-auto">
-    <label class="form-label small mb-1" for="{{ field.id_for_label }}">{{ field.label }}</label>
-    {{ field }}
+  <div class="col-auto d-flex align-items-center gap-1">
+    <label class="col-form-label col-form-label-sm text-nowrap" for="{{ field.id_for_label }}">{{ field.label }}</label>
+    {{ field|bootstrapfield }}
   </div>
   {% endfor %}
   <div class="col-auto align-self-end">
@@ -87,6 +88,9 @@
         <td class="text-end text-nowrap">
           {% if not is_inline %}
           <a href="{{ request.path }}{{ item.id }}/"
+             hx-get="{{ request.path }}{{ item.id }}/"
+             hx-target="{{ htmx_target }}"
+             hx-push-url="true"
              class="btn btn-outline-secondary btn-sm">
             {% icon "eye" %}
           </a>
@@ -130,8 +134,10 @@
               {% endif %}
             {% endwith %}
           {% endfor %}
-          <a hx-get="{{ request.path }}{{ item.id }}/edit/"
+          <a href="{{ request.path }}{{ item.id }}/edit/"
+             hx-get="{{ request.path }}{{ item.id }}/edit/"
              hx-target="{{ htmx_target }}"
+             hx-push-url="true"
              class="btn btn-outline-primary btn-sm">
             {% icon "pencil" %}
           </a>

@@ -1,3 +1,4 @@
+import re
 from django import template
 from django.utils.safestring import mark_safe
 from rest_framework import serializers as drf_serializers
@@ -122,6 +123,21 @@ def json(value) -> str:
     import json as _json
     return mark_safe(_json.dumps(value, ensure_ascii=False))
 
+@register.filter
+def bootstrapfield(field):
+    if field.widget_type == 'select':
+        return add_class(field, 'form-select form-select-sm')
+    return add_class(field, 'form-control form-control-sm')
+
+@register.filter
+def add_class(field, classes):
+    field_classes = field.css_classes().split(' ')
+    for cls in classes.split(' '):
+        if not cls in field_classes:
+            field_classes.append(cls)
+    return field.as_widget(attrs={
+        "class": " ".join(field_classes)
+    })
 
 @register.simple_tag
 def sebastian_version():
@@ -160,3 +176,4 @@ def include_resource(context, url):
         return mark_safe(resp.content.decode('utf-8'))
     except Exception as exc:
         return mark_safe(f'<!-- include_resource error: {exc} -->')
+

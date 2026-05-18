@@ -77,12 +77,12 @@
             {% if field.required %}<span class="text-danger">*</span>{% endif %}
           </label>
 
-          {% with ta=typeahead_fields|get_item:field_name %}
+          {% with fc=field_config|get_item:field_name %}
           {% if field.choices %}
-          {% if ta %}
+          {% if fc.typeahead_url %}
           <select class="form-select sb-typeahead" id="id_{{ field_name }}" name="{{ field_name }}"
-                  data-typeahead-url="{{ ta.url }}"
-                  data-typeahead-chars="{{ ta.typeahead_chars|default:2 }}"
+                  data-typeahead-url="{{ fc.typeahead_url }}"
+                  data-typeahead-chars="{{ fc.typeahead_chars|default:2 }}"
                   {% if cascading_fields %}data-cascade-field="{{ field_name }}"{% endif %}
                   {% if field.required %}required{% endif %}>
             {% if instance|get_item:field_name %}
@@ -162,11 +162,11 @@
       {{ field.label|default:field_name }}
       {% if field.required %}<span class="text-danger">*</span>{% endif %}
     </label>
-    {% with ta=typeahead_fields|get_item:field_name %}
-    {% if field.choices and ta %}
+    {% with fc=field_config|get_item:field_name %}
+    {% if field.choices and fc.typeahead_url %}
     <select class="form-select sb-typeahead" id="id_{{ field_name }}" name="{{ field_name }}"
-            data-typeahead-url="{{ ta.url }}"
-            data-typeahead-chars="{{ ta.typeahead_chars|default:2 }}"
+            data-typeahead-url="{{ fc.typeahead_url }}"
+            data-typeahead-chars="{{ fc.typeahead_chars|default:2 }}"
             {% if cascading_fields %}data-cascade-field="{{ field_name }}"{% endif %}
             {% if field.required %}required{% endif %}>
       {% if instance|get_item:field_name %}

@@ -47,7 +47,7 @@ class FornitoreViewSet(GUIMixin, viewsets.ModelViewSet):
         )
         max_ordering_fields = 2
 
-    @typeahead(typeahead_chars=2, max_results=50)
+    @typeahead(typeahead_chars=1, max_results=40)
     def fornitori_typeahead(self, request):
         q = request.query_params.get('q', '')
         return self.standard_typeahead(
@@ -107,11 +107,17 @@ class RichiestaViewSet(GUIMixin, viewsets.ModelViewSet):
 
     class Sebastian:
         label = 'Richieste'
-        typeahead_fields = {
-            'fornitore': {
-                'url':             '/api/fornitori/fornitori_typeahead/',
-                'typeahead_chars': 2,
-            }
+        ordering = (
+            ('titolo',  'Titolo ↑'),
+            ('-titolo', 'Titolo ↓'),
+            ('budget',  'Budget ↑'),
+            ('-budget', 'Budget ↓'),
+            ('fornitore', 'Fornitore ↑'),
+            ('-fornitore', 'Fornitore ↓'),
+        )
+        max_ordering_fields = 2
+        field_config = {
+            'fornitore': {'typeahead_url': '/api/fornitori/fornitori_typeahead/'},
         }
         menu = MenuGroup('Richieste', icon='clipboard-check', items=[
             MenuItem('Elenco', action='list', icon='list-ul'),

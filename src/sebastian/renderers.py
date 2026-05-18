@@ -102,7 +102,7 @@ class SebastianHTMLRenderer(BaseRenderer):
             'field_labels':       self._get_field_labels(view),
             'filter_form':        self._get_filter_form(view, request),
             'ordering_config':    self._get_ordering_config(view, request),
-            'typeahead_fields':   getattr(sebastian_config, 'typeahead_fields', {}) or {},
+            'field_config':       self._get_field_config(sebastian_config),
             'cascading_fields':   getattr(sebastian_config, 'cascading_fields', []) or [],
             'inlines':            self._get_inlines(view),
             'form_errors':        form_errors,
@@ -212,6 +212,33 @@ class SebastianHTMLRenderer(BaseRenderer):
             'slots':          slots,
             'ordering_param': ','.join(current),
         }
+
+    def _get_field_config(self, sebastian_config) -> dict:
+        raw = getattr(sebastian_config, 'field_config', None) or {}
+        result = {}
+        for field_name, config in raw.items():
+            entry = dict(config)
+            if 'typeahead_url' in entry and 'typeahead_chars' not in entry:
+                entry['typeahead_chars'] = self._resolve_typeahead_chars(entry['typeahead_url'])
+            result[field_name] = entry
+        return result
+
+    def _resolve_typeahead_chars(self, url: str) -> int:
+        if not url:
+            return 2
+        try:
+            from django.urls import resolve
+            match = resolve(url.split('?')[0])
+            # DRF ViewSet.as_view() stores {'get': 'action_name', ...} in view.actions
+            action_name = (getattr(match.func, 'actions', None) or {}).get('get', '')
+            cls = getattr(match.func, 'cls', None)
+            if cls and action_name:
+                method = getattr(cls, action_name, None)
+                if method is not None:
+                    return getattr(method, 'typeahead_chars', 2)
+        except Exception:
+            pass
+        return 2
 
     def _get_inlines(self, view) -> list:
         """Return a normalized list of {mountpoint, label} for each inline in Sebastian.inlines."""
