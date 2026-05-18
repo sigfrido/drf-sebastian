@@ -52,7 +52,7 @@ A first official release should see the light by the end of july 2026.
 
 Based on [Django](https://www.djangoproject.com/) and [Django Rest Framework](https://www.django-rest-framework.org/)
 
-Uses [HTMX](https://htmx.org/) and [bootstrap 5](https://getbootstrap.com/)
+Uses [HTMX](https://htmx.org/), [bootstrap 5](https://getbootstrap.com/) and [Tom Select](https://tom-select.js.org/)
 
 SEBASTIAN's name and tagline are freely inspired by the character J.F. Sebastian 
 from Blade Runner (1982), directed by Ridley Scott.
