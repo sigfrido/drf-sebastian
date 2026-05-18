@@ -16,11 +16,11 @@
   {% if ordering_config %}
   {% for i in ordering_config.slots %}
   {% with slot_idx=forloop.counter slot_val=i %}
-  <div class="col-auto">
+  <div class="col-auto d-flex align-items-center gap-1">
     {% if forloop.first %}
-    <label class="form-label small mb-1">Ordina per</label>
+    <label class="col-form-label col-form-label-sm text-nowrap">Ordina per</label>
     {% else %}
-    <label class="form-label small mb-1">Poi per</label>
+    <label class="col-form-label col-form-label-sm text-nowrap">Poi per</label>
     {% endif %}
     <select class="form-select form-select-sm" name="ordering_{{ slot_idx }}">
       <option value="">---</option>
@@ -33,9 +33,9 @@
   {% endfor %}
   {% endif %}
   {% for field in filter_form %}
-  <div class="col-auto">
-    <label class="form-label small mb-1" for="{{ field.id_for_label }}">{{ field.label }}</label>
-    {{ field }}
+  <div class="col-auto d-flex align-items-center gap-1">
+    <label class="col-form-label col-form-label-sm text-nowrap" for="{{ field.id_for_label }}">{{ field.label }}</label>
+    {{ field|bootstrapfield }}
   </div>
   {% endfor %}
   <div class="col-auto align-self-end">
