@@ -34,3 +34,11 @@ def confirm_actions() -> bool:
 
 def confirm_deletions() -> bool:
     return _sebastian('CONFIRM_DELETIONS', True)
+
+
+def brand() -> str:
+    return _sebastian('BRAND', 'Sebastian')
+
+
+def login_url() -> str:
+    return _sebastian('LOGIN_URL', '')

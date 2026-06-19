@@ -379,6 +379,10 @@ class GUIRouter:
 
         def home(request):
             request.sebastian_gui = True
+            _login = app_settings.login_url()
+            if _login and not request.user.is_authenticated:
+                from django.http import HttpResponseRedirect
+                return HttpResponseRedirect(f'{_login}?next={request.path}')
             pack      = app_settings.template_pack()
             skin_name = app_settings.skin()
             try:
@@ -410,9 +414,16 @@ class GUIRouter:
         return home
 
     def _wrap(self, view):
+        from . import app_settings as _as
+
         def wrapped(request, *args, **kwargs):
             request.sebastian_gui = True
+            _login = _as.login_url()
+            if _login and not request.user.is_authenticated:
+                from django.http import HttpResponseRedirect
+                return HttpResponseRedirect(f'{_login}?next={request.path}')
             return view(request, *args, **kwargs)
+
         wrapped.__name__ = getattr(getattr(view, 'cls', None), '__name__', 'view')
         wrapped.__module__ = view.__module__
         return wrapped

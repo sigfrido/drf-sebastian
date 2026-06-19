@@ -41,7 +41,9 @@ class SebastianHTMLRenderer(BaseRenderer):
         if is_confirm:
             template_name = f'sebastian/{pack}/confirm.html'
         elif is_form_error:
-            template_name = f'sebastian/{pack}/form.html'
+            template_name = (
+                getattr(view, 'form_template', None) or f'sebastian/{pack}/form.html'
+            )
         is_htmx = bool(request and request.META.get('HTTP_HX_REQUEST'))
 
         # Unpack DRF paginated response so templates always get a plain list
@@ -143,15 +145,30 @@ class SebastianHTMLRenderer(BaseRenderer):
         if isinstance(view, SebastianMenuView):
             return f'sebastian/{pack}/menu.html'
         action = getattr(view, 'action', None)
+        # 1. View-level template attributes (Django CBV style: form_template, detail_template, list_template)
+        _VIEW_PROP = {
+            'list':        'list_template',
+            'retrieve':    'detail_template',
+            'create_form': 'form_template',
+            'update_form': 'form_template',
+            'create':      'form_template',
+            'update':      'form_template',
+        }
+        if view and action:
+            prop = _VIEW_PROP.get(action)
+            if prop:
+                override = getattr(view, prop, None)
+                if override:
+                    return override
+        # 2. Sebastian.templates dict and legacy per-attribute override
         sebastian = getattr(view.__class__, 'Sebastian', None)
         if sebastian and action:
-            # Sebastian.templates dict: {'list': '...', 'detail': '...', 'form': '...'}
             templates = getattr(sebastian, 'templates', {})
             _key_map = {'retrieve': 'detail', 'create_form': 'form', 'update_form': 'form'}
             key = _key_map.get(action, action)
             if key in templates:
                 return templates[key]
-            # Legacy per-attribute override: Sebastian.retrieve_template = '...'
+            # Legacy: Sebastian.retrieve_template = '...'
             override = getattr(sebastian, f'{action}_template', None)
             if override:
                 return override
