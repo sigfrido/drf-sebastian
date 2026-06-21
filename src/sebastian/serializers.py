@@ -92,8 +92,11 @@ class GUISerializerMixin:
             # field-level DB constraints (blank/null/max_length) and unique
             # checks that the serializer fields already handle.
             instance = self.instance or self.Meta.model()
-            # Only proceed if the model actually overrides clean() — base Model.clean() is a no-op.
-            if type(instance).clean is not django_models.Model.clean:
+            # Only proceed if the instance is a Django model that overrides clean().
+            if (
+                hasattr(type(instance), 'clean')
+                and type(instance).clean is not django_models.Model.clean
+            ):
                 for attr, value in attrs.items():
                     setattr(instance, attr, value)
                 try:

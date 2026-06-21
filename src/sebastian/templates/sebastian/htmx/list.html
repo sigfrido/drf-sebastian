@@ -6,6 +6,7 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h4>{{ view.get_view_name }}</h4>
+  {% if view.can_create %}
   <a href="{{ request.path }}new/"
      hx-get="{{ request.path }}new/"
      hx-target="{{ htmx_target }}"
@@ -13,6 +14,7 @@
      class="btn btn-primary btn-sm">
     {% icon "plus-lg" %} Nuovo
   </a>
+  {% endif %}
 </div>
 
 {% if filter_form or ordering_config %}

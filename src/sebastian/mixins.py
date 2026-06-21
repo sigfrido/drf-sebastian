@@ -1,7 +1,9 @@
 from django.core.exceptions import ImproperlyConfigured
+from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.http import FileResponse
 from rest_framework import renderers as drf_renderers
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.mixins import CreateModelMixin, UpdateModelMixin
 from rest_framework.response import Response as DRFResponse
 
@@ -105,6 +107,23 @@ class _SebastianBaseMixin:
         if not sebastian:
             return []
         return getattr(sebastian, 'groups', [])
+
+    def can_create(self):
+        """Returns True if the current user is allowed to create a new instance.
+
+        Looks for a MenuItem with action='new' in Sebastian.menu; if one exists,
+        evaluates its permission. Falls back to True when no menu or no 'new' item
+        is configured (i.e. creation is unrestricted by default).
+        """
+        from .config import _check_permission
+        sebastian = getattr(self.__class__, 'Sebastian', None)
+        menu = getattr(sebastian, 'menu', None)
+        if menu is None:
+            return True
+        for item in getattr(menu, 'items', []):
+            if getattr(item, 'action', None) == 'new':
+                return bool(_check_permission(item.permission, self.request, None))
+        return True
 
     def get_available_actions(self):
         """
@@ -210,7 +229,8 @@ class _SebastianBaseMixin:
             resolved = self._resolve_confirmation(raw_conf, '', instance) if raw_conf else None
 
             if request.method == 'POST':
-                self.perform_destroy(instance)
+                with transaction.atomic():
+                    self.perform_destroy(instance)
                 return self._do_delete_redirect(request)
 
             # GET: show confirmation page
@@ -441,6 +461,8 @@ class GUIMixin(_SebastianBaseMixin):
     def create(self, request, *args, **kwargs):
         if not getattr(request, 'sebastian_gui', False):
             return super().create(request, *args, **kwargs)
+        if not self.can_create():
+            raise PermissionDenied()
         serializer = self.get_serializer(data=request.data)
         if not serializer.is_valid():
             resp = DRFResponse(
@@ -452,7 +474,8 @@ class GUIMixin(_SebastianBaseMixin):
             )
             resp['X-Sebastian-Form-Error'] = 'true'
             return resp
-        self.perform_create(serializer)
+        with transaction.atomic():
+            self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
         pk = serializer.data.get('id')
         resp = DRFResponse(serializer.data, status=200, headers=headers)
@@ -487,7 +510,8 @@ class GUIMixin(_SebastianBaseMixin):
             )
             resp['X-Sebastian-Form-Error'] = 'true'
             return resp
-        self.perform_update(serializer)
+        with transaction.atomic():
+            self.perform_update(serializer)
         if getattr(instance, '_prefetched_objects_cache', None):
             instance._prefetched_objects_cache = {}
         if request.META.get('HTTP_HX_REQUEST'):
@@ -512,6 +536,8 @@ class GUIMixin(_SebastianBaseMixin):
 
     def create_form(self, request, *args, **kwargs):
         """Return an empty HTML form for creating a new instance."""
+        if not self.can_create():
+            raise PermissionDenied()
         serializer = self.get_serializer()
         # Absolute URL so the form submits correctly when loaded as an HTMX fragment
         # (relative ../  would resolve against the browser URL, not the form fetch URL)
@@ -629,7 +655,8 @@ class NestedGUIMixin(GUIMixin):
             )
             resp['X-Sebastian-Form-Error'] = 'true'
             return resp
-        self.perform_create(serializer)
+        with transaction.atomic():
+            self.perform_create(serializer)
         if not request.META.get('HTTP_HX_REQUEST'):
             from django.http import HttpResponseRedirect
             list_path  = self._inline_list_path()
@@ -670,7 +697,8 @@ class NestedGUIMixin(GUIMixin):
             )
             resp['X-Sebastian-Form-Error'] = 'true'
             return resp
-        self.perform_update(serializer)
+        with transaction.atomic():
+            self.perform_update(serializer)
         if getattr(instance, '_prefetched_objects_cache', None):
             instance._prefetched_objects_cache = {}
         if not request.META.get('HTTP_HX_REQUEST'):
@@ -844,7 +872,8 @@ class SingletonGUIMixin(_SebastianBaseMixin):
             resp['X-Sebastian-Form-Error'] = 'true'
             return resp
 
-        serializer.save()
+        with transaction.atomic():
+            serializer.save()
 
         if request.META.get('HTTP_HX_REQUEST'):
             resp = DRFResponse(serializer.data, status=200)
