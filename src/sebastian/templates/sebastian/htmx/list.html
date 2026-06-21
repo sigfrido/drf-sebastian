@@ -56,15 +56,18 @@
   <table class="table table-hover table-sm">
     <thead class="table-light">
       <tr>
+        {% block extra_header_before %}{% endblock %}
         {% for key in items.0|data_keys %}
         <th>{{ field_labels|get_item:key|default:key }}</th>
         {% endfor %}
+        {% block extra_header_after %}{% endblock %}
         <th></th>
       </tr>
     </thead>
     <tbody>
       {% for item in items %}
       <tr>
+        {% block extra_fields_before %}{% endblock %}
         {% for key in items.0|data_keys %}
         {% get_link_action key as link_action %}
         <td>
@@ -87,6 +90,7 @@
           {% else %}{{ item|display_value:key }}{% endif %}
         </td>
         {% endfor %}
+        {% block extra_fields_after %}{% endblock %}
         <td class="text-end text-nowrap">
           {% if not is_inline %}
           <a href="{{ request.path }}{{ item.id }}/"
@@ -118,6 +122,9 @@
                 </button>
                 {% elif action.method == 'get' %}
                 <a href="{{ request.path }}{{ item.id }}/{{ action.name }}/"
+                   hx-get="{{ request.path }}{{ item.id }}/{{ action.name }}/"
+                   hx-target="{{ htmx_target }}"
+                   hx-push-url="true"
                    class="btn btn-{{ cfg.color|default:'secondary' }} btn-sm"
                    title="{{ cfg.hint|default:cfg.label|default:action.name }}">
                   {% if cfg.icon %}{% icon cfg.icon %}{% endif %}

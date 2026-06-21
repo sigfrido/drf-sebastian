@@ -1,5 +1,8 @@
+import datetime
 import re
 from django import template
+from django.utils import formats, timezone
+from django.utils.dateparse import parse_datetime
 from django.utils.safestring import mark_safe
 from rest_framework import serializers as drf_serializers
 
@@ -26,6 +29,26 @@ def get_item(obj, key):
         return obj[key]
     except (KeyError, IndexError, TypeError):
         return getattr(obj, key, '')
+
+
+@register.filter
+def isodt(value, fmt='d/m/Y H:i'):
+    """Parse an ISO 8601 datetime string from a DRF serializer and format it.
+
+    Usage: {{ state.state_date|isodt }} or {{ state.state_date|isodt:"d/m/Y" }}
+    Falls back to str(value) if parsing fails.
+    """
+    if not value:
+        return ''
+    if isinstance(value, (datetime.date, datetime.datetime)):
+        dt = value
+    else:
+        dt = parse_datetime(str(value))
+        if dt is None:
+            return str(value)
+    if isinstance(dt, datetime.datetime) and timezone.is_aware(dt):
+        dt = timezone.localtime(dt)
+    return formats.date_format(dt, fmt)
 
 
 @register.filter

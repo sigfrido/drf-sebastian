@@ -34,9 +34,10 @@ class _SebastianBaseMixin:
     #       form_template = 'myapp/my_form.html'
     #   {# myapp/my_form.html #}
     #   {% extends "sebastian/htmx/form.html" %}
-    form_template:   str | None = None
-    detail_template: str | None = None
-    list_template:   str | None = None
+    form_template:      str | None = None
+    detail_template:    str | None = None
+    list_template:      str | None = None
+    template_namespace: str | None = None
 
     _STANDARD_ACTIONS = frozenset([
         'list', 'create', 'retrieve', 'update', 'partial_update', 'destroy',

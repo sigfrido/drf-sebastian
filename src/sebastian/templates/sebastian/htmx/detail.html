@@ -33,6 +33,9 @@
         </button>
         {% elif action.method == 'get' %}
         <a href="{{ request.path }}{{ action.name }}/"
+           hx-get="{{ request.path }}{{ action.name }}/"
+           hx-target="#sebastian-content"
+           hx-push-url="true"
            class="btn btn-{{ cfg.color|default:'secondary' }} btn-sm"
            title="{{ cfg.hint|default:cfg.label|default:action.name }}">
           {% if cfg.icon %}{% icon cfg.icon %}{% endif %}
@@ -52,6 +55,9 @@
     {% endfor %}
   </div>
 </div>
+
+{% block extra_header_before %}{% endblock %}
+{% block extra_fields_before %}{% endblock %}
 
 {% if groups %}
 {# --- FieldGroup tabs --- #}
@@ -129,6 +135,9 @@
   {% endfor %}
 </dl>
 {% endif %}
+
+{% block extra_header_after %}{% endblock %}
+{% block extra_fields_after %}{% endblock %}
 
 {# --- Inline sections (NestedGUIMixin viewsets) --- #}
 {% for inline in inlines %}

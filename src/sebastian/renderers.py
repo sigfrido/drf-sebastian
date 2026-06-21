@@ -3,6 +3,19 @@ from rest_framework.renderers import BaseRenderer
 from . import app_settings
 
 
+def _find_in_mro(view, attr):
+    """Return the first value of `attr` defined explicitly in the MRO of view's class.
+
+    Uses __dict__ lookup so that inherited None values (e.g. from _SebastianBaseMixin)
+    do not shadow a non-None value defined by a later mixin such as WorkflowViewSetMixin.
+    """
+    for cls in type(view).__mro__:
+        val = cls.__dict__.get(attr)
+        if val is not None:
+            return val
+    return None
+
+
 class SebastianHTMLRenderer(BaseRenderer):
     media_type = 'text/html'
     format = 'html'
@@ -157,7 +170,9 @@ class SebastianHTMLRenderer(BaseRenderer):
         if view and action:
             prop = _VIEW_PROP.get(action)
             if prop:
-                override = getattr(view, prop, None)
+                # MRO walk so WorkflowViewSetMixin.list_template is found before
+                # the inherited None on _SebastianBaseMixin stops the search.
+                override = _find_in_mro(view, prop)
                 if override:
                     return override
         # 2. Sebastian.templates dict and legacy per-attribute override
@@ -172,7 +187,13 @@ class SebastianHTMLRenderer(BaseRenderer):
             override = getattr(sebastian, f'{action}_template', None)
             if override:
                 return override
-        suffix = self.ACTION_TEMPLATE_SUFFIXES.get(action, self.DEFAULT_TEMPLATE_SUFFIX)
+        # 3. template_namespace declared on the viewset or a mixin (MRO walk).
+        #    Builds the path as {namespace}/sebastian/{pack}/{suffix}, keeping the
+        #    pack dynamic so a settings change propagates everywhere automatically.
+        namespace = _find_in_mro(view, 'template_namespace') if view else None
+        suffix = self.ACTION_TEMPLATE_SUFFIXES.get(action, f'{action}.html' if action else self.DEFAULT_TEMPLATE_SUFFIX)
+        if namespace:
+            return f'{namespace}/sebastian/{pack}/{suffix}'
         return f'sebastian/{pack}/{suffix}'
 
     def _get_field_labels(self, view) -> dict:
