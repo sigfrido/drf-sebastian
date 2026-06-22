@@ -42,3 +42,22 @@ def brand() -> str:
 
 def login_url() -> str:
     return _sebastian('LOGIN_URL', '')
+
+
+def bool_display() -> str:
+    """How to render boolean fields in GUI mode.
+
+    Values: 'yesno' (Sì/No), 'checkmark' (✓/✗), 'icon' (Bootstrap bi icons),
+    'truefalse' (raw True/False, no transform).
+    """
+    return _sebastian('BOOL_DISPLAY', 'yesno')
+
+
+def date_format() -> str:
+    """strftime format for DateField values in GUI mode. Default: gg/mm/aaaa."""
+    return _sebastian('DATE_FORMAT', '%d/%m/%Y')
+
+
+def datetime_format() -> str:
+    """strftime format for DateTimeField values in GUI mode. Default: gg/mm/aaaa hh:mm."""
+    return _sebastian('DATETIME_FORMAT', '%d/%m/%Y %H:%M')

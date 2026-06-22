@@ -26,7 +26,7 @@
       enctype="multipart/form-data">
   {% csrf_token %}
 
-  {% with groups=sebastian_config.groups %}
+  {% with groups=visible_groups %}
   {% if groups %}
 
   {% for group in groups %}
@@ -37,7 +37,7 @@
       {% with field=serializer.fields|get_item:field_name %}
       {% if field and not field.read_only %}
       {% if field|input_type == 'checkbox' %}
-      <div class="form-check mb-3">
+      <div class="form-check mb-3 border-bottom border-secondary-subtle pb-3">
         <input type="checkbox"
                class="form-check-input"
                id="id_{{ field_name }}"
@@ -52,7 +52,7 @@
       {% elif field|input_type == 'file' %}
       {% include file_field_template with field_name=field_name field=field action=action instance=instance %}
       {% else %}
-      <div class="mb-3">
+      <div class="mb-3 border-bottom border-secondary-subtle pb-3">
         <label class="form-label" for="id_{{ field_name }}">
           {{ field.label|default:field_name }}
           {% if field.required %}<span class="text-danger">*</span>{% endif %}
@@ -91,7 +91,7 @@
       </div>
       {% endif %}
       {% elif field and field.read_only %}
-      <div class="mb-3">
+      <div class="mb-3 border-bottom border-secondary-subtle pb-3">
         <label class="form-label text-muted">{{ field.label|default:field_name }}</label>
         <p class="form-control-plaintext">
           {% if instance %}{{ instance|get_item:field_name }}{% endif %}
@@ -109,7 +109,7 @@
   {% for field_name, field in serializer.fields.items %}
   {% if not field.read_only %}
   {% if field|input_type == 'checkbox' %}
-  <div class="form-check mb-3">
+  <div class="form-check mb-3 border-bottom border-secondary-subtle pb-3">
     <input type="checkbox"
            class="form-check-input"
            id="id_{{ field_name }}"
@@ -121,7 +121,7 @@
   {% elif field|input_type == 'file' %}
   {% include file_field_template with field_name=field_name field=field action=action instance=instance %}
   {% else %}
-  <div class="mb-3">
+  <div class="mb-3 border-bottom border-secondary-subtle pb-3">
     <label class="form-label" for="id_{{ field_name }}">
       {{ field.label|default:field_name }}
       {% if field.required %}<span class="text-danger">*</span>{% endif %}

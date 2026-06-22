@@ -4,7 +4,7 @@
 {% block title %}Detail{% endblock %}
 
 {% block content %}
-{% with groups=sebastian_config.groups %}
+{% with groups=visible_groups %}
 
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h4><a href="..">{{ view.get_view_name }}</a> — Detail</h4>
@@ -78,29 +78,31 @@
   {% for group in groups %}
   <div class="tab-pane fade {% if forloop.first %}show active{% endif %}"
        id="tab-{{ group.name }}">
-    <dl class="row">
+    <dl>
       {% for field_name in group.fields %}
       {% get_link_action field_name as link_action %}
-      <dt class="col-sm-3">{{ field_labels|get_item:field_name|default:field_name }}</dt>
-      <dd class="col-sm-9">
-        {% if link_action and not link_action.disabled %}
-        {% with cfg=link_action.gui_config fv=data|display_value:field_name %}
-        {% if fv %}
-          {% if cfg.icon or cfg.label %}
-          {{ fv }}
-          <a href="{{ request.path }}{{ link_action.name }}/"
-             class="btn btn-{{ cfg.color|default:'outline-secondary' }} btn-sm ms-1"
-             title="{{ cfg.hint|default:cfg.label|default:link_action.name }}">
-            {% if cfg.icon %}{% icon cfg.icon %}{% endif %}{{ cfg.label }}
-          </a>
-          {% else %}
-          <a href="{{ request.path }}{{ link_action.name }}/"
-             title="{{ cfg.hint|default:link_action.name }}">{{ fv|filename }}</a>
-          {% endif %}
-        {% else %}—{% endif %}
-        {% endwith %}
-        {% else %}{{ data|display_value:field_name }}{% endif %}
-      </dd>
+      <div class="row border-bottom border-secondary-subtle py-2 mb-0">
+        <dt class="col-sm-3 mb-0 fw-semibold">{{ field_labels|get_item:field_name|default:field_name }}</dt>
+        <dd class="col-sm-9 mb-0">
+          {% if link_action and not link_action.disabled %}
+          {% with cfg=link_action.gui_config fv=data|display_value:field_name %}
+          {% if fv %}
+            {% if cfg.icon or cfg.label %}
+            {{ fv }}
+            <a href="{{ request.path }}{{ link_action.name }}/"
+               class="btn btn-{{ cfg.color|default:'outline-secondary' }} btn-sm ms-1"
+               title="{{ cfg.hint|default:cfg.label|default:link_action.name }}">
+              {% if cfg.icon %}{% icon cfg.icon %}{% endif %}{{ cfg.label }}
+            </a>
+            {% else %}
+            <a href="{{ request.path }}{{ link_action.name }}/"
+               title="{{ cfg.hint|default:link_action.name }}">{{ fv|filename }}</a>
+            {% endif %}
+          {% else %}—{% endif %}
+          {% endwith %}
+          {% else %}{{ data|display_value:field_name }}{% endif %}
+        </dd>
+      </div>
       {% endfor %}
     </dl>
   </div>
@@ -109,29 +111,31 @@
 
 {% else %}
 {# No groups — flat display #}
-<dl class="row mb-4">
+<dl class="mb-4">
   {% for key in data|data_keys %}
   {% get_link_action key as link_action %}
-  <dt class="col-sm-3">{{ field_labels|get_item:key|default:key }}</dt>
-  <dd class="col-sm-9">
-    {% if link_action and not link_action.disabled %}
-    {% with cfg=link_action.gui_config fv=data|display_value:key %}
-    {% if fv %}
-      {% if cfg.icon or cfg.label %}
-      {{ fv }}
-      <a href="{{ request.path }}{{ link_action.name }}/"
-         class="btn btn-{{ cfg.color|default:'outline-secondary' }} btn-sm ms-1"
-         title="{{ cfg.hint|default:cfg.label|default:link_action.name }}">
-        {% if cfg.icon %}{% icon cfg.icon %}{% endif %}{{ cfg.label }}
-      </a>
-      {% else %}
-      <a href="{{ request.path }}{{ link_action.name }}/"
-         title="{{ cfg.hint|default:link_action.name }}">{{ fv|filename }}</a>
-      {% endif %}
-    {% else %}—{% endif %}
-    {% endwith %}
-    {% else %}{{ data|display_value:key }}{% endif %}
-  </dd>
+  <div class="row border-bottom border-secondary-subtle py-2 mb-0">
+    <dt class="col-sm-3 mb-0 fw-semibold">{{ field_labels|get_item:key|default:key }}</dt>
+    <dd class="col-sm-9 mb-0">
+      {% if link_action and not link_action.disabled %}
+      {% with cfg=link_action.gui_config fv=data|display_value:key %}
+      {% if fv %}
+        {% if cfg.icon or cfg.label %}
+        {{ fv }}
+        <a href="{{ request.path }}{{ link_action.name }}/"
+           class="btn btn-{{ cfg.color|default:'outline-secondary' }} btn-sm ms-1"
+           title="{{ cfg.hint|default:cfg.label|default:link_action.name }}">
+          {% if cfg.icon %}{% icon cfg.icon %}{% endif %}{{ cfg.label }}
+        </a>
+        {% else %}
+        <a href="{{ request.path }}{{ link_action.name }}/"
+           title="{{ cfg.hint|default:link_action.name }}">{{ fv|filename }}</a>
+        {% endif %}
+      {% else %}—{% endif %}
+      {% endwith %}
+      {% else %}{{ data|display_value:key }}{% endif %}
+    </dd>
+  </div>
   {% endfor %}
 </dl>
 {% endif %}

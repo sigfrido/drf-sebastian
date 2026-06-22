@@ -57,7 +57,7 @@
     <thead class="table-light">
       <tr>
         {% block extra_header_before %}{% endblock %}
-        {% for key in items.0|data_keys %}
+        {% for key in display_fields %}
         <th>{{ field_labels|get_item:key|default:key }}</th>
         {% endfor %}
         {% block extra_header_after %}{% endblock %}
@@ -68,7 +68,7 @@
       {% for item in items %}
       <tr>
         {% block extra_fields_before %}{% endblock %}
-        {% for key in items.0|data_keys %}
+        {% for key in display_fields %}
         {% get_link_action key as link_action %}
         <td>
           {% if link_action and not link_action.disabled %}

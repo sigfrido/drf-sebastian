@@ -22,11 +22,14 @@ class SebastianHTMLRenderer(BaseRenderer):
     charset = 'utf-8'
 
     ACTION_TEMPLATE_SUFFIXES = {
-        'list':        'list.html',
-        'retrieve':    'detail.html',
-        'create_form': 'form.html',
-        'update_form': 'form.html',
-        'confirm':     'confirm.html',
+        'list':           'list.html',
+        'retrieve':       'detail.html',
+        'create_form':    'form.html',
+        'update_form':    'form.html',
+        'confirm':        'confirm.html',
+        'create':         'detail.html',
+        'update':         'detail.html',
+        'partial_update': 'detail.html',
     }
     DEFAULT_TEMPLATE_SUFFIX = 'detail.html'
 
@@ -100,9 +103,11 @@ class SebastianHTMLRenderer(BaseRenderer):
             menu_url = ''
 
         sebastian_config = getattr(view.__class__, 'Sebastian', None) if view else None
+        action = getattr(view, 'action', None) if view else None
         context = {
             'data':               data,
             'items':              items,
+            'display_fields':     self._get_display_fields(sebastian_config, items),
             'pagination':         pagination,
             'is_htmx':            is_htmx,
             'is_inline':          is_inline,
@@ -114,6 +119,7 @@ class SebastianHTMLRenderer(BaseRenderer):
             'request':            request,
             'response':           response,
             'sebastian_config':   sebastian_config,
+            'visible_groups':     self._get_visible_groups(sebastian_config, data, action),
             'field_labels':       self._get_field_labels(view),
             'filter_form':        self._get_filter_form(view, request),
             'ordering_config':    self._get_ordering_config(view, request),
@@ -190,21 +196,82 @@ class SebastianHTMLRenderer(BaseRenderer):
         # 3. template_namespace declared on the viewset or a mixin (MRO walk).
         #    Builds the path as {namespace}/sebastian/{pack}/{suffix}, keeping the
         #    pack dynamic so a settings change propagates everywhere automatically.
+        #    Falls back to sebastian/{pack}/{suffix} if the namespaced template does
+        #    not exist, so a namespace only needs to define templates it customises.
         namespace = _find_in_mro(view, 'template_namespace') if view else None
-        suffix = self.ACTION_TEMPLATE_SUFFIXES.get(action, f'{action}.html' if action else self.DEFAULT_TEMPLATE_SUFFIX)
+        suffix = self.ACTION_TEMPLATE_SUFFIXES.get(action, self.DEFAULT_TEMPLATE_SUFFIX)
         if namespace:
-            return f'{namespace}/sebastian/{pack}/{suffix}'
+            candidate = f'{namespace}/sebastian/{pack}/{suffix}'
+            from django.template.loader import get_template
+            from django.template.exceptions import TemplateDoesNotExist
+            try:
+                get_template(candidate)
+                return candidate
+            except TemplateDoesNotExist:
+                pass
         return f'sebastian/{pack}/{suffix}'
+
+    def _get_visible_groups(self, sebastian_config, data, action) -> list:
+        """Return groups that should be rendered, filtering out fully-hidden ones.
+
+        A FieldGroup is hidden when GUISerializerMixin removed all its fields
+        because visible_permission returned False.  Detection strategy:
+        - retrieve: check whether any field appears in the serialized data dict.
+        - update_form / create_form: check whether any field is still present in
+          serializer.fields (hidden fields are removed by get_fields()).
+        Non-FieldGroup entries are always included.
+        """
+        from sebastian.config import FieldGroup
+        all_groups = list(getattr(sebastian_config, 'groups', []) or []) if sebastian_config else []
+
+        if action == 'retrieve' and isinstance(data, dict):
+            return [
+                g for g in all_groups
+                if not isinstance(g, FieldGroup) or any(f in data for f in g.fields)
+            ]
+
+        if action in ('update_form', 'create_form') and isinstance(data, dict):
+            serializer = data.get('serializer')
+            if serializer is not None:
+                serializer_fields = getattr(serializer, 'fields', {})
+                return [
+                    g for g in all_groups
+                    if not isinstance(g, FieldGroup) or any(f in serializer_fields for f in g.fields)
+                ]
+
+        return all_groups
+
+    def _get_display_fields(self, sebastian_config, items) -> list:
+        explicit = getattr(sebastian_config, 'list_fields', None) if sebastian_config else None
+        if explicit:
+            return list(explicit)
+        if not items:
+            return []
+        first = items[0] if isinstance(items, list) else {}
+        return [
+            k for k, v in first.items()
+            if not k.endswith('__display')
+            and not k.startswith('sebastian__')
+            and not isinstance(v, (dict, list))
+        ]
 
     def _get_field_labels(self, view) -> dict:
         if not view:
             return {}
         try:
             serializer = view.get_serializer()
-            return {
+            labels = {
                 name: str(field.label) if field.label else name.replace('_', ' ').title()
                 for name, field in serializer.fields.items()
             }
+            for method_name in serializer._get_gui_field_names():
+                if method_name not in labels:
+                    method = getattr(type(serializer), method_name, None)
+                    labels[method_name] = (
+                        getattr(method, '_gui_label', None)
+                        or method_name.replace('_', ' ').title()
+                    )
+            return labels
         except Exception:
             return {}
 
