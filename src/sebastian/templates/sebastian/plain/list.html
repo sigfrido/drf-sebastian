@@ -6,9 +6,11 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h4>{{ view.get_view_name }}</h4>
+  {% if view.can_create %}
   <a href="{{ request.path }}new/" class="btn btn-primary btn-sm">
     {% icon "plus-lg" %} Nuovo
   </a>
+  {% endif %}
 </div>
 
 {% if filter_form or ordering_config %}
@@ -110,14 +112,18 @@
               {% endif %}
             {% endwith %}
           {% endfor %}
+          {% if item|row_can_update:view %}
           <a href="{{ request.path }}{{ item.id }}/edit/"
              class="btn btn-outline-primary btn-sm">
             {% icon "pencil" %}
           </a>
+          {% endif %}
+          {% if item|row_can_delete:view %}
           <a href="{{ request.path }}{{ item.id }}/delete/"
              class="btn btn-outline-danger btn-sm">
             {% icon "trash" %}
           </a>
+          {% endif %}
         </td>
       </tr>
       {% endfor %}

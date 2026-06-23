@@ -32,6 +32,37 @@ def get_item(obj, key):
 
 
 @register.filter
+def row_can_update(item, view):
+    """Per-row edit permission check for list templates.
+
+    If the serialized item contains a ``__can_update`` key (injected by
+    WorkflowSerializerMixin) that value is used; otherwise falls back to
+    ``view.can_update()``.  Safe to use on any item regardless of whether the
+    viewset is workflow-aware.
+    """
+    if isinstance(item, dict) and '__can_update' in item:
+        return bool(item['__can_update'])
+    can_update = getattr(view, 'can_update', None)
+    if callable(can_update):
+        return bool(can_update())
+    return bool(can_update) if can_update is not None else True
+
+
+@register.filter
+def row_can_delete(item, view):
+    """Per-row delete permission check for list templates.
+
+    Same fallback logic as ``row_can_update`` but checks ``__can_delete``.
+    """
+    if isinstance(item, dict) and '__can_delete' in item:
+        return bool(item['__can_delete'])
+    can_delete = getattr(view, 'can_delete', None)
+    if callable(can_delete):
+        return bool(can_delete())
+    return bool(can_delete) if can_delete is not None else True
+
+
+@register.filter
 def isodt(value, fmt='d/m/Y H:i'):
     """Parse an ISO 8601 datetime string from a DRF serializer and format it.
 

@@ -126,6 +126,36 @@ class _SebastianBaseMixin:
                 return bool(_check_permission(item.permission, self.request, None))
         return True
 
+    def can_update(self):
+        """Returns True if the current user can update the current instance.
+
+        Default: checks permission_classes via has_object_permission when an instance
+        is available (_sebastian_obj set by retrieve). Returns True in list context
+        (no object available — ownership is checked at form load time).
+        Override for custom logic (e.g. WorkflowViewSetMixin checks wfm ownership).
+        """
+        obj = getattr(self, '_sebastian_obj', None)
+        if obj is None:
+            return True
+        for perm in self.get_permissions():
+            if not perm.has_object_permission(self.request, self, obj):
+                return False
+        return True
+
+    def can_delete(self):
+        """Returns True if the current user can delete the current instance.
+
+        Default: same logic as can_update — checks permission_classes.
+        Override for custom logic.
+        """
+        obj = getattr(self, '_sebastian_obj', None)
+        if obj is None:
+            return True
+        for perm in self.get_permissions():
+            if not perm.has_object_permission(self.request, self, obj):
+                return False
+        return True
+
     def get_available_actions(self):
         """
         Returns gui_config metadata for @actions the current user has permission for.

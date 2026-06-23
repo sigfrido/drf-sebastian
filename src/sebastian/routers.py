@@ -233,13 +233,14 @@ class GUIRouter:
                 name=f'{basename}-gui-delete',
             ))
 
-        # Mirror @actions with gui_config
+        # Mirror @actions that have gui_config (display buttons) or gui_url=True (URL only)
         for attr_name in dir(viewset):
             method = getattr(viewset, attr_name, None)
             if not callable(method) or not hasattr(method, 'mapping'):
                 continue
             gui_config = getattr(method, 'gui_config', {})
-            if not gui_config:
+            gui_url    = getattr(method, 'gui_url', False)
+            if not gui_config and not gui_url:
                 continue
             url_path = getattr(method, 'url_path', attr_name)
             detail   = getattr(method, 'detail', True)
@@ -336,12 +337,12 @@ class GUIRouter:
                     name=f'{nested_base}-delete',
                 ))
 
-            # Mirror @actions with gui_config on the nested viewset
+            # Mirror @actions with gui_config or gui_url=True on the nested viewset
             for attr_name in dir(inline_vs):
                 action_method = getattr(inline_vs, attr_name, None)
                 if not callable(action_method) or not hasattr(action_method, 'mapping'):
                     continue
-                if not getattr(action_method, 'gui_config', {}):
+                if not getattr(action_method, 'gui_config', {}) and not getattr(action_method, 'gui_url', False):
                     continue
                 url_path = getattr(action_method, 'url_path', attr_name)
                 detail   = getattr(action_method, 'detail', True)

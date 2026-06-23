@@ -143,6 +143,7 @@
               {% endif %}
             {% endwith %}
           {% endfor %}
+          {% if item|row_can_update:view %}
           <a href="{{ request.path }}{{ item.id }}/edit/"
              hx-get="{{ request.path }}{{ item.id }}/edit/"
              hx-target="{{ htmx_target }}"
@@ -150,12 +151,15 @@
              class="btn btn-outline-primary btn-sm">
             {% icon "pencil" %}
           </a>
+          {% endif %}
+          {% if item|row_can_delete:view %}
           <button hx-get="{{ request.path }}{{ item.id }}/delete/"
                   hx-target="#sebastian-modal"
                   hx-swap="innerHTML"
                   class="btn btn-outline-danger btn-sm">
             {% icon "trash" %}
           </button>
+          {% endif %}
         </td>
       </tr>
       {% endfor %}

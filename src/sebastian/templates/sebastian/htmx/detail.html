@@ -9,10 +9,12 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h4><a href="..">{{ view.get_view_name }}</a> — Detail</h4>
   <div class="btn-group">
+    {% if view.can_update %}
     <a href="{{ request.path }}edit/"
        class="btn btn-outline-primary btn-sm">
       {% icon "pencil" %} Modifica
     </a>
+    {% endif %}
     {% for action in view.get_available_actions %}
       {% with cfg=action.gui_config %}
         {% if cfg.position != 'list' and not cfg.link_field %}
@@ -147,7 +149,7 @@
 {% for inline in inlines %}
 <div class="mt-3 border-top pt-3">
   <div id="inline-{{ inline.mountpoint }}"
-       hx-get="{{ request.path }}{{ inline.mountpoint }}/"
+       hx-get="{{ object_url }}{{ inline.mountpoint }}/"
        hx-trigger="load">
     <p class="text-muted small">Caricamento…</p>
   </div>

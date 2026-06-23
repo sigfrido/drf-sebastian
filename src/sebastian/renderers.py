@@ -30,6 +30,7 @@ class SebastianHTMLRenderer(BaseRenderer):
         'create':         'detail.html',
         'update':         'detail.html',
         'partial_update': 'detail.html',
+        'history':        'history.html',
     }
     DEFAULT_TEMPLATE_SUFFIX = 'detail.html'
 
@@ -55,7 +56,7 @@ class SebastianHTMLRenderer(BaseRenderer):
         skin_name = app_settings.skin()
         template_name = self._resolve_template(view, pack)
         if is_confirm:
-            template_name = f'sebastian/{pack}/confirm.html'
+            template_name = self._resolve_confirm_template(view, pack)
         elif is_form_error:
             template_name = (
                 getattr(view, 'form_template', None) or f'sebastian/{pack}/form.html'
@@ -115,6 +116,7 @@ class SebastianHTMLRenderer(BaseRenderer):
             'htmx_target':        htmx_target,
             'cancel_url':         cancel_url,
             'submit_url':         submit_url,
+            'object_url':         self._get_object_url(view, request),
             'view':               view,
             'request':            request,
             'response':           response,
@@ -126,6 +128,7 @@ class SebastianHTMLRenderer(BaseRenderer):
             'field_config':       self._get_field_config(sebastian_config),
             'cascading_fields':   getattr(sebastian_config, 'cascading_fields', []) or [],
             'inlines':            self._get_inlines(view),
+            'workflow_transitions': self._get_workflow_transitions(view),
             'form_errors':        form_errors,
             'pack_name':          pack,
             'pack_base':          f'sebastian/{pack}/base.html',
@@ -365,3 +368,64 @@ class SebastianHTMLRenderer(BaseRenderer):
             label = getattr(getattr(inline_vs, 'Sebastian', None), 'label', None) or mountpoint.title()
             result.append({'mountpoint': mountpoint, 'label': label})
         return result
+
+    def _resolve_confirm_template(self, view, pack: str) -> str:
+        """Return the confirm template path, preferring a namespace-specific override.
+
+        Checks ``{namespace}/sebastian/{pack}/confirm.html`` first; falls back to
+        the default ``sebastian/{pack}/confirm.html``.
+        """
+        default = f'sebastian/{pack}/confirm.html'
+        namespace = getattr(view, 'template_namespace', None) if view else None
+        if not namespace:
+            return default
+        candidate = f'{namespace}/sebastian/{pack}/confirm.html'
+        from django.template.loader import get_template
+        from django.template import TemplateDoesNotExist
+        try:
+            get_template(candidate)
+            return candidate
+        except TemplateDoesNotExist:
+            return default
+
+    def _get_workflow_transitions(self, view):
+        """Return WorkflowTransitions for the current instance, or None.
+
+        Called only when the view exposes get_workflow_transitions() (i.e. when
+        WorkflowViewSetMixin is in the MRO) and _sebastian_obj is set (i.e. in
+        retrieve/detail context).
+        """
+        if not view:
+            return None
+        get_wt = getattr(view, 'get_workflow_transitions', None)
+        if not callable(get_wt):
+            return None
+        obj = getattr(view, '_sebastian_obj', None)
+        if obj is None:
+            return None
+        try:
+            return get_wt(obj)
+        except Exception:
+            return None
+
+    def _get_object_url(self, view, request) -> str:
+        """Canonical GUI detail URL for the current object.
+
+        For 'retrieve' this equals request.path. For other detail actions
+        (history, change_state_form, …) we reverse basename-gui-detail so that
+        templates use the correct base URL for inline loading and sub-resource links,
+        regardless of which action URL is currently being served.
+        """
+        if view is None or request is None:
+            return getattr(request, 'path', '') if request else ''
+        if getattr(view, 'action', None) == 'retrieve':
+            return request.path
+        basename = getattr(view, 'basename', None)
+        pk = (getattr(view, 'kwargs', None) or {}).get('pk')
+        if basename and pk:
+            from django.urls import reverse, NoReverseMatch
+            try:
+                return reverse(f'{basename}-gui-detail', kwargs={'pk': pk})
+            except NoReverseMatch:
+                pass
+        return request.path
