@@ -819,6 +819,74 @@ class NestedGUIMixin(GUIMixin):
         field = self._resolve_parent_field(parent)
         serializer.save(**{field: parent})
 
+    # ------------------------------------------------------------------ #
+    # Edit permissions — inherit from parent's workflow state              #
+    # ------------------------------------------------------------------ #
+
+    def _parent_is_editable(self) -> bool:
+        """Return True if the parent object permits editing this nested resource.
+
+        For workflow-managed parents: requires that the user is the owner (or
+        admin) and that the parent is not suspended.
+
+        Additionally, if this nested viewset declares ``Sebastian.edit_permission``
+        (a callable ``(request, parent_obj) -> bool``), that permission is checked
+        after the ownership check.  This lets per-phase rules be expressed:
+
+            class RequisitoViewSet(NestedGUIMixin, ...):
+                class Sebastian:
+                    edit_permission = perm_fase('richiesta')
+
+        The result is cached on the viewset instance so that repeated calls
+        (one per row in a list) do not issue extra DB queries.
+        """
+        if hasattr(self, '_parent_is_editable_cache'):
+            return self._parent_is_editable_cache
+
+        try:
+            parent = self.get_parent_object()
+        except Exception:
+            self._parent_is_editable_cache = True
+            return True
+
+        user = self.request.user
+
+        # Duck-type check for workflow-managed parents.
+        if hasattr(parent, 'wfm_state') and hasattr(parent, 'wfm'):
+            state = parent.wfm_state
+            if state:
+                if state.suspended:
+                    self._parent_is_editable_cache = False
+                    return False
+                if not parent.wfm.is_owner(user) and not parent.wfm.can_admin(user):
+                    self._parent_is_editable_cache = False
+                    return False
+
+        # Optional per-viewset phase/role restriction.
+        from .config import _check_permission
+        sebastian = getattr(self.__class__, 'Sebastian', None)
+        perm = getattr(sebastian, 'edit_permission', None)
+        if perm is not None:
+            result = bool(_check_permission(perm, self.request, parent))
+            self._parent_is_editable_cache = result
+            return result
+
+        self._parent_is_editable_cache = True
+        return True
+
+    def can_create(self):
+        return self._parent_is_editable()
+
+    def can_update(self):
+        if not self._parent_is_editable():
+            return False
+        return super().can_update()
+
+    def can_delete(self):
+        if not self._parent_is_editable():
+            return False
+        return super().can_delete()
+
 
 # ====================================================================== #
 # Singleton view mixin                                                     #
