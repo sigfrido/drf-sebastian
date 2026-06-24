@@ -117,6 +117,7 @@ class SebastianHTMLRenderer(BaseRenderer):
             'cancel_url':         cancel_url,
             'submit_url':         submit_url,
             'object_url':         self._get_object_url(view, request),
+            'instance':           getattr(view, '_sebastian_obj', None),
             'view':               view,
             'request':            request,
             'response':           response,
@@ -415,12 +416,21 @@ class SebastianHTMLRenderer(BaseRenderer):
         (history, change_state_form, …) we reverse basename-gui-detail so that
         templates use the correct base URL for inline loading and sub-resource links,
         regardless of which action URL is currently being served.
+
+        GUIRouter does not pass ``basename`` to ``as_view()``, so ``view.basename``
+        is None for GUI action URLs. We fall back to extracting the basename from
+        ``request.resolver_match.url_name`` which follows the pattern
+        ``{basename}-gui-{action}``.
         """
         if view is None or request is None:
             return getattr(request, 'path', '') if request else ''
         if getattr(view, 'action', None) == 'retrieve':
             return request.path
         basename = getattr(view, 'basename', None)
+        if not basename:
+            url_name = getattr(getattr(request, 'resolver_match', None), 'url_name', '')
+            if url_name and '-gui-' in url_name:
+                basename = url_name.split('-gui-')[0]
         pk = (getattr(view, 'kwargs', None) or {}).get('pk')
         if basename and pk:
             from django.urls import reverse, NoReverseMatch
