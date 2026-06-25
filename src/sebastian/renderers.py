@@ -94,6 +94,8 @@ class SebastianHTMLRenderer(BaseRenderer):
                 form_errors = data['confirm_serializer'].errors
             else:
                 form_errors = {}
+        elif isinstance(data, dict) and 'form_errors' in data:
+            form_errors = data['form_errors']
         else:
             form_errors = {}
 

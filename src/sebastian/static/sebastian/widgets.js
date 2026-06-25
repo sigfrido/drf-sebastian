@@ -172,6 +172,20 @@
     });
   }
 
+  // ── Simple TomSelect enhancement ──────────────────────────────────────────
+  // Rendered as <select class="ts-select"> — static options already in the HTML,
+  // no remote load. Adds search + keyboard nav to any plain <select>.
+
+  function initTsSelect() {
+    document.querySelectorAll('select.ts-select').forEach(function (el) {
+      if (_initialized.has(el)) return;
+      _initialized.add(el);
+      new TomSelect(el, {
+        allowEmptyOption: true,
+      });
+    });
+  }
+
   // ── Filter form cleanup ────────────────────────────────────────────────────
   // Strip empty params and NullBooleanSelect 'unknown' sentinel from HTMX requests.
 
@@ -202,6 +216,7 @@
   function initAll() {
     initOrdering();
     initTypeahead();
+    initTsSelect();
     initCascade();
     initFilterForm();
   }
