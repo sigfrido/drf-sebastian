@@ -971,8 +971,20 @@ class SingletonGUIMixin(_SebastianBaseMixin):
             resp['X-Sebastian-Form-Error'] = 'true'
             return resp
 
-        with transaction.atomic():
-            serializer.save()
+        try:
+            with transaction.atomic():
+                serializer.save()
+        except Exception as exc:
+            from rest_framework.exceptions import ValidationError as DRFValidationError
+            if isinstance(exc, DRFValidationError):
+                serializer._errors = exc.detail  # inject back so _form_context renders them
+                resp = DRFResponse(
+                    self._form_context(serializer, {**instance_data, **dict(data.items())}, detail_url),
+                    status=400,
+                )
+                resp['X-Sebastian-Form-Error'] = 'true'
+                return resp
+            raise
 
         if request.META.get('HTTP_HX_REQUEST'):
             resp = DRFResponse(serializer.data, status=200)

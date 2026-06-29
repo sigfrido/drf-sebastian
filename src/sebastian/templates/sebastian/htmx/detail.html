@@ -33,6 +33,15 @@
           {% if cfg.icon %}{% icon cfg.icon %}{% endif %}
           {{ cfg.label }}
         </button>
+        {% elif cfg.open_url %}
+        <a href="{{ request.path }}{{ action.name }}/"
+           target="_blank"
+           rel="noopener"
+           class="btn btn-{{ cfg.color|default:'secondary' }} btn-sm"
+           title="{{ cfg.hint|default:cfg.label|default:action.name }}">
+          {% if cfg.icon %}{% icon cfg.icon %}{% endif %}
+          {{ cfg.label }}
+        </a>
         {% elif action.method == 'get' %}
         <a href="{{ request.path }}{{ action.name }}/"
            hx-get="{{ request.path }}{{ action.name }}/"
