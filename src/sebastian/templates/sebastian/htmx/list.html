@@ -10,7 +10,7 @@
   <a href="{{ request.path }}new/"
      hx-get="{{ request.path }}new/"
      hx-target="{{ htmx_target }}"
-     hx-push-url="true"
+     {% if not is_inline %}hx-push-url="true"{% endif %}
      class="btn btn-primary btn-sm">
     {% icon "plus-lg" %} Nuovo
   </a>
@@ -156,7 +156,7 @@
           <a href="{{ request.path }}{{ item.id }}/edit/"
              hx-get="{{ request.path }}{{ item.id }}/edit/"
              hx-target="{{ htmx_target }}"
-             hx-push-url="true"
+             {% if not is_inline %}hx-push-url="true"{% endif %}
              class="btn btn-outline-primary btn-sm">
             {% icon "pencil" %}
           </a>

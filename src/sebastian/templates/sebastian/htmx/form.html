@@ -54,6 +54,7 @@
          id="ftab-{{ group.name }}">
       {% for field_name in group.fields %}
         {% with field=serializer.fields|get_item:field_name %}
+        {% with fc=field_config|get_item:field_name %}
         {% if field and not field.read_only %}
         {% if field|input_type == 'checkbox' %}
         <div class="form-check mb-3 border-bottom border-secondary-subtle pb-3">
@@ -71,13 +72,12 @@
         {% elif field|input_type == 'file' %}
         {% include file_field_template with field_name=field_name field=field action=action instance=instance %}
         {% else %}
-        <div class="mb-3 border-bottom border-secondary-subtle pb-3">
+        <div class="mb-3 border-bottom border-secondary-subtle pb-3 {% field_col field fc %}">
           <label class="form-label" for="id_{{ field_name }}">
             {{ field.label|default:field_name }}
             {% if field.required %}<span class="text-danger">*</span>{% endif %}
           </label>
 
-          {% with fc=field_config|get_item:field_name %}
           {% if field.choices %}
           {% if fc.typeahead_url %}
           <select class="form-select sb-typeahead" id="id_{{ field_name }}" name="{{ field_name }}"
@@ -103,15 +103,20 @@
             {% endfor %}
           </select>
           {% endif %}
+          {% elif field|input_type == 'textarea' or fc.widget == 'textarea' %}
+          <textarea class="form-control"
+                    id="id_{{ field_name }}"
+                    name="{{ field_name }}"
+                    rows="4"
+                    {% if field.required %}required{% endif %}>{% if instance %}{{ instance|get_item:field_name }}{% endif %}</textarea>
           {% else %}
           <input type="{{ field|input_type }}"
                  class="form-control"
                  id="id_{{ field_name }}"
                  name="{{ field_name }}"
-                 value="{% if instance %}{{ instance|get_item:field_name }}{% endif %}"
+                 value="{{ instance|form_input_value:field_name }}"
                  {% if field.required %}required{% endif %}>
           {% endif %}
-          {% endwith %}
 
           {% if field.help_text %}
           <div class="form-text">{{ field.help_text }}</div>
@@ -137,6 +142,7 @@
         </div>
         {% endif %}
         {% endwith %}
+        {% endwith %}
       {% endfor %}
     </div>
     {% endif %}
@@ -146,6 +152,7 @@
   {% else %}
   {# No groups — render all writable fields flat #}
   {% for field_name, field in serializer.fields.items %}
+  {% with fc=field_config|get_item:field_name %}
   {% if not field.read_only %}
   {% if field|input_type == 'checkbox' %}
   <div class="form-check mb-3 border-bottom border-secondary-subtle pb-3">
@@ -160,12 +167,11 @@
   {% elif field|input_type == 'file' %}
   {% include file_field_template with field_name=field_name field=field action=action instance=instance %}
   {% else %}
-  <div class="mb-3 border-bottom border-secondary-subtle pb-3">
+  <div class="mb-3 border-bottom border-secondary-subtle pb-3 {% field_col field fc %}">
     <label class="form-label" for="id_{{ field_name }}">
       {{ field.label|default:field_name }}
       {% if field.required %}<span class="text-danger">*</span>{% endif %}
     </label>
-    {% with fc=field_config|get_item:field_name %}
     {% if field.choices and fc.typeahead_url %}
     <select class="form-select sb-typeahead" id="id_{{ field_name }}" name="{{ field_name }}"
             data-typeahead-url="{{ fc.typeahead_url }}"
@@ -189,15 +195,20 @@
       </option>
       {% endfor %}
     </select>
+    {% elif field|input_type == 'textarea' or fc.widget == 'textarea' %}
+    <textarea class="form-control"
+              id="id_{{ field_name }}"
+              name="{{ field_name }}"
+              rows="4"
+              {% if field.required %}required{% endif %}>{% if instance %}{{ instance|get_item:field_name }}{% endif %}</textarea>
     {% else %}
     <input type="{{ field|input_type }}"
            class="form-control"
            id="id_{{ field_name }}"
            name="{{ field_name }}"
-           value="{% if instance %}{{ instance|get_item:field_name }}{% endif %}"
+           value="{{ instance|form_input_value:field_name }}"
            {% if field.required %}required{% endif %}>
     {% endif %}
-    {% endwith %}
   {% with field_errors=form_errors|get_item:field_name %}
   {% if field_errors %}
   <div class="invalid-feedback d-block">
@@ -208,6 +219,7 @@
   </div>
   {% endif %}
   {% endif %}
+  {% endwith %}
   {% endfor %}
   {% endif %}
   {% endwith %}

@@ -505,8 +505,23 @@ class GUIMixin(_SebastianBaseMixin):
             )
             resp['X-Sebastian-Form-Error'] = 'true'
             return resp
-        with transaction.atomic():
-            self.perform_create(serializer)
+        try:
+            with transaction.atomic():
+                self.perform_create(serializer)
+        except Exception as exc:
+            from rest_framework.exceptions import ValidationError as DRFValidationError
+            if isinstance(exc, DRFValidationError):
+                raise
+            resp = DRFResponse(
+                {'serializer': serializer, 'action': 'create',
+                 'instance': dict(request.data),
+                 'submit_url': request.path, 'cancel_url': request.path,
+                 'htmx_target': '#sebastian-content',
+                 'form_errors': {'non_field_errors': ['Errore durante il salvataggio. Verificare i dati inseriti.']}},
+                status=400,
+            )
+            resp['X-Sebastian-Form-Error'] = 'true'
+            return resp
         headers = self.get_success_headers(serializer.data)
         pk = serializer.data.get('id')
         resp = DRFResponse(serializer.data, status=200, headers=headers)
@@ -541,8 +556,23 @@ class GUIMixin(_SebastianBaseMixin):
             )
             resp['X-Sebastian-Form-Error'] = 'true'
             return resp
-        with transaction.atomic():
-            self.perform_update(serializer)
+        try:
+            with transaction.atomic():
+                self.perform_update(serializer)
+        except Exception as exc:
+            from rest_framework.exceptions import ValidationError as DRFValidationError
+            if isinstance(exc, DRFValidationError):
+                raise
+            merged = {**instance_data, **{k: v for k, v in data.items()}}
+            resp = DRFResponse(
+                {'serializer': serializer, 'instance': merged, 'action': 'update',
+                 'submit_url': request.path, 'cancel_url': request.path,
+                 'htmx_target': '#sebastian-content',
+                 'form_errors': {'non_field_errors': ['Errore durante il salvataggio. Verificare i dati inseriti.']}},
+                status=400,
+            )
+            resp['X-Sebastian-Form-Error'] = 'true'
+            return resp
         if getattr(instance, '_prefetched_objects_cache', None):
             instance._prefetched_objects_cache = {}
         if request.META.get('HTTP_HX_REQUEST'):
@@ -674,10 +704,10 @@ class NestedGUIMixin(GUIMixin):
     def create(self, request, *args, **kwargs):
         if not getattr(request, 'sebastian_gui', False):
             return CreateModelMixin.create(self, request, *args, **kwargs)
+        container = self._inline_container_id()
+        list_path = self._inline_list_path()
         serializer = self.get_serializer(data=request.data)
         if not serializer.is_valid():
-            container = self._inline_container_id()
-            list_path = self._inline_list_path()
             resp = DRFResponse(
                 {'serializer': serializer, 'action': 'create',
                  'htmx_target': f'#{container}', 'cancel_url': list_path,
@@ -686,8 +716,22 @@ class NestedGUIMixin(GUIMixin):
             )
             resp['X-Sebastian-Form-Error'] = 'true'
             return resp
-        with transaction.atomic():
-            self.perform_create(serializer)
+        try:
+            with transaction.atomic():
+                self.perform_create(serializer)
+        except Exception as exc:
+            from rest_framework.exceptions import ValidationError as DRFValidationError
+            if isinstance(exc, DRFValidationError):
+                raise
+            resp = DRFResponse(
+                {'serializer': serializer, 'action': 'create',
+                 'htmx_target': f'#{container}', 'cancel_url': list_path,
+                 'submit_url': list_path,
+                 'form_errors': {'non_field_errors': ['Errore durante il salvataggio. Verificare i dati inseriti.']}},
+                status=400,
+            )
+            resp['X-Sebastian-Form-Error'] = 'true'
+            return resp
         if not request.META.get('HTTP_HX_REQUEST'):
             from django.http import HttpResponseRedirect
             list_path  = self._inline_list_path()
@@ -728,8 +772,23 @@ class NestedGUIMixin(GUIMixin):
             )
             resp['X-Sebastian-Form-Error'] = 'true'
             return resp
-        with transaction.atomic():
-            self.perform_update(serializer)
+        try:
+            with transaction.atomic():
+                self.perform_update(serializer)
+        except Exception as exc:
+            from rest_framework.exceptions import ValidationError as DRFValidationError
+            if isinstance(exc, DRFValidationError):
+                raise
+            merged = {**instance_data, **{k: v for k, v in data.items()}}
+            resp = DRFResponse(
+                {'serializer': serializer, 'instance': merged, 'action': 'update',
+                 'htmx_target': f'#{container}', 'cancel_url': cancel_url,
+                 'submit_url': submit_url,
+                 'form_errors': {'non_field_errors': ['Errore durante il salvataggio. Verificare i dati inseriti.']}},
+                status=400,
+            )
+            resp['X-Sebastian-Form-Error'] = 'true'
+            return resp
         if getattr(instance, '_prefetched_objects_cache', None):
             instance._prefetched_objects_cache = {}
         if not request.META.get('HTTP_HX_REQUEST'):

@@ -125,7 +125,15 @@ def filename(value) -> str:
 
 @register.filter
 def input_type(field) -> str:
-    """Map a DRF field instance to an appropriate HTML input type."""
+    """Map a DRF field instance to an appropriate HTML input type.
+
+    Returns 'textarea' for CharField fields generated from models.TextField
+    (DRF sets style={'base_template': 'textarea.html'} for these automatically).
+    """
+    # Check for textarea style (DRF sets this for models.TextField)
+    style = getattr(field, 'style', {})
+    if style.get('base_template') == 'textarea.html':
+        return 'textarea'
     mapping = {
         drf_serializers.IntegerField:  'number',
         drf_serializers.FloatField:    'number',
@@ -143,6 +151,66 @@ def input_type(field) -> str:
         if isinstance(field, field_class):
             return html_type
     return 'text'
+
+
+@register.filter
+def form_input_value(data, field_name) -> str:
+    """Come get_item, ma formatta datetime → YYYY-MM-DDTHH:MM per datetime-local input.
+
+    Il browser ignora i valori datetime con timezone (es. +02:00); questo filter
+    ritorna la stringa troncata al minuto senza offset.
+    """
+    val = get_item(data, field_name)
+    if not val:
+        return ''
+    s = str(val)
+    m = re.match(r'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})', s)
+    return m.group(1) if m else s
+
+
+_WIDTH_MAP = {
+    'xs':   'col-sm-3 col-md-2',
+    'sm':   'col-sm-4 col-md-3',
+    'md':   'col-sm-6 col-md-5',
+    'lg':   'col-sm-9 col-md-7',
+    'full': 'col-12',
+}
+
+
+@register.simple_tag
+def field_col(field, fc=None) -> str:
+    """Return a Bootstrap column class for a form field, used to size input width.
+
+    Checks field_config[field]['width'] first (logical size: xs/sm/md/lg/full),
+    then auto-maps from the field's HTML input type and max_length.
+    """
+    if fc and isinstance(fc, dict):
+        override = fc.get('width')
+        if override and override in _WIDTH_MAP:
+            return _WIDTH_MAP[override]
+
+    itype = input_type(field)
+    # manual widget override in field_config counts as textarea for width purposes
+    if fc and isinstance(fc, dict) and fc.get('widget') == 'textarea':
+        return _WIDTH_MAP['full']
+
+    if itype in ('date', 'time', 'number'):
+        return _WIDTH_MAP['sm']
+    if itype == 'datetime-local':
+        return _WIDTH_MAP['md']
+    if itype in ('email', 'select'):
+        return _WIDTH_MAP['md']
+    if itype == 'url':
+        return _WIDTH_MAP['lg']
+    if itype == 'text':
+        max_len = getattr(field, 'max_length', None)
+        if max_len and max_len <= 50:
+            return _WIDTH_MAP['sm']
+        if max_len and max_len <= 200:
+            return _WIDTH_MAP['md']
+        return _WIDTH_MAP['full']
+    # textarea, file, checkbox, unknown
+    return _WIDTH_MAP['full']
 
 
 @register.filter

@@ -352,15 +352,27 @@ class SebastianHTMLRenderer(BaseRenderer):
         return 2
 
     def _get_inlines(self, view) -> list:
-        """Return a normalized list of {mountpoint, label} for each inline in Sebastian.inlines."""
+        """Return a normalized list of {mountpoint, label} for each inline in Sebastian.inlines.
+
+        Inlines with Sebastian.visible_permission set are skipped when the permission
+        returns False for the current object and request.
+        """
         if not view:
             return []
         sebastian = getattr(view.__class__, 'Sebastian', None)
         if not sebastian:
             return []
+        from .config import _check_permission
+        obj = getattr(view, '_sebastian_obj', None)
+        request = getattr(view, 'request', None)
         result = []
         for spec in getattr(sebastian, 'inlines', []):
             inline_vs = spec[0] if isinstance(spec, (list, tuple)) else spec
+            inline_sebastian = getattr(inline_vs, 'Sebastian', None)
+            visible_perm = getattr(inline_sebastian, 'visible_permission', None)
+            if visible_perm is not None and obj is not None and request is not None:
+                if not _check_permission(visible_perm, request, obj):
+                    continue
             mountpoint = (
                 getattr(inline_vs, 'mountpoint', None)
                 or getattr(getattr(getattr(inline_vs, 'queryset', None), 'model', None),
@@ -368,7 +380,7 @@ class SebastianHTMLRenderer(BaseRenderer):
                    inline_vs.queryset.model._meta.verbose_name_plural.lower()
                 or inline_vs.__name__.lower().replace('viewset', '')
             )
-            label = getattr(getattr(inline_vs, 'Sebastian', None), 'label', None) or mountpoint.title()
+            label = getattr(inline_sebastian, 'label', None) or mountpoint.title()
             result.append({'mountpoint': mountpoint, 'label': label})
         return result
 
