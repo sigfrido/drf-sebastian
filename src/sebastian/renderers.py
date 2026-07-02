@@ -107,6 +107,9 @@ class SebastianHTMLRenderer(BaseRenderer):
 
         sebastian_config = getattr(view.__class__, 'Sebastian', None) if view else None
         action = getattr(view, 'action', None) if view else None
+        # DRF serializers expose the pk as 'id'; map lookup_field 'pk' → 'id' for URL generation.
+        _raw_lookup = getattr(view, 'lookup_field', 'pk') if view else 'pk'
+        lookup_field = 'id' if _raw_lookup == 'pk' else _raw_lookup
         context = {
             'data':               data,
             'items':              items,
@@ -136,6 +139,8 @@ class SebastianHTMLRenderer(BaseRenderer):
             'pack_name':          pack,
             'pack_base':          f'sebastian/{pack}/base.html',
             'skin_name':          skin_name,
+            'lookup_field':       lookup_field,
+            'list_link_field':    getattr(sebastian_config, 'list_link_field', None),
             'menu_url':           menu_url,
             'file_field_template': f'sebastian/{pack}/_file_field.html',
         }
@@ -445,11 +450,12 @@ class SebastianHTMLRenderer(BaseRenderer):
             url_name = getattr(getattr(request, 'resolver_match', None), 'url_name', '')
             if url_name and '-gui-' in url_name:
                 basename = url_name.split('-gui-')[0]
-        pk = (getattr(view, 'kwargs', None) or {}).get('pk')
-        if basename and pk:
+        lookup = getattr(view, 'lookup_url_kwarg', None) or getattr(view, 'lookup_field', 'pk')
+        obj_id = (getattr(view, 'kwargs', None) or {}).get(lookup)
+        if basename and obj_id:
             from django.urls import reverse, NoReverseMatch
             try:
-                return reverse(f'{basename}-gui-detail', kwargs={'pk': pk})
+                return reverse(f'{basename}-gui-detail', kwargs={lookup: obj_id})
             except NoReverseMatch:
                 pass
         return request.path

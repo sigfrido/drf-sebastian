@@ -72,7 +72,7 @@ def _evaluate_menu(request, groups: list, current_url: str = '') -> list:
             'label':    group['label'],
             'icon':     group.get('icon', ''),
             'disabled': not group_permitted,
-            'active':   any(i['active'] for i in evaluated_items),
+            'active':   any(i['active'] for i in evaluated_items if not i.get('divider')),
             'items':    evaluated_items,
         })
     return result

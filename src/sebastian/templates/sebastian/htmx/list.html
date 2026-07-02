@@ -71,18 +71,27 @@
         {% for key in display_fields %}
         {% get_link_action key as link_action %}
         <td>
-          {% if link_action and not link_action.disabled %}
+          {% if key == list_link_field and not is_inline %}
+          {% with fv=item|display_value:key %}
+          {% if fv %}
+            <a href="{{ request.path }}{{ item|get_item:lookup_field }}/"
+               hx-get="{{ request.path }}{{ item|get_item:lookup_field }}/"
+               hx-target="{{ htmx_target }}"
+               hx-push-url="true">{{ fv }}</a>
+          {% else %}—{% endif %}
+          {% endwith %}
+          {% elif link_action and not link_action.disabled %}
           {% with cfg=link_action.gui_config fv=item|display_value:key %}
           {% if fv %}
             {% if cfg.icon or cfg.label %}
             {{ fv }}
-            <a href="{{ request.path }}{{ item.id }}/{{ link_action.name }}/"
+            <a href="{{ request.path }}{{ item|get_item:lookup_field }}/{{ link_action.name }}/"
                class="btn btn-{{ cfg.color|default:'outline-secondary' }} btn-sm ms-1"
                title="{{ cfg.hint|default:cfg.label|default:link_action.name }}">
               {% if cfg.icon %}{% icon cfg.icon %}{% endif %}{{ cfg.label }}
             </a>
             {% else %}
-            <a href="{{ request.path }}{{ item.id }}/{{ link_action.name }}/"
+            <a href="{{ request.path }}{{ item|get_item:lookup_field }}/{{ link_action.name }}/"
                title="{{ cfg.hint|default:link_action.name }}">{{ fv|filename }}</a>
             {% endif %}
           {% else %}—{% endif %}
@@ -92,9 +101,9 @@
         {% endfor %}
         {% block extra_fields_after %}{% endblock %}
         <td class="text-end text-nowrap">
-          {% if not is_inline %}
-          <a href="{{ request.path }}{{ item.id }}/"
-             hx-get="{{ request.path }}{{ item.id }}/"
+          {% if not is_inline and not list_link_field %}
+          <a href="{{ request.path }}{{ item|get_item:lookup_field }}/"
+             hx-get="{{ request.path }}{{ item|get_item:lookup_field }}/"
              hx-target="{{ htmx_target }}"
              hx-push-url="true"
              class="btn btn-outline-secondary btn-sm">
@@ -112,7 +121,7 @@
                   {{ cfg.label }}
                 </button>
                 {% elif cfg.confirmation %}
-                <button hx-get="{{ request.path }}{{ item.id }}/{{ action.name }}/confirm/"
+                <button hx-get="{{ request.path }}{{ item|get_item:lookup_field }}/{{ action.name }}/confirm/"
                         hx-target="#sebastian-modal"
                         hx-swap="innerHTML"
                         class="btn btn-{{ cfg.color|default:'secondary' }} btn-sm"
@@ -121,7 +130,7 @@
                   {{ cfg.label }}
                 </button>
                 {% elif cfg.open_url %}
-                <a href="{{ request.path }}{{ item.id }}/{{ action.name }}/"
+                <a href="{{ request.path }}{{ item|get_item:lookup_field }}/{{ action.name }}/"
                    target="_blank"
                    rel="noopener"
                    class="btn btn-{{ cfg.color|default:'secondary' }} btn-sm"
@@ -130,8 +139,8 @@
                   {{ cfg.label }}
                 </a>
                 {% elif action.method == 'get' %}
-                <a href="{{ request.path }}{{ item.id }}/{{ action.name }}/"
-                   hx-get="{{ request.path }}{{ item.id }}/{{ action.name }}/"
+                <a href="{{ request.path }}{{ item|get_item:lookup_field }}/{{ action.name }}/"
+                   hx-get="{{ request.path }}{{ item|get_item:lookup_field }}/{{ action.name }}/"
                    hx-target="{{ htmx_target }}"
                    hx-push-url="true"
                    class="btn btn-{{ cfg.color|default:'secondary' }} btn-sm"
@@ -140,7 +149,7 @@
                   {{ cfg.label }}
                 </a>
                 {% else %}
-                <button hx-post="{{ request.path }}{{ item.id }}/{{ action.name }}/"
+                <button hx-post="{{ request.path }}{{ item|get_item:lookup_field }}/{{ action.name }}/"
                         hx-target="{{ htmx_target }}"
                         class="btn btn-{{ cfg.color|default:'secondary' }} btn-sm"
                         title="{{ cfg.hint|default:cfg.label|default:action.name }}">
@@ -153,8 +162,8 @@
             {% endwith %}
           {% endfor %}
           {% if item|row_can_update:view %}
-          <a href="{{ request.path }}{{ item.id }}/edit/"
-             hx-get="{{ request.path }}{{ item.id }}/edit/"
+          <a href="{{ request.path }}{{ item|get_item:lookup_field }}/edit/"
+             hx-get="{{ request.path }}{{ item|get_item:lookup_field }}/edit/"
              hx-target="{{ htmx_target }}"
              {% if not is_inline %}hx-push-url="true"{% endif %}
              class="btn btn-outline-primary btn-sm">
@@ -162,7 +171,7 @@
           </a>
           {% endif %}
           {% if item|row_can_delete:view %}
-          <button hx-get="{{ request.path }}{{ item.id }}/delete/"
+          <button hx-get="{{ request.path }}{{ item|get_item:lookup_field }}/delete/"
                   hx-target="#sebastian-modal"
                   hx-swap="innerHTML"
                   class="btn btn-outline-danger btn-sm">

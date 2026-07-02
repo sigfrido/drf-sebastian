@@ -64,18 +64,24 @@
         {% for key in display_fields %}
         {% get_link_action key as link_action %}
         <td>
-          {% if link_action and not link_action.disabled %}
+          {% if key == list_link_field and not is_inline %}
+          {% with fv=item|display_value:key %}
+          {% if fv %}
+            <a href="{{ request.path }}{{ item|get_item:lookup_field }}/">{{ fv }}</a>
+          {% else %}—{% endif %}
+          {% endwith %}
+          {% elif link_action and not link_action.disabled %}
           {% with cfg=link_action.gui_config fv=item|display_value:key %}
           {% if fv %}
             {% if cfg.icon or cfg.label %}
             {{ fv }}
-            <a href="{{ request.path }}{{ item.id }}/{{ link_action.name }}/"
+            <a href="{{ request.path }}{{ item|get_item:lookup_field }}/{{ link_action.name }}/"
                class="btn btn-{{ cfg.color|default:'outline-secondary' }} btn-sm ms-1"
                title="{{ cfg.hint|default:cfg.label|default:link_action.name }}">
               {% if cfg.icon %}{% icon cfg.icon %}{% endif %}{{ cfg.label }}
             </a>
             {% else %}
-            <a href="{{ request.path }}{{ item.id }}/{{ link_action.name }}/"
+            <a href="{{ request.path }}{{ item|get_item:lookup_field }}/{{ link_action.name }}/"
                title="{{ cfg.hint|default:link_action.name }}">{{ fv|filename }}</a>
             {% endif %}
           {% else %}—{% endif %}
@@ -84,8 +90,8 @@
         </td>
         {% endfor %}
         <td class="text-end text-nowrap">
-          {% if not is_inline %}
-          <a href="{{ request.path }}{{ item.id }}/"
+          {% if not is_inline and not list_link_field %}
+          <a href="{{ request.path }}{{ item|get_item:lookup_field }}/"
              class="btn btn-outline-secondary btn-sm">
             {% icon "eye" %}
           </a>
@@ -101,7 +107,7 @@
                   {{ cfg.label }}
                 </button>
                 {% else %}
-                <a href="{{ request.path }}{{ item.id }}/{{ action.name }}/"
+                <a href="{{ request.path }}{{ item|get_item:lookup_field }}/{{ action.name }}/"
                    class="btn btn-{{ cfg.color|default:'secondary' }} btn-sm"
                    title="{{ cfg.hint|default:cfg.label|default:action.name }}">
                   {% if cfg.icon %}{% icon cfg.icon %}{% endif %}
@@ -113,13 +119,13 @@
             {% endwith %}
           {% endfor %}
           {% if item|row_can_update:view %}
-          <a href="{{ request.path }}{{ item.id }}/edit/"
+          <a href="{{ request.path }}{{ item|get_item:lookup_field }}/edit/"
              class="btn btn-outline-primary btn-sm">
             {% icon "pencil" %}
           </a>
           {% endif %}
           {% if item|row_can_delete:view %}
-          <a href="{{ request.path }}{{ item.id }}/delete/"
+          <a href="{{ request.path }}{{ item|get_item:lookup_field }}/delete/"
              class="btn btn-outline-danger btn-sm">
             {% icon "trash" %}
           </a>

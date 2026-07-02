@@ -92,7 +92,8 @@
             {% endif %}
           </select>
           {% else %}
-          <select class="form-select" id="id_{{ field_name }}" name="{{ field_name }}"
+          <select class="form-select {% if fc.widget == 'ts-select' %}ts-select{% endif %}"
+                  id="id_{{ field_name }}" name="{{ field_name }}"
                   {% if field.required %}required{% endif %}>
             <option value="">---------</option>
             {% for val, lbl in field.choices.items %}
