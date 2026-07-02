@@ -52,7 +52,7 @@ class MenuItem:
 
 @dataclass
 class MenuDivider:
-    """Separatore visivo (orizzontale) nel dropdown di MenuGroup."""
+    """A horizontal rule rendered as a visual separator inside a MenuGroup dropdown."""
     pass
 
 
