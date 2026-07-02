@@ -38,10 +38,11 @@ class SebastianRouter(DefaultRouter):
         specs = getattr(sebastian, 'inlines', [])
         if specs:
             parent_model = viewset.queryset.model
-            self._register_inline_specs(prefix, parent_model, basename, specs)
+            self._register_inline_specs(prefix, parent_model, basename, specs, parent_viewset=viewset)
 
-    def _register_inline_specs(self, prefix, parent_model, basename, specs):
-        parent_kwarg = f'{parent_model._meta.model_name}_pk'
+    def _register_inline_specs(self, prefix, parent_model, basename, specs, parent_viewset=None):
+        parent_lookup = _lookup_kwarg(parent_viewset) if parent_viewset else 'pk'
+        parent_kwarg = f'{parent_model._meta.model_name}_{parent_lookup}'
         for spec in specs:
             if isinstance(spec, (list, tuple)):
                 inline_vs, sub_specs = spec[0], list(spec[1:])
@@ -56,17 +57,18 @@ class SebastianRouter(DefaultRouter):
 
             if sub_specs:
                 child_model = inline_vs.queryset.model
-                self._register_inline_specs(nested_prefix, child_model, nested_base, sub_specs)
+                self._register_inline_specs(nested_prefix, child_model, nested_base, sub_specs, parent_viewset=inline_vs)
 
     def _add_nested_api_patterns(self, prefix, viewset, basename):
+        child_kwarg = _lookup_kwarg(viewset)
         list_view   = viewset.as_view({'get': 'list', 'post': 'create'})
         detail_view = viewset.as_view({
             'get': 'retrieve', 'put': 'update',
             'patch': 'partial_update', 'delete': 'destroy',
         })
         self._nested_patterns += [
-            path(f'{prefix}/',      list_view,   name=f'{basename}-list'),
-            path(f'{prefix}/<pk>/', detail_view, name=f'{basename}-detail'),
+            path(f'{prefix}/',                  list_view,   name=f'{basename}-list'),
+            path(f'{prefix}/<{child_kwarg}>/',  detail_view, name=f'{basename}-detail'),
         ]
         # Mirror @actions on the nested viewset
         for attr_name in dir(viewset):
@@ -79,7 +81,7 @@ class SebastianRouter(DefaultRouter):
             action_view = viewset.as_view(mapping)
             if detail:
                 self._nested_patterns.append(
-                    path(f'{prefix}/<pk>/{url_path}/', action_view,
+                    path(f'{prefix}/<{child_kwarg}>/{url_path}/', action_view,
                          name=f'{basename}-{attr_name}')
                 )
             else:
@@ -157,8 +159,12 @@ class GUIRouter:
             from .config import MenuGroup
             if not isinstance(menu, MenuGroup):
                 continue
+            from .config import MenuDivider
             items = []
             for item in menu.items:
+                if isinstance(item, MenuDivider):
+                    items.append({'divider': True})
+                    continue
                 if item.url_name:
                     url_name = item.url_name
                 elif item.action == 'list':
@@ -189,9 +195,10 @@ class GUIRouter:
         return SebastianMenuView.as_view()
 
     def _routes_for(self, prefix, viewset, basename):
-        has_gui = issubclass(viewset, GUIMixin)
-        routes  = []
-        kw      = {'format': 'html'}
+        has_gui    = issubclass(viewset, GUIMixin)
+        routes     = []
+        kw         = {'format': 'html'}
+        lkwarg     = _lookup_kwarg(viewset)
 
         routes.append(path(
             f'{prefix}/',
@@ -209,7 +216,7 @@ class GUIRouter:
             ))
 
         routes.append(path(
-            f'{prefix}/<pk>/',
+            f'{prefix}/<{lkwarg}>/',
             self._wrap(viewset.as_view({
                 'get': 'retrieve',
                 'put': 'update', 'patch': 'partial_update',
@@ -221,13 +228,13 @@ class GUIRouter:
 
         if has_gui:
             routes.append(path(
-                f'{prefix}/<pk>/edit/',
+                f'{prefix}/<{lkwarg}>/edit/',
                 self._wrap(viewset.as_view({'get': 'update_form', 'post': 'partial_update'})),
                 kw,
                 name=f'{basename}-gui-edit',
             ))
             routes.append(path(
-                f'{prefix}/<pk>/delete/',
+                f'{prefix}/<{lkwarg}>/delete/',
                 self._wrap(viewset.as_view({'get': 'confirm', 'post': 'confirm'})),
                 {**kw, '_confirm_type': 'delete'},
                 name=f'{basename}-gui-delete',
@@ -247,7 +254,7 @@ class GUIRouter:
             mapping  = dict(method.mapping)
             if detail:
                 routes.append(path(
-                    f'{prefix}/<pk>/{url_path}/',
+                    f'{prefix}/<{lkwarg}>/{url_path}/',
                     self._wrap(viewset.as_view(mapping)),
                     kw,
                     name=f'{basename}-gui-{attr_name}',
@@ -255,7 +262,7 @@ class GUIRouter:
                 # Confirmation page for actions that declare any confirmation config
                 if gui_config.get('confirmation'):
                     routes.append(path(
-                        f'{prefix}/<pk>/{url_path}/confirm/',
+                        f'{prefix}/<{lkwarg}>/{url_path}/confirm/',
                         self._wrap(viewset.as_view({'get': 'confirm'})),
                         {**kw, '_confirm_type': 'action', '_confirm_action': attr_name},
                         name=f'{basename}-gui-{attr_name}-confirm',
@@ -273,13 +280,14 @@ class GUIRouter:
         specs = getattr(sebastian, 'inlines', [])
         if specs:
             parent_model = viewset.queryset.model
-            routes += self._nested_gui_routes(prefix, parent_model, basename, specs)
+            routes += self._nested_gui_routes(prefix, parent_model, basename, specs, parent_viewset=viewset)
 
         return routes
 
-    def _nested_gui_routes(self, prefix, parent_model, basename, specs):
+    def _nested_gui_routes(self, prefix, parent_model, basename, specs, parent_viewset=None):
         routes = []
-        parent_kwarg = f'{parent_model._meta.model_name}_pk'
+        parent_lookup = _lookup_kwarg(parent_viewset) if parent_viewset else 'pk'
+        parent_kwarg  = f'{parent_model._meta.model_name}_{parent_lookup}'
         kw = {'format': 'html'}
 
         for spec in specs:
@@ -292,6 +300,7 @@ class GUIRouter:
             nested_prefix = f'{prefix}/<{parent_kwarg}>/{mountpoint}'
             nested_base   = f'{basename}-gui-{mountpoint}'
             has_gui       = issubclass(inline_vs, GUIMixin)
+            child_kwarg   = _lookup_kwarg(inline_vs)
 
             # Inline list (HTMX fragment — loaded into detail page)
             routes.append(path(
@@ -312,7 +321,7 @@ class GUIRouter:
 
             # Inline detail — accepts PATCH/PUT/DELETE from the inline edit form
             routes.append(path(
-                f'{nested_prefix}/<pk>/',
+                f'{nested_prefix}/<{child_kwarg}>/',
                 self._wrap(inline_vs.as_view({
                     'get': 'retrieve',
                     'put': 'update', 'patch': 'partial_update',
@@ -325,13 +334,13 @@ class GUIRouter:
             # Edit form for inline section
             if has_gui:
                 routes.append(path(
-                    f'{nested_prefix}/<pk>/edit/',
+                    f'{nested_prefix}/<{child_kwarg}>/edit/',
                     self._wrap(inline_vs.as_view({'get': 'update_form', 'post': 'partial_update'})),
                     kw,
                     name=f'{nested_base}-edit',
                 ))
                 routes.append(path(
-                    f'{nested_prefix}/<pk>/delete/',
+                    f'{nested_prefix}/<{child_kwarg}>/delete/',
                     self._wrap(inline_vs.as_view({'get': 'confirm', 'post': 'confirm'})),
                     {**kw, '_confirm_type': 'delete'},
                     name=f'{nested_base}-delete',
@@ -349,7 +358,7 @@ class GUIRouter:
                 mapping  = dict(action_method.mapping)
                 if detail:
                     routes.append(path(
-                        f'{nested_prefix}/<pk>/{url_path}/',
+                        f'{nested_prefix}/<{child_kwarg}>/{url_path}/',
                         self._wrap(inline_vs.as_view(mapping)),
                         kw,
                         name=f'{nested_base}-{attr_name}',
@@ -366,7 +375,8 @@ class GUIRouter:
             if sub_specs:
                 child_model = inline_vs.queryset.model
                 routes += self._nested_gui_routes(
-                    nested_prefix, child_model, f'{basename}-{mountpoint}', sub_specs
+                    nested_prefix, child_model, f'{basename}-{mountpoint}', sub_specs,
+                    parent_viewset=inline_vs,
                 )
 
         return routes
@@ -433,6 +443,11 @@ class GUIRouter:
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+def _lookup_kwarg(vs) -> str:
+    """Return the URL kwarg name for ``vs``'s lookup field (default: 'pk')."""
+    return getattr(vs, 'lookup_url_kwarg', None) or getattr(vs, 'lookup_field', 'pk')
+
 
 def _get_mountpoint(viewset) -> str:
     if getattr(viewset, 'mountpoint', ''):

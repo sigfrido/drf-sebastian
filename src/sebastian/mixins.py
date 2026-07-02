@@ -846,12 +846,18 @@ class NestedGUIMixin(GUIMixin):
         for f in model._meta.get_fields():
             if not hasattr(f, 'related_model') or not f.related_model:
                 continue
-            kwarg = f'{f.related_model._meta.model_name}_pk'
-            if kwarg in self.kwargs:
-                return get_object_or_404(f.related_model, pk=self.kwargs[kwarg])
+            model_name = f.related_model._meta.model_name
+            kwarg = next(
+                (k for k in self.kwargs if k.startswith(f'{model_name}_')),
+                None,
+            )
+            if kwarg is None:
+                continue
+            field_name = kwarg[len(model_name) + 1:]
+            return get_object_or_404(f.related_model, **{field_name: self.kwargs[kwarg]})
         raise ImproperlyConfigured(
             f"{self.__class__.__name__}: cannot find parent object from URL kwargs. "
-            f"Expected a kwarg named '{{parent_model_name}}_pk'. "
+            f"Expected a kwarg named '{{parent_model_name}}_<lookup_field>'. "
             f"Set parent_field explicitly if needed."
         )
 

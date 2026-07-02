@@ -33,6 +33,9 @@ def _evaluate_menu(request, groups: list, current_url: str = '') -> list:
 
         evaluated_items = []
         for item in group.get('items', []):
+            if item.get('divider'):
+                evaluated_items.append({'divider': True})
+                continue
             item_permitted = _check_permission(item.get('permission'), request, None)
             if not item_permitted and hide:
                 continue
@@ -54,7 +57,7 @@ def _evaluate_menu(request, groups: list, current_url: str = '') -> list:
         # Active item: exact match wins; fall back to longest prefix match.
         # This ensures /gui/richieste/new/ activates "Nuova", not "Elenco".
         if current_url:
-            candidate_urls = [i['url'] for i in evaluated_items if i['url'] != '#']
+            candidate_urls = [i['url'] for i in evaluated_items if not i.get('divider') and i['url'] != '#']
             exact = current_url if current_url in candidate_urls else None
             if exact:
                 best = exact
@@ -62,7 +65,8 @@ def _evaluate_menu(request, groups: list, current_url: str = '') -> list:
                 prefixes = [u for u in candidate_urls if current_url.startswith(u)]
                 best = max(prefixes, key=len) if prefixes else None
             for item in evaluated_items:
-                item['active'] = (item['url'] == best)
+                if not item.get('divider'):
+                    item['active'] = (item['url'] == best)
 
         result.append({
             'label':    group['label'],

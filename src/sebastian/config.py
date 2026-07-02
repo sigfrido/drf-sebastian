@@ -51,9 +51,15 @@ class MenuItem:
 
 
 @dataclass
+class MenuDivider:
+    """Separatore visivo (orizzontale) nel dropdown di MenuGroup."""
+    pass
+
+
+@dataclass
 class MenuGroup:
     """A navbar dropdown contributed by a module. Declared in ViewSet.Sebastian.menu."""
     label: str
     icon: str = ''
-    items: List[MenuItem] = field(default_factory=list)
+    items: List[Union[MenuItem, 'MenuDivider']] = field(default_factory=list)
     permission: Permission = None

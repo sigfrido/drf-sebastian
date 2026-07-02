@@ -10,7 +10,7 @@
     <ul class="dropdown-menu">
       {% for item in group.items %}
       <li>
-        {% if item.disabled %}
+        {% if item.divider %}<hr class="dropdown-divider">{% elif item.disabled %}
         <span class="dropdown-item disabled">
           {% if item.icon %}{% icon item.icon "me-1" %}{% endif %}
           {{ item.label }}
