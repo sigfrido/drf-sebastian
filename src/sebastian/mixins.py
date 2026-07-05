@@ -416,6 +416,13 @@ class _SebastianBaseMixin:
         filename = field.name.split('/')[-1]
         return FileResponse(field.open('rb'), as_attachment=True, filename=filename)
 
+    def preview_action(self, field_name, request, pk=None, **kwargs):
+        """Serve a file field inline so the browser opens it in its viewer (e.g. PDF preview)."""
+        instance = self.get_object()
+        field = getattr(instance, field_name)
+        filename = field.name.split('/')[-1]
+        return FileResponse(field.open('rb'), as_attachment=False, filename=filename)
+
     def standard_typeahead(self, filter, order_by=None, get_description=str):
         """Helper for @typeahead actions. Returns Response([{value, label}, ...])."""
         qs = self.get_queryset()

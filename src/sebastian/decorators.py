@@ -9,13 +9,17 @@ typeahead()  Registers a GET list action as a typeahead endpoint.
 from rest_framework.decorators import action as drf_action
 
 
-def action(*args, gui_config: dict | None = None, **kwargs):
+def action(*args, gui_config: dict | None = None, gui_url: bool = False, **kwargs):
     """
     Drop-in replacement for DRF's @action that attaches GUI metadata.
     All DRF @action arguments are passed through unchanged.
+
+    gui_url=True registers a GUI URL for the action even when gui_config is empty
+    (useful for actions accessed directly by URL rather than via a button).
     """
     def decorator(func):
         func.gui_config = gui_config or {}
+        func.gui_url    = gui_url
         return drf_action(*args, **kwargs)(func)
     return decorator
 

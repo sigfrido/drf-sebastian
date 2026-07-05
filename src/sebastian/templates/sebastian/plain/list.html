@@ -99,6 +99,7 @@
           {% for action in view.get_available_actions %}
             {% with cfg=action.gui_config %}
               {% if cfg.position == 'list' or cfg.position == 'both' %}
+              {% if not cfg.row_visible_field or item|get_item:cfg.row_visible_field %}
               {% if not cfg.link_field %}
                 {% if action.disabled %}
                 <button class="btn btn-{{ cfg.color|default:'secondary' }} btn-sm" disabled
@@ -114,6 +115,7 @@
                   {{ cfg.label }}
                 </a>
                 {% endif %}
+              {% endif %}
               {% endif %}
               {% endif %}
             {% endwith %}
