@@ -134,7 +134,10 @@ class GUISerializerMixin:
                 rendered = self._render_bool(raw)
                 if rendered is not None:
                     ret[f'{field_name}__display'] = rendered
+        hidden = getattr(self, '_permission_hidden_fields', set())
         for method_name in self._get_gui_field_names():
+            if method_name in hidden:
+                continue
             method = getattr(self, method_name, None)
             if callable(method):
                 ret[method_name] = method(instance)
@@ -280,16 +283,20 @@ class GUISerializerMixin:
         is_list_without_obj = obj is None and getattr(view, 'action', None) == 'list'
 
         from sebastian.config import FieldGroup
+        gui_names = set(self._get_gui_field_names())
         for group in groups:
             if not isinstance(group, FieldGroup):
                 continue
             for field_name in group.fields:
-                if field_name not in fields:
+                is_drf = field_name in fields
+                is_gui = field_name in gui_names
+                if not is_drf and not is_gui:
                     continue
                 if not is_list_without_obj and not group.is_visible(request, obj):
                     self._permission_hidden_fields.add(field_name)
-                    del fields[field_name]
-                elif field_name in fields and not group.is_editable(request, obj):
+                    if is_drf:
+                        del fields[field_name]
+                elif is_drf and not group.is_editable(request, obj):
                     self._permission_readonly_fields.add(field_name)
                     fields[field_name].read_only = True
         return fields
