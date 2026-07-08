@@ -501,13 +501,17 @@ class GUIMixin(_SebastianBaseMixin):
             return super().create(request, *args, **kwargs)
         if not self.can_create():
             raise PermissionDenied()
-        serializer = self.get_serializer(data=request.data)
+        data = request.data.copy()
+        for key in [k for k, v in list(data.items()) if v == '' and k not in request.FILES]:
+            data.pop(key)
+        serializer = self.get_serializer(data=data)
         if not serializer.is_valid():
             resp = DRFResponse(
                 {'serializer': serializer, 'action': 'create',
-                 'instance': dict(request.data),
+                 'instance': {k: v for k, v in request.data.items()},
                  'submit_url': request.path, 'cancel_url': request.path,
-                 'htmx_target': '#sebastian-content'},
+                 'htmx_target': '#sebastian-content',
+                 'form_errors': serializer.errors},
                 status=400,
             )
             resp['X-Sebastian-Form-Error'] = 'true'
@@ -516,23 +520,25 @@ class GUIMixin(_SebastianBaseMixin):
             with transaction.atomic():
                 self.perform_create(serializer)
         except Exception as exc:
+            import traceback, logging
+            logging.getLogger(__name__).error('perform_create failed: %s', traceback.format_exc())
             from rest_framework.exceptions import ValidationError as DRFValidationError
             if isinstance(exc, DRFValidationError):
                 raise
             resp = DRFResponse(
                 {'serializer': serializer, 'action': 'create',
-                 'instance': dict(request.data),
+                 'instance': {k: v for k, v in request.data.items()},
                  'submit_url': request.path, 'cancel_url': request.path,
                  'htmx_target': '#sebastian-content',
-                 'form_errors': {'non_field_errors': ['Errore durante il salvataggio. Verificare i dati inseriti.']}},
+                 'form_errors': {'non_field_errors': [str(exc)]}},
                 status=400,
             )
             resp['X-Sebastian-Form-Error'] = 'true'
             return resp
         headers = self.get_success_headers(serializer.data)
-        pk = serializer.data.get('id')
+        lookup_value = serializer.data.get(self.lookup_field, serializer.data.get('id'))
         resp = DRFResponse(serializer.data, status=200, headers=headers)
-        resp['HX-Redirect'] = f'{request.path}{pk}/'
+        resp['HX-Redirect'] = f'{request.path}{lookup_value}/'
         return resp
 
     def update(self, request, *args, **kwargs):

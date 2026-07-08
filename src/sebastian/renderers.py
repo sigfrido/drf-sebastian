@@ -88,7 +88,10 @@ class SebastianHTMLRenderer(BaseRenderer):
             and data.get('confirm_serializer') is not None
         )
         if is_serializer_error:
-            if 'serializer' in data:
+            explicit = data.get('form_errors') if isinstance(data, dict) else None
+            if explicit:
+                form_errors = explicit
+            elif 'serializer' in data:
                 form_errors = data['serializer'].errors
             elif 'confirm_serializer' in data and data['confirm_serializer'] is not None:
                 form_errors = data['confirm_serializer'].errors
