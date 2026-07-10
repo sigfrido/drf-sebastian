@@ -178,11 +178,17 @@
 
   function initTsSelect() {
     document.querySelectorAll('select.ts-select').forEach(function (el) {
-      if (_initialized.has(el)) return;
-      _initialized.add(el);
-      new TomSelect(el, {
-        allowEmptyOption: true,
-      });
+      // Skip if TomSelect is properly initialized and its wrapper is still in the DOM.
+      // The wrapper check catches stale instances left over when HTMX removes old elements
+      // without going through TomSelect's destroy() (wrapper removed = stale).
+      if (el.tomselect && el.tomselect.wrapper && document.body.contains(el.tomselect.wrapper)) return;
+      if (el.tomselect) {
+        try { el.tomselect.destroy(); } catch (_) {}
+      }
+      var opts = el.multiple
+        ? { plugins: ['remove_button'], closeAfterSelect: false }
+        : { allowEmptyOption: true };
+      new TomSelect(el, opts);
     });
   }
 
@@ -196,6 +202,18 @@
     Object.keys(params).forEach(function (key) {
       if (params[key] === '' || params[key] === 'unknown') {
         delete params[key];
+      }
+    });
+  });
+
+  // For filter forms that do a plain GET (no hx-get), disable empty/sentinel
+  // fields before submit so they are omitted from the query string.
+  document.addEventListener('submit', function (evt) {
+    var form = evt.target;
+    if (!form || form.id !== 'sb-filter-form' || form.hasAttribute('hx-get')) return;
+    form.querySelectorAll('input[name], select[name]').forEach(function (el) {
+      if (!el.value || el.value === 'unknown') {
+        el.disabled = true;
       }
     });
   });
@@ -221,6 +239,20 @@
     initFilterForm();
   }
 
-  document.addEventListener('DOMContentLoaded', initAll);
-  document.addEventListener('htmx:afterSwap',   initAll);
+  // Destroy all TomSelect instances inside an HTMX swap target BEFORE the swap
+  // replaces the DOM. Without explicit destroy(), stale JS state (event listeners,
+  // el.tomselect references) leaks into the next render cycle and produces
+  // double-widget symptoms (native select + TomSelect rendered together).
+  document.addEventListener('htmx:beforeSwap', function (evt) {
+    var target = evt.detail && evt.detail.target;
+    if (!target) return;
+    target.querySelectorAll('select').forEach(function (el) {
+      if (el.tomselect) {
+        try { el.tomselect.destroy(); } catch (_) {}
+      }
+    });
+  });
+
+  document.addEventListener('DOMContentLoaded',  initAll);
+  document.addEventListener('htmx:afterSwap',    initAll);
 }());

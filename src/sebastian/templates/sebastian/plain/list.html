@@ -34,12 +34,14 @@
   {% endwith %}
   {% endfor %}
   {% endif %}
+  {% block filter_fields %}
   {% for field in filter_form %}
   <div class="col-auto d-flex align-items-center gap-1">
     <label class="col-form-label col-form-label-sm text-nowrap" for="{{ field.id_for_label }}">{{ field.label }}</label>
     {{ field|bootstrapfield }}
   </div>
   {% endfor %}
+  {% endblock filter_fields %}
   <div class="col-auto align-self-end">
     <button type="submit" class="btn btn-outline-secondary btn-sm">Filtra</button>
     <a href="{{ request.path }}" class="btn btn-link btn-sm">Cancella</a>

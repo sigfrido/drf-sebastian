@@ -247,18 +247,20 @@ def json(value) -> str:
 
 @register.filter
 def bootstrapfield(field):
-    if field.widget_type == 'select':
+    if field.widget_type in ('select', 'selectmultiple'):
         return add_class(field, 'form-select form-select-sm')
     return add_class(field, 'form-control form-control-sm')
 
 @register.filter
 def add_class(field, classes):
+    widget = getattr(getattr(field, 'field', None), 'widget', None)
+    widget_class = getattr(widget, 'attrs', {}).get('class', '') if widget else ''
     field_classes = field.css_classes().split(' ')
-    for cls in classes.split(' '):
-        if not cls in field_classes:
+    for cls in (classes + ' ' + widget_class).split(' '):
+        if cls and cls not in field_classes:
             field_classes.append(cls)
     return field.as_widget(attrs={
-        "class": " ".join(field_classes)
+        "class": " ".join(c for c in field_classes if c)
     })
 
 @register.simple_tag
