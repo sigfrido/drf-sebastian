@@ -400,9 +400,19 @@ class GUIRouter:
                 menu_url = reverse('sebastian-menu')
             except NoReverseMatch:
                 menu_url = ''
+            gui_registry = [
+                (prefix, viewset)
+                for prefix, viewset, _ in registry
+                if issubclass(viewset, GUIMixin)
+            ]
+            uses_opt_in = any(
+                getattr(getattr(vs, 'Sebastian', None), 'add_to_home', False)
+                for _, vs in gui_registry
+            )
             entries = []
-            for prefix, viewset, _ in registry:
-                if not issubclass(viewset, GUIMixin):
+            for prefix, viewset in gui_registry:
+                sebastian = getattr(viewset, 'Sebastian', None)
+                if uses_opt_in and not getattr(sebastian, 'add_to_home', False):
                     continue
                 model = getattr(getattr(viewset, 'queryset', None), 'model', None)
                 if model:
