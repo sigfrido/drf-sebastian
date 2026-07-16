@@ -389,16 +389,17 @@ class TestRichiestaActionsGUI:
         with override_settings(SEBASTIAN={'HIDE_UNAUTHORIZED_ACTIONS': True}):
             r = auth_client.get(f'/gui/richieste/{richiesta.pk}/', **HTMX)
         assert r.status_code == 200
-        # Check the confirm URL rather than the label: 'Inviata' (stato display value)
+        # Check the action URL rather than the label: 'Inviata' (stato display value)
         # is a substring of 'Invia' so a plain label check would be a false positive.
-        assert b'/invia/confirm/' not in r.content
+        # The button now uses data-sb-confirm-url=".../invia/" (no /confirm/ suffix).
+        assert b'/invia/"' not in r.content
 
     def test_invia_button_visibile_su_bozza(self, auth_client, richiesta):
         """Invia button visible when stato==BOZZA."""
         with override_settings(SEBASTIAN={'HIDE_UNAUTHORIZED_ACTIONS': True}):
             r = auth_client.get(f'/gui/richieste/{richiesta.pk}/', **HTMX)
         assert r.status_code == 200
-        assert b'/invia/confirm/' in r.content
+        assert b'/invia/"' in r.content
 
 
 @pytest.mark.django_db
