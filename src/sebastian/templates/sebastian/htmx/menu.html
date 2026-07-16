@@ -17,8 +17,7 @@
         </span>
         {% else %}
         <a class="dropdown-item{% if item.active %} active{% endif %}"
-           href="{{ item.url }}"
-           hx-get="{{ item.url }}" hx-target="#sebastian-content" hx-push-url="true">
+           href="{{ item.url }}">
           {% if item.icon %}{% icon item.icon "me-1" %}{% endif %}
           {{ item.label }}
         </a>
