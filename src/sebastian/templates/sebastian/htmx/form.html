@@ -56,19 +56,18 @@
         {% with field=serializer.fields|get_item:field_name %}
         {% with fc=field_config|get_item:field_name %}
         {% if field and not field.read_only %}
-        {% if field|input_type == 'checkbox' %}
-        <div class="form-check mb-3 border-bottom border-secondary-subtle pb-3">
-          <input type="checkbox"
-                 class="form-check-input"
-                 id="id_{{ field_name }}"
-                 name="{{ field_name }}"
-                 value="true"
-                 {% if instance %}{% if instance|get_item:field_name %}checked{% endif %}{% endif %}>
-          <label class="form-check-label" for="id_{{ field_name }}">
-            {{ field.label|default:field_name }}
-          </label>
+        {% if field|input_type == 'bool-select' %}
+        {% with bval=instance|bool_select_value:field_name %}
+        <div class="mb-3 border-bottom border-secondary-subtle pb-3 {% field_col field fc %}">
+          <label class="form-label" for="id_{{ field_name }}">{{ field.label|default:field_name }}</label>
+          <select class="form-select form-select-sm" id="id_{{ field_name }}" name="{{ field_name }}">
+            {% if field.allow_null %}<option value="" {% if not bval %}selected{% endif %}>{{ fc.bool_null|default:"-" }}</option>{% endif %}
+            <option value="true"  {% if bval == "true"  %}selected{% endif %}>{{ fc.bool_true|default:"Sì" }}</option>
+            <option value="false" {% if bval == "false" %}selected{% endif %}>{{ fc.bool_false|default:"No" }}</option>
+          </select>
           {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
         </div>
+        {% endwith %}
         {% elif field|input_type == 'file' %}
         {% include file_field_template with field_name=field_name field=field action=action instance=instance %}
         {% else %}

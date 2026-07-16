@@ -143,7 +143,7 @@ def input_type(field) -> str:
         drf_serializers.TimeField:     'time',
         drf_serializers.EmailField:    'email',
         drf_serializers.URLField:      'url',
-        drf_serializers.BooleanField:  'checkbox',
+        drf_serializers.BooleanField:  'bool-select',
         drf_serializers.FileField:     'file',
         drf_serializers.ImageField:    'file',
     }
@@ -194,7 +194,7 @@ def field_col(field, fc=None) -> str:
     if fc and isinstance(fc, dict) and fc.get('widget') == 'textarea':
         return _WIDTH_MAP['full']
 
-    if itype in ('date', 'time', 'number'):
+    if itype in ('date', 'time', 'number', 'bool-select'):
         return _WIDTH_MAP['sm']
     if itype == 'datetime-local':
         return _WIDTH_MAP['md']
@@ -209,8 +209,19 @@ def field_col(field, fc=None) -> str:
         if max_len and max_len <= 200:
             return _WIDTH_MAP['md']
         return _WIDTH_MAP['full']
-    # textarea, file, checkbox, unknown
+    # textarea, file, unknown
     return _WIDTH_MAP['full']
+
+
+@register.filter
+def bool_select_value(instance, field_name: str) -> str:
+    """Return 'true', 'false', or '' for a boolean field, suitable for <select> value comparison."""
+    val = instance.get(field_name) if isinstance(instance, dict) else getattr(instance, field_name, None)
+    if val is True:
+        return 'true'
+    if val is False:
+        return 'false'
+    return ''
 
 
 @register.filter
