@@ -214,14 +214,22 @@ def field_col(field, fc=None) -> str:
 
 
 @register.filter
-def bool_select_value(instance, field_name: str) -> str:
-    """Return 'true', 'false', or '' for a boolean field, suitable for <select> value comparison."""
+def bool_select_value(instance, field) -> str:
+    """Return 'true', 'false', or '' for a boolean field, suitable for <select> value comparison.
+    Accepts a DRF field object or a plain field name string.
+    When the value is None and the field does not allow null, defaults to 'false'.
+    """
+    if isinstance(field, str):
+        field_name, allow_null = field, False
+    else:
+        field_name = field.field_name
+        allow_null = getattr(field, 'allow_null', False)
     val = instance.get(field_name) if isinstance(instance, dict) else getattr(instance, field_name, None)
     if val is True:
         return 'true'
     if val is False:
         return 'false'
-    return ''
+    return '' if allow_null else 'false'
 
 
 @register.filter

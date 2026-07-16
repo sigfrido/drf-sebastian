@@ -37,11 +37,11 @@
       {% with field=serializer.fields|get_item:field_name %}
       {% if field and not field.read_only %}
       {% if field|input_type == 'bool-select' %}
-      {% with bval=instance|bool_select_value:field_name %}
+      {% with bval=instance|bool_select_value:field %}
       <div class="mb-3 border-bottom border-secondary-subtle pb-3">
         <label class="form-label" for="id_{{ field_name }}">{{ field.label|default:field_name }}</label>
         <select class="form-select form-select-sm" id="id_{{ field_name }}" name="{{ field_name }}">
-          {% if field.allow_null %}<option value="" {% if not bval %}selected{% endif %}>-</option>{% endif %}
+          {% if field.allow_null %}<option value="" {% if bval == "" %}selected{% endif %}>-</option>{% endif %}
           <option value="true"  {% if bval == "true"  %}selected{% endif %}>Sì</option>
           <option value="false" {% if bval == "false" %}selected{% endif %}>No</option>
         </select>
@@ -108,11 +108,11 @@
   {% for field_name, field in serializer.fields.items %}
   {% if not field.read_only %}
   {% if field|input_type == 'bool-select' %}
-  {% with bval=instance|bool_select_value:field_name %}
+  {% with bval=instance|bool_select_value:field %}
   <div class="mb-3 border-bottom border-secondary-subtle pb-3">
     <label class="form-label" for="id_{{ field_name }}">{{ field.label|default:field_name }}</label>
     <select class="form-select form-select-sm" id="id_{{ field_name }}" name="{{ field_name }}">
-      {% if field.allow_null %}<option value="" {% if not bval %}selected{% endif %}>-</option>{% endif %}
+      {% if field.allow_null %}<option value="" {% if bval == "" %}selected{% endif %}>-</option>{% endif %}
       <option value="true"  {% if bval == "true"  %}selected{% endif %}>Sì</option>
       <option value="false" {% if bval == "false" %}selected{% endif %}>No</option>
     </select>
