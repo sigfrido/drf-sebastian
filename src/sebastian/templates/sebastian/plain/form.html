@@ -26,13 +26,12 @@
       enctype="multipart/form-data">
   {% csrf_token %}
 
-  {% with groups=visible_groups %}
-  {% if groups %}
-
-  {% for group in groups %}
+  {% for group in visible_groups %}
   {% if group.fields %}
+  {% if group.label %}
   <details {% if forloop.first %}open{% endif %} class="mb-3 border rounded p-3">
-    <summary class="fw-semibold mb-2" style="cursor:pointer">{{ group.label|default:group.name }}</summary>
+    <summary class="fw-semibold mb-2" style="cursor:pointer">{{ group.label }}</summary>
+  {% endif %}
     {% for field_name in group.fields %}
       {% with field=serializer.fields|get_item:field_name %}
       {% if field and not field.read_only %}
@@ -99,52 +98,11 @@
       {% endif %}
       {% endwith %}
     {% endfor %}
+  {% if group.label %}
   </details>
   {% endif %}
-  {% endfor %}
-
-  {% else %}
-  {# No groups — render all writable fields flat #}
-  {% for field_name, field in serializer.fields.items %}
-  {% if not field.read_only %}
-  {% if field|input_type == 'bool-select' %}
-  {% with bval=instance|bool_select_value:field %}
-  <div class="mb-3 border-bottom border-secondary-subtle pb-3">
-    <label class="form-label" for="id_{{ field_name }}">{{ field.label|default:field_name }}</label>
-    <select class="form-select form-select-sm" id="id_{{ field_name }}" name="{{ field_name }}">
-      {% if field.allow_null %}<option value="" {% if bval == "" %}selected{% endif %}>-</option>{% endif %}
-      <option value="true"  {% if bval == "true"  %}selected{% endif %}>Sì</option>
-      <option value="false" {% if bval == "false" %}selected{% endif %}>No</option>
-    </select>
-  </div>
-  {% endwith %}
-  {% elif field|input_type == 'file' %}
-  {% include file_field_template with field_name=field_name field=field action=action instance=instance %}
-  {% else %}
-  <div class="mb-3 border-bottom border-secondary-subtle pb-3">
-    <label class="form-label" for="id_{{ field_name }}">
-      {{ field.label|default:field_name }}
-      {% if field.required %}<span class="text-danger">*</span>{% endif %}
-    </label>
-    <input type="{{ field|input_type }}"
-           class="form-control"
-           id="id_{{ field_name }}"
-           name="{{ field_name }}"
-           value="{% if instance %}{{ instance|get_item:field_name }}{% endif %}"
-           {% if field.required %}required{% endif %}>
-  {% with field_errors=form_errors|get_item:field_name %}
-  {% if field_errors %}
-  <div class="invalid-feedback d-block">
-    {% for e in field_errors %}{{ e }}{% if not forloop.last %} {% endif %}{% endfor %}
-  </div>
-  {% endif %}
-  {% endwith %}
-  </div>
-  {% endif %}
   {% endif %}
   {% endfor %}
-  {% endif %}
-  {% endwith %}
 
   <div class="d-flex gap-2">
     <button type="submit" class="btn btn-primary">Save</button>

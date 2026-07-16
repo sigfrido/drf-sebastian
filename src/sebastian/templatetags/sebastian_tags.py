@@ -233,6 +233,12 @@ def bool_select_value(instance, field) -> str:
 
 
 @register.filter
+def any_has_label(groups) -> bool:
+    """True if at least one group in the list has a non-empty label."""
+    return any(getattr(g, 'label', '') for g in groups)
+
+
+@register.filter
 def field_value(instance, field_name: str):
     """Get the display value of a field from a serializer's data dict or model instance."""
     if instance is None:

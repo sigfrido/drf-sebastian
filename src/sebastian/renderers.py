@@ -248,10 +248,14 @@ class SebastianHTMLRenderer(BaseRenderer):
             serializer = data.get('serializer')
             if serializer is not None:
                 serializer_fields = getattr(serializer, 'fields', {})
-                return [
+                visible = [
                     g for g in all_groups
                     if not isinstance(g, FieldGroup) or any(f in serializer_fields for f in g.fields)
                 ]
+                if visible:
+                    return visible
+                from types import SimpleNamespace
+                return [SimpleNamespace(name='__default__', label='', fields=list(serializer_fields.keys()))]
 
         return all_groups
 

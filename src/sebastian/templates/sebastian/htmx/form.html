@@ -30,8 +30,7 @@
   {% csrf_token %}
 
   {% with groups=visible_groups %}
-  {% if groups %}
-
+  {% if groups|any_has_label %}
   <ul class="nav nav-tabs mb-3" role="tablist">
     {% for group in groups %}
     {% if group.fields %}
@@ -46,181 +45,115 @@
     {% endif %}
     {% endfor %}
   </ul>
-
   <div class="tab-content mb-3">
-    {% for group in groups %}
-    {% if group.fields %}
-    <div class="tab-pane fade {% if forloop.first %}show active{% endif %}"
-         id="ftab-{{ group.name }}">
-      {% for field_name in group.fields %}
-        {% with field=serializer.fields|get_item:field_name %}
-        {% with fc=field_config|get_item:field_name %}
-        {% if field and not field.read_only %}
-        {% if field|input_type == 'bool-select' %}
-        {% with bval=instance|bool_select_value:field %}
-        <div class="mb-3 border-bottom border-secondary-subtle pb-3 {% field_col field fc %}">
-          <label class="form-label" for="id_{{ field_name }}">{{ field.label|default:field_name }}</label>
-          <select class="form-select form-select-sm" id="id_{{ field_name }}" name="{{ field_name }}">
-            {% if field.allow_null %}<option value="" {% if bval == "" %}selected{% endif %}>{{ fc.bool_null|default:"-" }}</option>{% endif %}
-            <option value="true"  {% if bval == "true"  %}selected{% endif %}>{{ fc.bool_true|default:"Sì" }}</option>
-            <option value="false" {% if bval == "false" %}selected{% endif %}>{{ fc.bool_false|default:"No" }}</option>
-          </select>
-          {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
-        </div>
-        {% endwith %}
-        {% elif field|input_type == 'file' %}
-        {% include file_field_template with field_name=field_name field=field action=action instance=instance %}
+  {% endif %}
+
+  {% for group in groups %}
+  {% if group.fields %}
+  {% if group.label %}
+  <div class="tab-pane fade {% if forloop.first %}show active{% endif %}"
+       id="ftab-{{ group.name }}">
+  {% endif %}
+    {% for field_name in group.fields %}
+      {% with field=serializer.fields|get_item:field_name %}
+      {% with fc=field_config|get_item:field_name %}
+      {% if field and not field.read_only %}
+      {% if field|input_type == 'bool-select' %}
+      {% with bval=instance|bool_select_value:field %}
+      <div class="mb-3 border-bottom border-secondary-subtle pb-3 {% field_col field fc %}">
+        <label class="form-label" for="id_{{ field_name }}">{{ field.label|default:field_name }}</label>
+        <select class="form-select form-select-sm" id="id_{{ field_name }}" name="{{ field_name }}">
+          {% if field.allow_null %}<option value="" {% if bval == "" %}selected{% endif %}>{{ fc.bool_null|default:"-" }}</option>{% endif %}
+          <option value="true"  {% if bval == "true"  %}selected{% endif %}>{{ fc.bool_true|default:"Sì" }}</option>
+          <option value="false" {% if bval == "false" %}selected{% endif %}>{{ fc.bool_false|default:"No" }}</option>
+        </select>
+        {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+      </div>
+      {% endwith %}
+      {% elif field|input_type == 'file' %}
+      {% include file_field_template with field_name=field_name field=field action=action instance=instance %}
+      {% else %}
+      <div class="mb-3 border-bottom border-secondary-subtle pb-3 {% field_col field fc %}">
+        <label class="form-label" for="id_{{ field_name }}">
+          {{ field.label|default:field_name }}
+          {% if field.required %}<span class="text-danger">*</span>{% endif %}
+        </label>
+
+        {% if field.choices %}
+        {% if fc.typeahead_url %}
+        <select class="form-select sb-typeahead" id="id_{{ field_name }}" name="{{ field_name }}"
+                data-typeahead-url="{{ fc.typeahead_url }}"
+                data-typeahead-chars="{{ fc.typeahead_chars|default:2 }}"
+                {% if cascading_fields %}data-cascade-field="{{ field_name }}"{% endif %}
+                {% if field.required %}required{% endif %}>
+          {% if instance|get_item:field_name %}
+          <option value="{{ instance|get_item:field_name }}" selected>
+            {{ instance|display_value:field_name }}
+          </option>
+          {% endif %}
+        </select>
         {% else %}
-        <div class="mb-3 border-bottom border-secondary-subtle pb-3 {% field_col field fc %}">
-          <label class="form-label" for="id_{{ field_name }}">
-            {{ field.label|default:field_name }}
-            {% if field.required %}<span class="text-danger">*</span>{% endif %}
-          </label>
-
-          {% if field.choices %}
-          {% if fc.typeahead_url %}
-          <select class="form-select sb-typeahead" id="id_{{ field_name }}" name="{{ field_name }}"
-                  data-typeahead-url="{{ fc.typeahead_url }}"
-                  data-typeahead-chars="{{ fc.typeahead_chars|default:2 }}"
-                  {% if cascading_fields %}data-cascade-field="{{ field_name }}"{% endif %}
-                  {% if field.required %}required{% endif %}>
-            {% if instance|get_item:field_name %}
-            <option value="{{ instance|get_item:field_name }}" selected>
-              {{ instance|display_value:field_name }}
-            </option>
-            {% endif %}
-          </select>
-          {% else %}
-          <select class="form-select {% if fc.widget == 'ts-select' %}ts-select{% endif %}"
-                  id="id_{{ field_name }}" name="{{ field_name }}"
-                  {% if field.required %}required{% endif %}>
-            <option value="">---------</option>
-            {% for val, lbl in field.choices.items %}
-            <option value="{{ val }}"
-              {% if instance %}{% if instance|get_item:field_name == val %}selected{% endif %}{% endif %}>
-              {{ lbl }}
-            </option>
-            {% endfor %}
-          </select>
-          {% endif %}
-          {% elif field|input_type == 'textarea' or fc.widget == 'textarea' %}
-          <textarea class="form-control"
-                    id="id_{{ field_name }}"
-                    name="{{ field_name }}"
-                    rows="4"
-                    {% if field.required %}required{% endif %}>{% if instance %}{{ instance|get_item:field_name }}{% endif %}</textarea>
-          {% else %}
-          <input type="{{ field|input_type }}"
-                 class="form-control"
-                 id="id_{{ field_name }}"
-                 name="{{ field_name }}"
-                 value="{{ instance|form_input_value:field_name }}"
-                 {% if field.required %}required{% endif %}>
-          {% endif %}
-
-          {% if field.help_text %}
-          <div class="form-text">{{ field.help_text }}</div>
-          {% endif %}
-          {% with field_errors=form_errors|get_item:field_name %}
-          {% if field_errors %}
-          <div class="invalid-feedback d-block">
-            {% for e in field_errors %}{{ e }}{% if not forloop.last %} {% endif %}{% endfor %}
-          </div>
-          {% endif %}
-          {% endwith %}
-        </div>
+        <select class="form-select {% if fc.widget == 'ts-select' %}ts-select{% endif %}"
+                id="id_{{ field_name }}" name="{{ field_name }}"
+                {% if field.required %}required{% endif %}>
+          <option value="">---------</option>
+          {% for val, lbl in field.choices.items %}
+          <option value="{{ val }}"
+            {% if instance %}{% if instance|get_item:field_name == val %}selected{% endif %}{% endif %}>
+            {{ lbl }}
+          </option>
+          {% endfor %}
+        </select>
         {% endif %}
-        {% elif field and field.read_only %}
-        <div class="mb-3 border-bottom border-secondary-subtle pb-3">
-          <label class="form-label text-muted">{{ field.label|default:field_name }}</label>
-          <p class="form-control-plaintext">
-            {% if instance %}
-              {% if field|input_type == 'file' %}{{ instance|get_item:field_name|filename }}
-              {% else %}{{ instance|display_value:field_name }}{% endif %}
-            {% endif %}
-          </p>
+        {% elif field|input_type == 'textarea' or fc.widget == 'textarea' %}
+        <textarea class="form-control"
+                  id="id_{{ field_name }}"
+                  name="{{ field_name }}"
+                  rows="4"
+                  {% if field.required %}required{% endif %}>{% if instance %}{{ instance|get_item:field_name }}{% endif %}</textarea>
+        {% else %}
+        <input type="{{ field|input_type }}"
+               class="form-control"
+               id="id_{{ field_name }}"
+               name="{{ field_name }}"
+               value="{{ instance|form_input_value:field_name }}"
+               {% if field.required %}required{% endif %}>
+        {% endif %}
+
+        {% if field.help_text %}
+        <div class="form-text">{{ field.help_text }}</div>
+        {% endif %}
+        {% with field_errors=form_errors|get_item:field_name %}
+        {% if field_errors %}
+        <div class="invalid-feedback d-block">
+          {% for e in field_errors %}{{ e }}{% if not forloop.last %} {% endif %}{% endfor %}
         </div>
         {% endif %}
         {% endwith %}
-        {% endwith %}
-      {% endfor %}
-    </div>
-    {% endif %}
-    {% endfor %}
-  </div>
-
-  {% else %}
-  {# No groups — render all writable fields flat #}
-  {% for field_name, field in serializer.fields.items %}
-  {% with fc=field_config|get_item:field_name %}
-  {% if not field.read_only %}
-  {% if field|input_type == 'checkbox' %}
-  <div class="form-check mb-3 border-bottom border-secondary-subtle pb-3">
-    <input type="checkbox"
-           class="form-check-input"
-           id="id_{{ field_name }}"
-           name="{{ field_name }}"
-           value="true"
-           {% if instance %}{% if instance|get_item:field_name %}checked{% endif %}{% endif %}>
-    <label class="form-check-label" for="id_{{ field_name }}">{{ field.label|default:field_name }}</label>
-  </div>
-  {% elif field|input_type == 'file' %}
-  {% include file_field_template with field_name=field_name field=field action=action instance=instance %}
-  {% else %}
-  <div class="mb-3 border-bottom border-secondary-subtle pb-3 {% field_col field fc %}">
-    <label class="form-label" for="id_{{ field_name }}">
-      {{ field.label|default:field_name }}
-      {% if field.required %}<span class="text-danger">*</span>{% endif %}
-    </label>
-    {% if field.choices and fc.typeahead_url %}
-    <select class="form-select sb-typeahead" id="id_{{ field_name }}" name="{{ field_name }}"
-            data-typeahead-url="{{ fc.typeahead_url }}"
-            data-typeahead-chars="{{ fc.typeahead_chars|default:2 }}"
-            {% if cascading_fields %}data-cascade-field="{{ field_name }}"{% endif %}
-            {% if field.required %}required{% endif %}>
-      {% if instance|get_item:field_name %}
-      <option value="{{ instance|get_item:field_name }}" selected>
-        {{ instance|display_value:field_name }}
-      </option>
+      </div>
       {% endif %}
-    </select>
-    {% elif field.choices %}
-    <select class="form-select" id="id_{{ field_name }}" name="{{ field_name }}"
-            {% if field.required %}required{% endif %}>
-      <option value="">---------</option>
-      {% for val, lbl in field.choices.items %}
-      <option value="{{ val }}"
-        {% if instance %}{% if instance|get_item:field_name == val %}selected{% endif %}{% endif %}>
-        {{ lbl }}
-      </option>
-      {% endfor %}
-    </select>
-    {% elif field|input_type == 'textarea' or fc.widget == 'textarea' %}
-    <textarea class="form-control"
-              id="id_{{ field_name }}"
-              name="{{ field_name }}"
-              rows="4"
-              {% if field.required %}required{% endif %}>{% if instance %}{{ instance|get_item:field_name }}{% endif %}</textarea>
-    {% else %}
-    <input type="{{ field|input_type }}"
-           class="form-control"
-           id="id_{{ field_name }}"
-           name="{{ field_name }}"
-           value="{{ instance|form_input_value:field_name }}"
-           {% if field.required %}required{% endif %}>
-    {% endif %}
-  {% with field_errors=form_errors|get_item:field_name %}
-  {% if field_errors %}
-  <div class="invalid-feedback d-block">
-    {% for e in field_errors %}{{ e }}{% if not forloop.last %} {% endif %}{% endfor %}
-  </div>
-  {% endif %}
-  {% endwith %}
+      {% elif field and field.read_only %}
+      <div class="mb-3 border-bottom border-secondary-subtle pb-3">
+        <label class="form-label text-muted">{{ field.label|default:field_name }}</label>
+        <p class="form-control-plaintext">
+          {% if instance %}
+            {% if field|input_type == 'file' %}{{ instance|get_item:field_name|filename }}
+            {% else %}{{ instance|display_value:field_name }}{% endif %}
+          {% endif %}
+        </p>
+      </div>
+      {% endif %}
+      {% endwith %}
+      {% endwith %}
+    {% endfor %}
+  {% if group.label %}
   </div>
   {% endif %}
   {% endif %}
-  {% endwith %}
   {% endfor %}
+
+  {% if groups|any_has_label %}
+  </div>
   {% endif %}
   {% endwith %}
 
