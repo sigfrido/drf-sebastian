@@ -233,6 +233,12 @@ def bool_select_value(instance, field) -> str:
 
 
 @register.filter
+def resolve_confirm(prompt, obj) -> str:
+    """Substitute $OBJECT in a confirmation prompt with str(obj)."""
+    return (prompt or '').replace('$OBJECT', str(obj) if obj is not None else '')
+
+
+@register.filter
 def any_has_label(groups) -> bool:
     """True if at least one group in the list has a non-empty label."""
     return any(getattr(g, 'label', '') for g in groups)

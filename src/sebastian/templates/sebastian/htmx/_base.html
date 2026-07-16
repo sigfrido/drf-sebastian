@@ -50,6 +50,25 @@
 
 <div id="sebastian-modal"></div>
 
+<!-- Generic yes/no action confirmation modal -->
+<div class="modal fade" id="sb-action-modal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Conferma</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div id="sb-action-modal-prompt" class="alert alert-primary mb-0"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annulla</button>
+        <button type="button" id="sb-action-modal-ok" class="btn btn-primary">Conferma</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="toast-container position-fixed bottom-0 end-0 p-3" id="sebastian-toasts"></div>
 
 <script src="https://unpkg.com/htmx.org@2.0.4"
@@ -114,17 +133,49 @@
     });
   });
 
-  var _sbModal = null;
   document.body.addEventListener('htmx:afterSwap', function (evt) {
     if (evt.detail.target.id === 'sebastian-modal') {
       var el = document.getElementById('sb-confirm-modal');
-      if (el) {
-        if (_sbModal) { try { _sbModal.dispose(); } catch (_) {} }
-        _sbModal = new bootstrap.Modal(el);
-        _sbModal.show();
-      }
+      if (el) { bootstrap.Modal.getOrCreateInstance(el).show(); }
     }
   });
+
+  /* Generic yes/no action confirmation ---------------------------------- */
+  (function () {
+    document.body.addEventListener('click', function (evt) {
+      var btn = evt.target.closest('[data-sb-confirm-url]');
+      if (!btn) return;
+      var url    = btn.dataset.sbConfirmUrl;
+      var prompt = btn.dataset.sbConfirmPrompt || 'Confermare?';
+      var style  = btn.dataset.sbConfirmStyle  || 'primary';
+
+      var modal     = document.getElementById('sb-action-modal');
+      var promptEl  = document.getElementById('sb-action-modal-prompt');
+      var okBtn     = document.getElementById('sb-action-modal-ok');
+
+      promptEl.className = 'alert alert-' + style + ' mb-0';
+      promptEl.textContent = prompt;
+      okBtn.className = 'btn btn-' + style;
+
+      var newOk = okBtn.cloneNode(true);
+      okBtn.replaceWith(newOk);
+      newOk.addEventListener('click', function () {
+        bootstrap.Modal.getOrCreateInstance(modal).hide();
+        var csrfToken = '';
+        try {
+          var hxh = JSON.parse(document.body.getAttribute('hx-headers') || '{}');
+          csrfToken = hxh['X-CSRFToken'] || '';
+        } catch (e) {}
+        htmx.ajax('POST', url, {
+          headers: {'X-CSRFToken': csrfToken},
+          target:  '#sebastian-content',
+          swap:    'innerHTML'
+        });
+      }, {once: true});
+
+      bootstrap.Modal.getOrCreateInstance(modal).show();
+    });
+  })();
 </script>
 </body>
 </html>{% endif %}

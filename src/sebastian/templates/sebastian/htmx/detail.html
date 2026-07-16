@@ -29,9 +29,9 @@
         </button>
         {% elif cfg.confirmation %}
         <button class="btn btn-{{ cfg.color|default:'secondary' }} btn-sm"
-                hx-get="{{ request.path }}{{ action.name }}/confirm/"
-                hx-target="#sebastian-modal"
-                hx-swap="innerHTML"
+                data-sb-confirm-url="{{ request.path }}{{ action.name }}/"
+                data-sb-confirm-prompt="{{ cfg.confirmation.prompt|resolve_confirm:instance }}"
+                data-sb-confirm-style="{{ cfg.confirmation.style|default:'primary' }}"
                 title="{{ cfg.hint|default:cfg.label|default:action.name }}">
           {% if cfg.icon %}{% icon cfg.icon %}{% endif %}
           {{ cfg.label }}

@@ -122,14 +122,16 @@
                   {{ cfg.label }}
                 </button>
                 {% elif cfg.confirmation %}
-                <button hx-get="{{ request.path }}{{ item|get_item:lookup_field }}/{{ action.name }}/confirm/"
-                        hx-target="#sebastian-modal"
-                        hx-swap="innerHTML"
-                        class="btn btn-{{ cfg.color|default:'secondary' }} btn-sm"
+                {% with obj_id=item|get_item:lookup_field %}
+                <button class="btn btn-{{ cfg.color|default:'secondary' }} btn-sm"
+                        data-sb-confirm-url="{{ request.path }}{{ obj_id }}/{{ action.name }}/"
+                        data-sb-confirm-prompt="{{ cfg.confirmation.prompt|resolve_confirm:obj_id }}"
+                        data-sb-confirm-style="{{ cfg.confirmation.style|default:'primary' }}"
                         title="{{ cfg.hint|default:cfg.label|default:action.name }}">
                   {% if cfg.icon %}{% icon cfg.icon %}{% endif %}
                   {{ cfg.label }}
                 </button>
+                {% endwith %}
                 {% elif cfg.open_url %}
                 <a href="{{ request.path }}{{ item|get_item:lookup_field }}/{{ action.name }}/"
                    target="_blank"
