@@ -588,12 +588,20 @@ class GUIMixin(_SebastianBaseMixin):
             return resp
         if getattr(instance, '_prefetched_objects_cache', None):
             instance._prefetched_objects_cache = {}
-        if request.META.get('HTTP_HX_REQUEST'):
+        is_htmx = bool(request.META.get('HTTP_HX_REQUEST'))
+        lookup_val = getattr(instance, self.lookup_field, None)
+        if lookup_val is not None:
+            # HTMX posts to detail URL /{prefix}/{old}/; plain posts to /{prefix}/{old}/edit/
+            segments_to_strip = 1 if is_htmx else 2
+            list_url = request.path.rstrip('/').rsplit('/', segments_to_strip)[0] + '/'
+            detail_url = f'{list_url}{lookup_val}/'
+        else:
+            detail_url = request.path.rstrip('/').rsplit('/', 1)[0] + '/'
+        if is_htmx:
             resp = DRFResponse(serializer.data, status=200)
-            resp['HX-Redirect'] = request.path
+            resp['HX-Redirect'] = detail_url
             return resp
         from django.http import HttpResponseRedirect
-        detail_url = request.path.rstrip('/').rsplit('/', 1)[0] + '/'
         return HttpResponseRedirect(detail_url)
 
     def destroy(self, request, *args, **kwargs):
