@@ -89,7 +89,7 @@ def test_input_type_integer():
 
 def test_input_type_boolean():
     from rest_framework import serializers
-    assert input_type(serializers.BooleanField()) == 'checkbox'
+    assert input_type(serializers.BooleanField()) == 'bool-select'
 
 
 def test_input_type_date():
