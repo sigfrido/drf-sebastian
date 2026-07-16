@@ -131,7 +131,7 @@ class SebastianHTMLRenderer(BaseRenderer):
             'response':           response,
             'sebastian_config':   sebastian_config,
             'visible_groups':     self._get_visible_groups(sebastian_config, data, action),
-            'field_labels':       self._get_field_labels(view),
+            'field_labels':       self._get_field_labels(view, getattr(view, '_sebastian_obj', None)),
             'filter_form':        self._get_filter_form(view, request),
             'ordering_config':    self._get_ordering_config(view, request),
             'field_config':       self._get_field_config(sebastian_config),
@@ -269,11 +269,11 @@ class SebastianHTMLRenderer(BaseRenderer):
             and not isinstance(v, (dict, list))
         ]
 
-    def _get_field_labels(self, view) -> dict:
+    def _get_field_labels(self, view, instance=None) -> dict:
         if not view:
             return {}
         try:
-            serializer = view.get_serializer()
+            serializer = view.get_serializer(instance) if instance is not None else view.get_serializer()
             labels = {
                 name: str(field.label) if field.label else name.replace('_', ' ').title()
                 for name, field in serializer.fields.items()
