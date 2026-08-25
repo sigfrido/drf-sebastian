@@ -29,7 +29,7 @@
       new TomSelect(el, {
         maxItems:    maxItems,
         plugins:     ['remove_button'],
-        placeholder: el.getAttribute('placeholder') || 'Ordina per…',
+        placeholder: el.getAttribute('placeholder') || 'Sort by…',
         // Pass current values via the items setting so TomSelect pre-selects
         // them in the correct order during its own setup phase.
         items: current,
@@ -39,7 +39,7 @@
         },
         onItemAdd: function (value) {
           // Mutual exclusion: remove the opposite direction for the same field.
-          // 'ragione_sociale' and '-ragione_sociale' cannot both be selected.
+          // 'company_name' and '-company_name' cannot both be selected.
           var opposite = value.startsWith('-') ? value.slice(1) : ('-' + value);
           if (this.items.indexOf(opposite) !== -1) {
             this.removeItem(opposite, true);  // silent — won't retrigger onChange

@@ -1,0 +1,109 @@
+# Italian translation of drf-sebastian's default GUI chrome.
+# Copyright (C) 2026 Luca Sigfrido Percich
+# This file is distributed under the same license as the drf-sebastian package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: drf-sebastian 0.1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-08-25 12:37-0500\n"
+"PO-Revision-Date: 2026-08-25 12:37-0500\n"
+"Last-Translator: Luca Sigfrido Percich\n"
+"Language-Team: Italian\n"
+"Language: it\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#. Translators: $ACTION and $OBJECT are placeholders substituted below — keep them verbatim.
+msgid "Perform $ACTION on $OBJECT?"
+msgstr "Eseguire $ACTION su $OBJECT?"
+
+msgid "Confirm?"
+msgstr "Confermare?"
+
+#. Translators: $OBJECT is a placeholder substituted below — keep it verbatim.
+msgid "Delete $OBJECT?"
+msgstr "Eliminare $OBJECT?"
+
+msgid "An error occurred while saving. Please check the entered data."
+msgstr "Si è verificato un errore durante il salvataggio. Verificare i dati inseriti."
+
+msgid "Error"
+msgstr "Errore"
+
+msgid "Yes"
+msgstr "Sì"
+
+msgid "No"
+msgstr "No"
+
+msgid "Confirm"
+msgstr "Conferma"
+
+msgid "Close"
+msgstr "Chiudi"
+
+msgid "Cancel"
+msgstr "Annulla"
+
+msgid "File will be removed"
+msgstr "Il file verrà rimosso"
+
+msgid "Remove file"
+msgstr "Rimuovi file"
+
+msgid "Select a file to replace the current one."
+msgstr "Seleziona un file per sostituire quello attuale."
+
+msgid "Detail"
+msgstr "Dettaglio"
+
+msgid "Edit"
+msgstr "Modifica"
+
+msgid "Loading…"
+msgstr "Caricamento…"
+
+msgid "New"
+msgstr "Nuovo"
+
+msgid "Save"
+msgstr "Salva"
+
+msgid "Home"
+msgstr "Home"
+
+msgid "Available modules"
+msgstr "Moduli disponibili"
+
+msgid "No modules registered."
+msgstr "Nessun modulo registrato."
+
+msgid "List"
+msgstr "Elenco"
+
+msgid "Sort by"
+msgstr "Ordina per"
+
+msgid "Sort by…"
+msgstr "Ordina per…"
+
+msgid "Filter"
+msgstr "Filtra"
+
+msgid "Clear"
+msgstr "Cancella"
+
+#, python-format
+msgid "%(counter)s record"
+msgid_plural "%(counter)s records"
+msgstr[0] "%(counter)s elemento"
+msgstr[1] "%(counter)s elementi"
+
+msgid "No records found."
+msgstr "Nessun elemento trovato."
+
+msgid "Then by"
+msgstr "Poi per"

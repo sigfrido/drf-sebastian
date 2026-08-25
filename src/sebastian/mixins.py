@@ -2,6 +2,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.http import FileResponse
+from django.utils.translation import gettext
 from rest_framework import renderers as drf_renderers
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.mixins import CreateModelMixin, UpdateModelMixin
@@ -219,7 +220,8 @@ class _SebastianBaseMixin:
             return None
         prompt = conf.get('prompt', '')
         if not prompt and confirm_flag is True:
-            prompt = 'Eseguire $ACTION su $OBJECT?' if action_name else 'Confermare?'
+            # Translators: $ACTION and $OBJECT are placeholders substituted below — keep them verbatim.
+            prompt = gettext('Perform $ACTION on $OBJECT?') if action_name else gettext('Confirm?')
         # Substitute $OBJECT / $ACTION
         if instance is not None:
             prompt = prompt.replace('$OBJECT', str(instance))
@@ -254,7 +256,8 @@ class _SebastianBaseMixin:
             if delete_cfg is not None:
                 raw_conf = delete_cfg.get('confirmation', {})
             elif confirm_deletions():
-                raw_conf = {'prompt': 'Eliminare $OBJECT?', 'icon': 'trash', 'style': 'danger'}
+                # Translators: $OBJECT is a placeholder substituted below — keep it verbatim.
+                raw_conf = {'prompt': gettext('Delete $OBJECT?'), 'icon': 'trash', 'style': 'danger'}
             else:
                 raw_conf = {}
             resolved = self._resolve_confirmation(raw_conf, '', instance) if raw_conf else None
@@ -581,7 +584,7 @@ class GUIMixin(_SebastianBaseMixin):
                 {'serializer': serializer, 'instance': merged, 'action': 'update',
                  'submit_url': request.path, 'cancel_url': request.path,
                  'htmx_target': '#sebastian-content',
-                 'form_errors': {'non_field_errors': ['Errore durante il salvataggio. Verificare i dati inseriti.']}},
+                 'form_errors': {'non_field_errors': [gettext('An error occurred while saving. Please check the entered data.')]}},
                 status=400,
             )
             resp['X-Sebastian-Form-Error'] = 'true'
@@ -684,15 +687,15 @@ class NestedGUIMixin(GUIMixin):
     Filters the queryset and injects the parent FK on create.
 
     Usage:
-        class AllegatoViewSet(NestedGUIMixin, viewsets.ModelViewSet):
-            queryset         = Allegato.objects.all()
-            serializer_class = AllegatoSerializer
-            mountpoint       = 'allegati'   # URL segment after parent pk
+        class AttachmentViewSet(NestedGUIMixin, viewsets.ModelViewSet):
+            queryset         = Attachment.objects.all()
+            serializer_class = AttachmentSerializer
+            mountpoint       = 'attachments'   # URL segment after parent pk
 
     The parent is declared in the parent ViewSet:
-        class RichiestaViewSet(GUIMixin, viewsets.ModelViewSet):
+        class RequestViewSet(GUIMixin, viewsets.ModelViewSet):
             class Sebastian:
-                inlines = [AllegatoViewSet]
+                inlines = [AttachmentViewSet]
     """
 
     _sebastian_is_nested = True
@@ -748,7 +751,7 @@ class NestedGUIMixin(GUIMixin):
                 {'serializer': serializer, 'action': 'create',
                  'htmx_target': f'#{container}', 'cancel_url': list_path,
                  'submit_url': list_path,
-                 'form_errors': {'non_field_errors': ['Errore durante il salvataggio. Verificare i dati inseriti.']}},
+                 'form_errors': {'non_field_errors': [gettext('An error occurred while saving. Please check the entered data.')]}},
                 status=400,
             )
             resp['X-Sebastian-Form-Error'] = 'true'
@@ -805,7 +808,7 @@ class NestedGUIMixin(GUIMixin):
                 {'serializer': serializer, 'instance': merged, 'action': 'update',
                  'htmx_target': f'#{container}', 'cancel_url': cancel_url,
                  'submit_url': submit_url,
-                 'form_errors': {'non_field_errors': ['Errore durante il salvataggio. Verificare i dati inseriti.']}},
+                 'form_errors': {'non_field_errors': [gettext('An error occurred while saving. Please check the entered data.')]}},
                 status=400,
             )
             resp['X-Sebastian-Form-Error'] = 'true'

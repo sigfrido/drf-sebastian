@@ -23,21 +23,21 @@ PLAIN_SETTINGS = override_settings(SEBASTIAN={
 @pytest.mark.django_db
 class TestPackContext:
     def test_pack_name_in_response(self, auth_client):
-        r = auth_client.get('/gui/fornitori/', **HTMX)
+        r = auth_client.get('/gui/suppliers/', **HTMX)
         assert r.status_code == 200
         # The response is rendered HTML; pack_name drives template selection
         # — if we got here without TemplateDoesNotExist, the pack resolved correctly
-        assert b'Fornitor' in r.content or b'fornitor' in r.content.lower()
+        assert b'Supplier' in r.content or b'supplier' in r.content.lower()
 
     def test_htmx_is_default_pack(self, auth_client):
         """Default pack renders HTMX HTML."""
-        r = auth_client.get('/gui/fornitori/', **GUI)
+        r = auth_client.get('/gui/suppliers/', **GUI)
         assert r.status_code == 200
         assert b'hx-target' in r.content.lower()
 
     def test_bootstrap5_skin_fragment_included(self, auth_client):
         """Skin fragment CDN links appear in the full-page response."""
-        r = auth_client.get('/gui/fornitori/', **GUI)
+        r = auth_client.get('/gui/suppliers/', **GUI)
         assert b'bootstrap@5.3.3' in r.content
         assert b'bootstrap-icons' in r.content
 
@@ -113,32 +113,32 @@ class TestIncludeResourceTag:
 
 @pytest.mark.django_db
 class TestPlainPack:
-    def test_plain_list_has_no_hx_get(self, auth_client, fornitore):
+    def test_plain_list_has_no_hx_get(self, auth_client, supplier):
         with PLAIN_SETTINGS:
-            r = auth_client.get('/gui/fornitori/', **GUI)
+            r = auth_client.get('/gui/suppliers/', **GUI)
         assert r.status_code == 200
         assert b'hx-get' not in r.content
         assert b'hx-post' not in r.content
-        assert b'Acme Srl' in r.content
+        assert b'Acme Inc' in r.content
 
     def test_plain_list_filter_uses_plain_form(self, auth_client):
         with PLAIN_SETTINGS:
-            r = auth_client.get('/gui/fornitori/', **GUI)
+            r = auth_client.get('/gui/suppliers/', **GUI)
         assert r.status_code == 200
         assert b'method="get"' in r.content
 
-    def test_plain_detail_renders_inline_directly(self, auth_client, richiesta):
+    def test_plain_detail_renders_inline_directly(self, auth_client, purchase_request):
         """Inline section is embedded server-side (no hx-trigger=load)."""
         with PLAIN_SETTINGS:
-            r = auth_client.get(f'/gui/richieste/{richiesta.pk}/', **GUI)
+            r = auth_client.get(f'/gui/requests/{purchase_request.pk}/', **GUI)
         assert r.status_code == 200
         assert b'hx-trigger' not in r.content
         # inline section header still present
-        assert b'Allegati' in r.content
+        assert b'Attachments' in r.content
 
-    def test_plain_form_uses_method_post(self, auth_client, fornitore):
+    def test_plain_form_uses_method_post(self, auth_client, supplier):
         with PLAIN_SETTINGS:
-            r = auth_client.get(f'/gui/fornitori/{fornitore.pk}/edit/', **GUI)
+            r = auth_client.get(f'/gui/suppliers/{supplier.pk}/edit/', **GUI)
         assert r.status_code == 200
         assert b'method="post"' in r.content
         # Form posts to /edit/ URL (mapped to partial_update) — no _method override needed
@@ -148,7 +148,7 @@ class TestPlainPack:
         with PLAIN_SETTINGS:
             r = auth_client.get('/gui/', **GUI)
         assert r.status_code == 200
-        assert b'Moduli disponibili' in r.content
+        assert b'Available modules' in r.content
         assert b'hx-' not in r.content
 
 
@@ -158,23 +158,23 @@ class TestPlainPack:
 
 @pytest.mark.django_db
 class TestViewsetTemplateOverride:
-    def test_override_beats_pack(self, auth_client, fornitore, settings, tmp_path):
+    def test_override_beats_pack(self, auth_client, supplier, settings, tmp_path):
         """Sebastian.templates = {'list': '...'} takes precedence over the active pack."""
-        from selco.views import FornitoreViewSet
-        original = getattr(getattr(FornitoreViewSet, 'Sebastian', None), 'templates', {})
+        from demo.views import SupplierViewSet
+        original = getattr(getattr(SupplierViewSet, 'Sebastian', None), 'templates', {})
         # Use the existing flat legacy template as the override target
         try:
             # Ensure active pack is 'plain'
             with PLAIN_SETTINGS:
-                r = auth_client.get('/gui/fornitori/', **HTMX)
+                r = auth_client.get('/gui/suppliers/', **HTMX)
                 assert r.status_code == 200
-                assert b'Acme Srl' in r.content
+                assert b'Acme Inc' in r.content
                 # plain does not use HTMX
                 assert b'hx-target' not in r.content
-                FornitoreViewSet.Sebastian.templates = {'list': 'sebastian/htmx/list.html'}
-                r = auth_client.get('/gui/fornitori/', **HTMX)
+                SupplierViewSet.Sebastian.templates = {'list': 'sebastian/htmx/list.html'}
+                r = auth_client.get('/gui/suppliers/', **HTMX)
                 assert r.status_code == 200
-                assert b'Acme Srl' in r.content
+                assert b'Acme Inc' in r.content
                 assert b'hx-target' in r.content
         finally:
-            FornitoreViewSet.Sebastian.templates = original
+            SupplierViewSet.Sebastian.templates = original

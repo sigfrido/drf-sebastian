@@ -1,8 +1,8 @@
 {% extends pack_base %}
-{% load sebastian_tags %}
+{% load i18n sebastian_tags %}
 
 {% block title %}
-  {% if data.action == 'create' %}New{% else %}Edit{% endif %}
+  {% if data.action == 'create' %}{% trans "New" %}{% else %}{% trans "Edit" %}{% endif %}
 {% endblock %}
 
 {% block content %}
@@ -10,7 +10,7 @@
 
 <h4>
   {{ view.get_view_name }} —
-  {% if action == 'create' %}New{% else %}Edit{% endif %}
+  {% if action == 'create' %}{% trans "New" %}{% else %}{% trans "Edit" %}{% endif %}
 </h4>
 
 {% if form_errors.non_field_errors %}
@@ -60,12 +60,14 @@
       {% if field and not field.read_only %}
       {% if field|input_type == 'bool-select' %}
       {% with bval=instance|bool_select_value:field %}
+      {% trans "Yes" as yes_label %}
+      {% trans "No" as no_label %}
       <div class="mb-3 border-bottom border-secondary-subtle pb-3 {% field_col field fc %}">
         <label class="form-label" for="id_{{ field_name }}">{{ field.label|default:field_name }}</label>
         <select class="form-select form-select-sm" id="id_{{ field_name }}" name="{{ field_name }}">
           {% if field.allow_null %}<option value="" {% if bval == "" %}selected{% endif %}>{{ fc.bool_null|default:"-" }}</option>{% endif %}
-          <option value="true"  {% if bval == "true"  %}selected{% endif %}>{{ fc.bool_true|default:"Sì" }}</option>
-          <option value="false" {% if bval == "false" %}selected{% endif %}>{{ fc.bool_false|default:"No" }}</option>
+          <option value="true"  {% if bval == "true"  %}selected{% endif %}>{{ fc.bool_true|default:yes_label }}</option>
+          <option value="false" {% if bval == "false" %}selected{% endif %}>{{ fc.bool_false|default:no_label }}</option>
         </select>
         {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
       </div>
@@ -158,15 +160,15 @@
   {% endwith %}
 
   <div class="d-flex gap-2">
-    <button type="submit" class="btn btn-primary">Save</button>
+    <button type="submit" class="btn btn-primary">{% trans "Save" %}</button>
     {% if cancel_url %}
     <button type="button"
             hx-get="{{ cancel_url }}"
             hx-target="{{ htmx_target }}"
             {% if not is_inline %}hx-push-url="{{ cancel_url }}"{% endif %}
-            class="btn btn-outline-secondary">Cancel</button>
+            class="btn btn-outline-secondary">{% trans "Cancel" %}</button>
     {% else %}
-    <a href="{{ request.path }}../" class="btn btn-outline-secondary">Cancel</a>
+    <a href="{{ request.path }}../" class="btn btn-outline-secondary">{% trans "Cancel" %}</a>
     {% endif %}
   </div>
 

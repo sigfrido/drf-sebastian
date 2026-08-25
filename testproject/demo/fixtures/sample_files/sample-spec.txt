@@ -1,0 +1,5 @@
+Sample specification document.
+
+This is a placeholder attachment used by the `seed_demo_data` management
+command to demonstrate the download and preview actions in the Sebastian
+demo project.

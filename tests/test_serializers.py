@@ -27,104 +27,104 @@ def _api_request():
 # ── to_representation: GUI vs API mode ───────────────────────────────────────
 
 @pytest.mark.django_db
-def test_gui_mode_adds_sebastian_str(fornitore):
-    from selco.serializers import FornitoreSerializer
-    s = FornitoreSerializer(fornitore, context={'request': _gui_request()})
+def test_gui_mode_adds_sebastian_str(supplier):
+    from demo.serializers import SupplierSerializer
+    s = SupplierSerializer(supplier, context={'request': _gui_request()})
     assert 'sebastian__str' in s.data
-    assert s.data['sebastian__str'] == str(fornitore)
+    assert s.data['sebastian__str'] == str(supplier)
 
 
 @pytest.mark.django_db
-def test_api_mode_omits_sebastian_str(fornitore):
-    from selco.serializers import FornitoreSerializer
-    s = FornitoreSerializer(fornitore, context={'request': _api_request()})
+def test_api_mode_omits_sebastian_str(supplier):
+    from demo.serializers import SupplierSerializer
+    s = SupplierSerializer(supplier, context={'request': _api_request()})
     assert 'sebastian__str' not in s.data
 
 
 @pytest.mark.django_db
-def test_gui_mode_adds_display_for_related_field(richiesta):
-    from selco.serializers import RichiestaSerializer
-    s = RichiestaSerializer(richiesta, context={'request': _gui_request()})
-    assert 'fornitore__display' in s.data
-    assert richiesta.fornitore.ragione_sociale in s.data['fornitore__display']
+def test_gui_mode_adds_display_for_related_field(purchase_request):
+    from demo.serializers import RequestSerializer
+    s = RequestSerializer(purchase_request, context={'request': _gui_request()})
+    assert 'supplier__display' in s.data
+    assert purchase_request.supplier.company_name in s.data['supplier__display']
 
 
 @pytest.mark.django_db
-def test_api_mode_omits_display_keys(richiesta):
-    from selco.serializers import RichiestaSerializer
-    s = RichiestaSerializer(richiesta, context={'request': _api_request()})
+def test_api_mode_omits_display_keys(purchase_request):
+    from demo.serializers import RequestSerializer
+    s = RequestSerializer(purchase_request, context={'request': _api_request()})
     assert not any(k.endswith('__display') for k in s.data)
 
 
 @pytest.mark.django_db
 def test_gui_mode_null_fk_omits_display(db):
-    from selco.models import Richiesta
-    from selco.serializers import RichiestaSerializer
-    r = Richiesta.objects.create(
-        titolo='No fornitore', descrizione='', budget='0', stato=Richiesta.Stato.BOZZA,
+    from demo.models import Request
+    from demo.serializers import RequestSerializer
+    r = Request.objects.create(
+        title='No supplier', description='', budget='0', status=Request.Status.DRAFT,
     )
-    s = RichiestaSerializer(r, context={'request': _gui_request()})
-    assert 'fornitore__display' not in s.data
+    s = RequestSerializer(r, context={'request': _gui_request()})
+    assert 'supplier__display' not in s.data
 
 
 # ── FieldGroup permission enforcement ────────────────────────────────────────
 
 @pytest.mark.django_db
-def test_fieldgroup_hidden_field_removed(fornitore, admin_user):
+def test_fieldgroup_hidden_field_removed(supplier, admin_user):
     """A field whose group has visible_permission=False is absent from output."""
-    from selco.serializers import FornitoreSerializer
+    from demo.serializers import SupplierSerializer
 
     class RestrictedView:
         class Sebastian:
             groups = [
-                FieldGroup('base', ['ragione_sociale', 'codice_fiscale'],
+                FieldGroup('base', ['company_name', 'tax_code'],
                            visible_permission=lambda req, obj: False),
             ]
 
     req = _gui_request(admin_user)
-    s = FornitoreSerializer(
-        fornitore,
+    s = SupplierSerializer(
+        supplier,
         context={'request': req, 'view': RestrictedView()},
     )
     fields = s.fields
-    assert 'ragione_sociale' not in fields
-    assert 'codice_fiscale' not in fields
+    assert 'company_name' not in fields
+    assert 'tax_code' not in fields
 
 
 @pytest.mark.django_db
-def test_fieldgroup_readonly_when_not_editable(fornitore, admin_user):
+def test_fieldgroup_readonly_when_not_editable(supplier, admin_user):
     """A field whose group has edit_permission=False is marked read_only."""
-    from selco.serializers import FornitoreSerializer
+    from demo.serializers import SupplierSerializer
 
     class ReadonlyView:
         class Sebastian:
             groups = [
-                FieldGroup('base', ['ragione_sociale'],
+                FieldGroup('base', ['company_name'],
                            edit_permission=lambda req, obj: False),
             ]
 
     req = _gui_request(admin_user)
-    s = FornitoreSerializer(
-        fornitore,
+    s = SupplierSerializer(
+        supplier,
         context={'request': req, 'view': ReadonlyView()},
     )
-    assert s.fields['ragione_sociale'].read_only is True
+    assert s.fields['company_name'].read_only is True
 
 
 @pytest.mark.django_db
-def test_fieldgroup_visible_permission_true_keeps_field(fornitore, admin_user):
-    from selco.serializers import FornitoreSerializer
+def test_fieldgroup_visible_permission_true_keeps_field(supplier, admin_user):
+    from demo.serializers import SupplierSerializer
 
     class VisibleView:
         class Sebastian:
             groups = [
-                FieldGroup('base', ['ragione_sociale'],
+                FieldGroup('base', ['company_name'],
                            visible_permission=lambda req, obj: True),
             ]
 
     req = _gui_request(admin_user)
-    s = FornitoreSerializer(
-        fornitore,
+    s = SupplierSerializer(
+        supplier,
         context={'request': req, 'view': VisibleView()},
     )
-    assert 'ragione_sociale' in s.fields
+    assert 'company_name' in s.fields

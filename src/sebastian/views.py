@@ -55,7 +55,7 @@ def _evaluate_menu(request, groups: list, current_url: str = '') -> list:
             continue
 
         # Active item: exact match wins; fall back to longest prefix match.
-        # This ensures /gui/richieste/new/ activates "Nuova", not "Elenco".
+        # This ensures /gui/requests/new/ activates "New", not "List".
         if current_url:
             candidate_urls = [i['url'] for i in evaluated_items if not i.get('divider') and i['url'] != '#']
             exact = current_url if current_url in candidate_urls else None

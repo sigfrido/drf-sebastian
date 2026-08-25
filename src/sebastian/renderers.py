@@ -1,4 +1,5 @@
 from django.template.loader import render_to_string
+from django.utils.translation import gettext
 from rest_framework.renderers import BaseRenderer
 from . import app_settings
 
@@ -17,6 +18,16 @@ def _find_in_mro(view, attr):
 
 
 class SebastianHTMLRenderer(BaseRenderer):
+    """DRF renderer that turns any GUI-mode response into HTML.
+
+    Set as `sebastian.mixins.GUIMixin.renderer_classes[0]`, and installed
+    project-wide via ``REST_FRAMEWORK['DEFAULT_RENDERER_CLASSES']`` so plain
+    DRF views can opt in too. Resolves the right template for the current
+    action/pack (list/detail/form/confirm/error), builds the extra context
+    (pagination, HTMX flags, field labels, filter form, inline configs), and
+    hands off to `django.template.loader.render_to_string`.
+    """
+
     media_type = 'text/html'
     format = 'html'
     charset = 'utf-8'
@@ -35,6 +46,8 @@ class SebastianHTMLRenderer(BaseRenderer):
     DEFAULT_TEMPLATE_SUFFIX = 'detail.html'
 
     def render(self, data, accepted_media_type=None, renderer_context=None):
+        """Render `data` (the ViewSet's response payload) as an HTML page or,
+        for HTMX requests, just the ``{% block content %}`` fragment."""
         renderer_context = renderer_context or {}
         view     = renderer_context.get('view')
         request  = renderer_context.get('request')
@@ -159,7 +172,8 @@ class SebastianHTMLRenderer(BaseRenderer):
         if isinstance(data, dict):
             detail = data.get('detail', '') or data.get('message', '')
         if not detail:
-            detail = f'Errore {response.status_code}'
+            error_label = gettext('Error')
+            detail = f'{error_label} {response.status_code}'
         return render_to_string(f'sebastian/{pack}/error.html', {
             'error_detail':    str(detail),
             'alert_class':     alert_class,

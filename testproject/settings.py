@@ -18,7 +18,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'django_filters',
     'sebastian',
-    'selco',
+    'demo',
 ]
 
 MIDDLEWARE = [
@@ -58,6 +58,9 @@ DATABASES = {
 
 STATIC_URL = '/static/'
 
+MEDIA_URL  = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 REST_FRAMEWORK = {
@@ -76,6 +79,5 @@ REST_FRAMEWORK = {
 SEBASTIAN = {
     'TEMPLATE_PACK': 'htmx',
     # 'TEMPLATE_PACK': 'plain',
-    'DEFAULT_PAGE_SIZE': 25,
     'HIDE_UNAUTHORIZED_ACTIONS': False, # Disable instead
 }

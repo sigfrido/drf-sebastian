@@ -18,7 +18,7 @@ def admin_user(db):
 def regular_user(db):
     from django.contrib.auth import get_user_model
     User = get_user_model()
-    return User.objects.create_user('utente', 'utente@example.com', 'password')
+    return User.objects.create_user('regular', 'regular@example.com', 'password')
 
 
 @pytest.fixture
@@ -42,33 +42,35 @@ def auth_client_regular(api_client, regular_user):
 # ── model fixtures ────────────────────────────────────────────────────────────
 
 @pytest.fixture
-def fornitore(db):
-    from selco.models import Fornitore
-    return Fornitore.objects.create(
-        ragione_sociale='Acme Srl',
-        codice_fiscale='12345678901',
-        attivo=True,
+def supplier(db):
+    from demo.models import Supplier
+    return Supplier.objects.create(
+        company_name='Acme Inc',
+        tax_code='AC1234567890',
+        active=True,
     )
 
 
 @pytest.fixture
-def richiesta(db, fornitore):
-    from selco.models import Richiesta
-    return Richiesta.objects.create(
-        titolo='Acquisto server',
-        descrizione='Rinnovo infrastruttura',
+def purchase_request(db, supplier):
+    # Named purchase_request (not `request`) to avoid shadowing pytest's builtin
+    # `request` fixture, which every test implicitly has access to.
+    from demo.models import Request
+    return Request.objects.create(
+        title='Server purchase',
+        description='Infrastructure renewal',
         budget='5000.00',
-        stato=Richiesta.Stato.BOZZA,
-        fornitore=fornitore,
+        status=Request.Status.DRAFT,
+        supplier=supplier,
     )
 
 
 @pytest.fixture
-def allegato(db, richiesta):
-    from selco.models import Allegato
+def attachment(db, purchase_request):
+    from demo.models import Attachment
     from django.core.files.base import ContentFile
-    a = Allegato(richiesta=richiesta, descrizione='Documento test')
-    a.file.save('test.txt', ContentFile(b'contenuto test'))
+    a = Attachment(request=purchase_request, description='Test document')
+    a.file.save('test.txt', ContentFile(b'test content'))
     return a
 
 

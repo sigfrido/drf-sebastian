@@ -1,11 +1,11 @@
 # drf-sebastian Framework Specification
 
-See README.md for an introduction.
+See README.md for an introduction and a Quick Start.
 
-**Version**: 0.2.0  
-**Last Updated**: 2026-04-28  
-**Author**: Sig  
-**Status**: Architecture settled — Phase 1 scaffold complete
+**Version**: 0.1.0 (tracks `pyproject.toml`)
+**Last Updated**: 2026-08-25
+**Author**: Sig
+**Status**: Core framework complete and in real-world use (see [roadmap](roadmap.md)). SPA/schema mode remains a deferred idea, not an implemented feature.
 
 ---
 
@@ -26,12 +26,13 @@ In both cases, duplication raises development cost and may produce inconsistenci
 
 Sebastian overloads existing DRF ViewSets, Serializers, and Routers with GUI-specific metadata so the same API endpoints produce both JSON data and HTML GUI fragments. The same business logic, permissions, and validation applies to both — there is no duplication.
 
-Based on HTMX, Sebastian provides a GUI framework with standard placeholders (menu bar, status bar, content frame) and standard concepts (actions, lists, details, edit forms, inline entities, widgets).
+Based on HTMX, Sebastian provides a GUI framework with standard placeholders (menu bar, content frame, modals) and standard concepts (actions, lists, details, edit forms, nested/inline resources, singleton resources, widgets).
 
 Sebastian enriches the API with GUI-related and context-related metadata:
 
-- An entity's fields are grouped in **field groups**: each group can have visibility and editability rules for the current user. When no groups are defined, all fields are accessible with default permissions. Groups are rendered as tabs or sections in detail and form views.
-- **Entity groups** represent weak-entity (inline) relations — e.g. attachments owned by a parent record. They are managed via HTMX-powered per-row modal forms with no page reload, one modal per API endpoint.
+- An entity's fields are grouped in **field groups** (`FieldGroup`): each group can have visibility and editability rules for the current user. When no groups are defined, all fields are accessible with default permissions. Groups are rendered as tabs (htmx pack) or accordion sections (plain pack) in detail and form views.
+- **Nested resources** represent weak-entity (inline) relations — e.g. attachments owned by a parent record — declared via `NestedGUIMixin` and `ViewSet.Sebastian.inlines`. They are real, independently-routable child ViewSets, not a separate config object; the parent's GUI simply mounts their list/form as an inline section.
+- **Singleton resources** (`SingletonGUIMixin`) — for GUI pages backed by at most one instance per context (e.g. an app's settings), where list/create/destroy semantics don't apply.
 - The API returns, for each instance, the actions available for the current user (may differ for list and detail views).
 - `enabled`/`visible` concepts apply to actions and field groups and map directly to GUI control visibility and availability.
 
@@ -40,72 +41,78 @@ Field groups are especially useful in workflows, where different users may acces
 GUI URLs mirror API URLs:
 
 ```
-GET  /api/richieste/             → JSON list
-GET  /api/richieste/123/         → JSON detail
-POST /api/richieste/123/approva/ → JSON action result
+GET  /api/requests/            → JSON list
+GET  /api/requests/123/        → JSON detail
+POST /api/requests/123/approve/→ JSON action result
 
-GET  /gui/richieste/             → HTML list with filters
-GET  /gui/richieste/new/         → HTML create form       ← GUI-only
-GET  /gui/richieste/123/         → HTML detail with action buttons
-GET  /gui/richieste/123/edit/    → HTML edit form         ← GUI-only
-POST /gui/richieste/123/approva/ → HTML fragment (HTMX)
+GET  /gui/requests/            → HTML list with filters
+GET  /gui/requests/new/        → HTML create form       ← GUI-only
+GET  /gui/requests/123/        → HTML detail with action buttons
+GET  /gui/requests/123/edit/   → HTML edit form          ← GUI-only
+POST /gui/requests/123/approve/→ HTML fragment (HTMX)
 ```
 
 **Minimal adoption example** — add two mixins to existing DRF code:
 
 ```python
 from sebastian.mixins import GUIMixin
-from sebastian.serializers import GUISerializer
+from sebastian.serializers import GUISerializerMixin
 
-class RichiestaSerializer(GUISerializer, serializers.ModelSerializer):
+class RequestSerializer(GUISerializerMixin, serializers.ModelSerializer):
     class Meta:
-        model  = Richiesta
+        model  = Request
         fields = '__all__'
 
-class RichiestaViewSet(GUIMixin, viewsets.ModelViewSet):  # ← add GUIMixin
-    queryset         = Richiesta.objects.all()
-    serializer_class = RichiestaSerializer
-    filterset_fields = ['stato']
+class RequestViewSet(GUIMixin, viewsets.ModelViewSet):  # ← add GUIMixin
+    queryset         = Request.objects.all()
+    serializer_class = RequestSerializer
+    filterset_fields = ['status']
 ```
 
-With a full `Sebastian` inner class and `@action` metadata (see §3.4 and §4.4):
+With a full `Sebastian` inner class, `@action` metadata, and a nested resource (see §3.4, §4.1, §4.6):
 
 ```python
-from sebastian.mixins import GUIMixin
-from sebastian.serializers import GUISerializer
-from sebastian.config import FieldGroup, EntityGroup
+from sebastian.mixins import GUIMixin, NestedGUIMixin
+from sebastian.serializers import GUISerializerMixin
+from sebastian.config import FieldGroup
 from sebastian.decorators import action
 
-class RichiestaViewSet(GUIMixin, viewsets.ModelViewSet):
-    queryset         = Richiesta.objects.select_related('fornitore').all()
-    serializer_class = RichiestaSerializer
+class AttachmentViewSet(NestedGUIMixin, viewsets.ModelViewSet):
+    queryset         = Attachment.objects.all()
+    serializer_class = AttachmentSerializer
+    mountpoint       = 'attachments'
+
+class RequestViewSet(GUIMixin, viewsets.ModelViewSet):
+    queryset         = Request.objects.select_related('supplier').all()
+    serializer_class = RequestSerializer
 
     class Sebastian:
         groups = [
-            FieldGroup('generale', ['titolo', 'descrizione', 'budget', 'stato'],
-                       label='Generale'),
-            FieldGroup('direzione', ['note_direttore', 'cig'],
-                       label='Direzione',
-                       edit_permission=lambda req, obj: req.user.groups.filter(name='direttori').exists()),
-            EntityGroup('allegati', model=Allegato, serializer_class=AllegatoSerializer,
-                        label='Allegati', related_field='richiesta'),
+            FieldGroup('general', ['title', 'description', 'budget', 'status'],
+                       label='General'),
+            FieldGroup('management', ['manager_notes', 'reference_code'],
+                       label='Management',
+                       edit_permission=lambda req, obj: req.user.groups.filter(name='managers').exists()),
         ]
+        inlines = [AttachmentViewSet]
 
     @action(detail=True, methods=['post'],
             permission_classes=[IsAdminUser],
             gui_config={
-                'label':   'Approva',
-                'icon':    'check-circle',
-                'color':   'success',
-                'confirm': 'Confermi approvazione?',
+                'label':    'Approve',
+                'icon':     'check-circle',
+                'color':    'success',
                 'position': 'detail',
+                'confirmation': {'prompt': 'Confirm approval of $OBJECT?', 'style': 'success'},
             })
-    def approva(self, request, pk=None):
+    def approve(self, request, pk=None):
         instance = self.get_object()
-        instance.stato = 'approvata'
+        instance.status = 'approved'
         instance.save()
         return Response(self.get_serializer(instance).data)
 ```
+
+See it running end-to-end in `testproject/demo/` — clone the repo and follow the README's Quick Start.
 
 ---
 
@@ -115,15 +122,20 @@ class RichiestaViewSet(GUIMixin, viewsets.ModelViewSet):
 
 ```
 src/sebastian/
-├── mixins.py        GUIMixin — ViewSet mixin for HTML rendering + GUI-only actions
-├── routers.py       GUIRouter — mirrors DRF router registry to /gui/ URL space
-├── renderers.py     SebastianHTMLRenderer — renders action-appropriate template
-├── serializers.py   GUISerializer — enforces FieldGroup permissions at serializer layer
-├── config.py        FieldGroup, EntityGroup — declared in ViewSet.Sebastian.groups
-├── decorators.py    @action — DRF @action extended with gui_config metadata
-├── dispatch.py      call() — internal ViewSet dispatch for cascading actions
-└── templatetags/
-    └── sebastian_tags.py   get_item, input_type, field_value filters
+├── mixins.py         GUIMixin, NestedGUIMixin, SingletonGUIMixin
+├── routers.py        SebastianRouter, GUIRouter
+├── renderers.py       SebastianHTMLRenderer — resolves + renders the right template
+├── serializers.py     GUISerializerMixin, gui_field, NullableFileField
+├── config.py           FieldGroup, MenuItem, MenuGroup, MenuDivider
+├── decorators.py       @action (gui_config), @typeahead
+├── permissions.py      perm_is_admin, perm_is_staff, perm_is_action, perm_or, perm_and
+├── dispatch.py          call() — internal ViewSet-to-ViewSet dispatch
+├── app_settings.py      accessors for the SEBASTIAN settings dict
+├── views.py              SebastianMenuView
+├── static/sebastian/     widgets.js (TomSelect init), sebastian.css
+└── templates/sebastian/
+    ├── htmx/            HTMX-aware pack (default)
+    └── plain/           No-JS pack (server renders full pages)
 ```
 
 ### 3.2 URL Routing
@@ -132,12 +144,11 @@ The user registers an API router normally, then passes it to `GUIRouter`:
 
 ```python
 # urls.py
-from rest_framework.routers import DefaultRouter
-from sebastian.routers import GUIRouter
-from selco.views import RichiestaViewSet
+from sebastian.routers import SebastianRouter, GUIRouter
+from demo.views import RequestViewSet
 
-api_router = DefaultRouter()
-api_router.register('richieste', RichiestaViewSet, basename='richiesta')
+api_router = SebastianRouter()   # drop-in DefaultRouter replacement
+api_router.register('requests', RequestViewSet, basename='request')
 
 gui_router = GUIRouter(api_router)   # ← reads api_router.registry
 
@@ -147,87 +158,90 @@ urlpatterns = [
 ]
 ```
 
-`GUIRouter` walks `api_router.registry` and for each registered ViewSet produces:
+`SebastianRouter` additionally auto-registers API URL patterns for any nested ViewSets declared in `Sebastian.inlines` (see §4.1). `GUIRouter` walks `api_router.registry` and, for each registered `GUIMixin` ViewSet, produces:
 
 | Route | Method | ViewSet action |
 |---|---|---|
-| `/gui/{prefix}/` | GET | `list` |
+| `/gui/{prefix}/` | GET/POST | `list` / `create` |
 | `/gui/{prefix}/new/` | GET | `create_form` ¹ |
-| `/gui/{prefix}/<pk>/` | GET | `retrieve` |
+| `/gui/{prefix}/<pk>/` | GET/PATCH | `retrieve` / `partial_update` |
 | `/gui/{prefix}/<pk>/edit/` | GET | `update_form` ¹ |
+| `/gui/{prefix}/<pk>/delete/` | GET/POST | `confirm` (delete flow) |
 | `/gui/{prefix}/<pk>/{url_path}/` | * | mirrored `@action` (detail) |
+| `/gui/{prefix}/<pk>/{url_path}/confirm/` | GET | `confirm` (action confirmation, if `gui_config['confirmation']` is set) |
 | `/gui/{prefix}/{url_path}/` | * | mirrored `@action` (list-level) |
+| `/gui/menu/` | GET | `SebastianMenuView` — HTML fragment for the navbar |
+| `/api/menu/` | GET | `SebastianMenuView` — same data as JSON |
+
+Nested ViewSets (`Sebastian.inlines`) get an analogous set of routes mounted under `/gui/{parent-prefix}/<parent_pk>/{mountpoint}/...`, with parent lookup kwargs named `{parent_model_name}_pk` at every depth so arbitrarily nested resources never collide.
 
 ¹ Only added when the ViewSet has `GUIMixin`. These have no API equivalent.
 
 `@action` routes are only mirrored when the action carries `gui_config` metadata.
 
-Non-data views (dashboard, help, options) are wired manually in `urls.py`. Sebastian provides the shell template; the developer provides the view.
+Singleton resources (`SingletonGUIMixin`) are **not** auto-mirrored by `GUIRouter` — they are plain Django views, registered explicitly via `GUIRouter.add_page(url_path, view, name)` (see §4.2). Custom non-ViewSet pages use the same mechanism.
 
 ### 3.3 Content Negotiation and GUI Detection
 
-GUI routes force `format='html'` via URL kwargs, which causes DRF's built-in content negotiation to select `SebastianHTMLRenderer` (registered with `format = 'html'`). This is mechanism **A**.
-
-A convenience flag **B** is also set — `request.sebastian_gui = True` — via a lightweight view wrapper in `GUIRouter` and via `GUIMixin.initial()`. It is available for debug tooling and custom ViewSet hooks; it carries no semantic weight in the core.
+Unlike plain DRF content negotiation, Sebastian defaults every `GUIMixin` ViewSet to **JSON-only** and opts into HTML rendering explicitly:
 
 ```python
-# GUIRouter wraps every view:
-def _wrap(view):
-    def wrapped(request, *args, **kwargs):
-        request.sebastian_gui = True     # B: debug flag
-        return view(request, *args, **kwargs)
-    return wrapped
-
-# GUIMixin.initial() also sets it after content negotiation:
-def initial(self, request, *args, **kwargs):
-    super().initial(request, *args, **kwargs)
-    if getattr(request, 'accepted_renderer', None):
-        if request.accepted_renderer.format == 'html':
-            request.sebastian_gui = True
+# GUIMixin.get_renderers()  (mixins.py)
+def get_renderers(self):
+    if not getattr(self.request, 'sebastian_gui', False):
+        return [JSONRenderer()]
+    return super().get_renderers()   # includes SebastianHTMLRenderer
 ```
+
+The `request.sebastian_gui` flag is set by `GUIRouter._wrap()` — a thin view wrapper applied to every `/gui/...` URL — **before** the view even dispatches, on the raw Django request. `GUIMixin.initialize_request()` copies that flag onto the DRF `Request` object once it's constructed. `SingletonGUIMixin` sets the same flag directly in its own `dispatch()`, since it isn't registered through `GUIRouter`'s normal per-ViewSet route building.
+
+The practical effect: the exact same ViewSet/Serializer pair serves `/api/...` as JSON and `/gui/...` as HTML — there is no separate GUI-only code path, only a flag that changes which renderer is available.
+
+`GUIRouter._wrap()` also handles the `SEBASTIAN['LOGIN_URL']` redirect for unauthenticated GUI requests, if that setting is non-empty.
 
 ### 3.4 The `Sebastian` Inner Class
 
-Every ViewSet that uses `GUIMixin` may declare a `Sebastian` inner class to configure its GUI behaviour. The class is named `Sebastian` (not `GUIConfig`) because its metadata applies to both the API layer (serializer field-group permission enforcement) and the GUI layer (template rendering, action buttons).
+Every ViewSet that uses `GUIMixin` (or `NestedGUIMixin`) may declare a `Sebastian` inner class to configure its GUI behaviour. The class is named `Sebastian` (not `GUIConfig`) because its metadata applies to both the API layer (serializer field-group permission enforcement) and the GUI layer (template rendering, action buttons, menu).
 
 ```python
-class RichiestaViewSet(GUIMixin, viewsets.ModelViewSet):
+class RequestViewSet(GUIMixin, viewsets.ModelViewSet):
 
     class Sebastian:
-        # Field groups and entity groups — declaration order is respected in GUI
-        groups = [
-            FieldGroup(...),
-            EntityGroup(...),
-        ]
-
-        # Per-action template overrides (optional)
-        list_template   = 'selco/richieste_list.html'
-        detail_template = 'selco/richieste_detail.html'
-        form_template   = 'selco/richieste_form.html'
+        label   = 'Requests'          # display name (defaults to the model's verbose_name_plural)
+        groups  = [FieldGroup(...)]   # field groups, declaration order = render order
+        inlines = [AttachmentViewSet] # nested resources
+        menu    = MenuGroup(...)      # navbar entry (optional, see §4.3)
+        ordering      = (...)         # ordering widget options (see §4.7)
+        field_config  = {...}         # per-field widget config: typeahead, cascading (see §4.7)
+        templates     = {'list': 'myapp/custom_list.html'}   # per-action template override
 ```
 
-When no `Sebastian` class is declared, all fields are shown in a single flat group with default permissions.
+When no `Sebastian` class is declared, all fields are shown in a single flat group with default permissions and no menu entry.
 
 ### 3.5 Renderer
 
-`SebastianHTMLRenderer` selects the appropriate template based on `view.action` and any per-action overrides declared in `ViewSet.Sebastian`:
+`SebastianHTMLRenderer` resolves a template from the current pack (`SEBASTIAN['TEMPLATE_PACK']`, default `'htmx'`), the view's action, and any override in `Sebastian.templates`:
 
 ```python
-ACTION_TEMPLATES = {
-    'list':        'sebastian/list.html',
-    'retrieve':    'sebastian/detail.html',
-    'create_form': 'sebastian/form.html',
-    'update_form': 'sebastian/form.html',
+ACTION_TEMPLATE_SUFFIXES = {
+    'list':           'list.html',
+    'retrieve':       'detail.html',
+    'create_form':    'form.html',
+    'update_form':    'form.html',
+    'confirm':        'confirm.html',
+    'create':         'detail.html',
+    'update':         'detail.html',
+    'partial_update': 'detail.html',
 }
 ```
 
-Template context always includes `data`, `view`, `request`, `response`, and `sebastian_config` (the `Sebastian` inner class, or `None`).
+HTMX requests (`HX-Request` header) receive only the `{% block content %}` fragment; full-page navigation receives the complete pack shell (`base.html`). Template context always includes `data`, `view`, `request`, `pack_name`, `skin_name`, plus action-specific keys (pagination, field labels, filter form, inline configs, menu URL).
 
 ---
 
 ## 4. Core Features
 
-### 4.1 Field Groups
+### 4.1 Field Groups & Nested Resources
 
 Field groups partition a serializer's fields into named sections. They are declared in `ViewSet.Sebastian.groups` as `FieldGroup` instances. Declaration order is the rendered order.
 
@@ -235,160 +249,235 @@ Field groups partition a serializer's fields into named sections. They are decla
 from sebastian.config import FieldGroup
 
 FieldGroup(
-    name='direzione',
-    fields=['note_direttore', 'cig'],
-    label='Direzione',                              # tab/section label in GUI
-    edit_permission=lambda req, obj: (              # callable (request, obj) -> bool
-        req.user.groups.filter(name='direttori').exists()
-        and obj.stato == 'inviata'
+    name='management',
+    fields=['manager_notes', 'reference_code'],
+    label='Management',                              # tab/section label in GUI
+    edit_permission=lambda req, obj: (               # callable (request, obj) -> bool
+        req.user.groups.filter(name='managers').exists()
+        and obj.status == 'submitted'
     ),
-    visible_permission=None,                        # None = always visible
+    visible_permission=None,                          # None = always visible
 )
 ```
 
-**Permission callables** have signature `(request, obj) -> bool`. They are pure callables — no base class required — so each application implements its own permission logic, decoupled from Sebastian. The callable can check user roles, workflow state, or any other condition.
+**Permission callables** have signature `(request, obj) -> bool`. `obj` is `None` in list/label contexts, so any callable used for `visible_permission`/`edit_permission` must guard `if obj is None: return False` (or `True`, depending on intent). They are pure callables — no base class required — so each application implements its own permission logic, decoupled from Sebastian. `sebastian.permissions` ships a small set of reusable ones (`perm_is_admin`, `perm_is_staff`, `perm_is_action(name)`) plus `perm_or`/`perm_and` combinators.
 
 **Runtime behaviour**:
 
-1. Record-level permission check passes (DRF standard).
+1. Record-level permission check passes (DRF standard `permission_classes`).
 2. For each `FieldGroup`, `edit_permission` and `visible_permission` are evaluated.
-3. Result is injected into `GUISerializer.get_fields()` via `self.context['view']`.
-4. Fields in non-visible groups are removed from the serializer output.
-5. Fields in visible-but-not-editable groups are marked `read_only=True`.
-6. On `PUT`/`PATCH`, the serializer also enforces field group permissions server-side — not just cosmetically in the GUI.
+3. Fields in non-visible groups are removed from the serializer output.
+4. Fields in visible-but-not-editable groups are marked `read_only=True`.
+5. On `PUT`/`PATCH`, `GUISerializerMixin.validate()` also checks the raw payload against hidden/read-only fields and raises `PermissionDenied` (403) if the client tried to write one — enforcement is server-side, not just cosmetic in the GUI.
 
 Fields not assigned to any group are accessible with no restrictions by default.
 
-### 4.2 Entity Groups
-
-Entity groups represent inline relations — weak-entity models owned by the parent record (e.g. `Allegato` owned by `Richiesta`). They are declared alongside field groups in `ViewSet.Sebastian.groups`.
+**Nested resources** (formerly a separate `EntityGroup` config object in early drafts of this spec — now a real, independent ViewSet) represent weak-entity relations owned by the parent record, e.g. `Attachment` owned by `Request`:
 
 ```python
-from sebastian.config import EntityGroup
+from sebastian.mixins import NestedGUIMixin
 
-EntityGroup(
-    name='allegati',
-    model=Allegato,
-    serializer_class=AllegatoSerializer,
-    label='Allegati',
-    related_field='richiesta',    # FK on Allegato pointing to Richiesta; auto-detected if unambiguous
-    display='tabular',            # 'tabular' | 'stacked'
-    edit_permission=None,
-    visible_permission=None,
-)
+class AttachmentViewSet(NestedGUIMixin, viewsets.ModelViewSet):
+    queryset         = Attachment.objects.all()
+    serializer_class = AttachmentSerializer
+    mountpoint       = 'attachments'    # URL segment mounted under the parent's detail page
+
+class RequestViewSet(GUIMixin, viewsets.ModelViewSet):
+    class Sebastian:
+        inlines = [AttachmentViewSet]
 ```
 
-**GUI behaviour**: The entity group section in the detail/form view renders as an inline table with per-row **Edit** and **Delete** buttons and a top-level **Add** button. All operations use HTMX modal forms — each modal maps 1:1 to one API endpoint call. After save or delete, only the entity group section is refreshed, not the whole page.
+**GUI behaviour**: the inline section on the parent's detail page renders as a table with per-row **Edit**/**Delete** buttons and a top-level **New** button, loaded via `hx-trigger="load"` into `#inline-{mountpoint}`. Every operation (create/update/delete) is a real HTTP call to the nested ViewSet's own `/gui/{parent-prefix}/<pk>/{mountpoint}/...` routes; after save or delete, the server returns the updated inline list HTML directly (not a redirect), so only that section refreshes.
 
+`NestedGUIMixin` auto-detects the parent from the `{parent_model_name}_pk` URL kwarg, filters `get_queryset()` to that parent, and injects the parent FK on create. The parent FK field name on the child model is auto-detected if unambiguous, or set explicitly via `parent_field`. Set `inline_in_api = False` on the nested ViewSet to exclude it from the parent's JSON detail response while still rendering it in the GUI.
+
+### 4.2 Singleton Resources
+
+For a GUI page backed by at most one record per context (e.g. an app's settings, or "impersonate user"), use `SingletonGUIMixin` instead of `GUIMixin` — there is no list, no create, no delete.
+
+```python
+from rest_framework import generics
+from sebastian.mixins import SingletonGUIMixin
+
+class SettingsView(SingletonGUIMixin, generics.GenericAPIView):
+    serializer_class = SettingsSerializer
+
+    class Sebastian:
+        label  = 'Settings'
+        groups = [FieldGroup('general', ['auto_approval_threshold', 'notification_email'])]
+
+    def get_object(self):
+        return Settings.get_solo()   # get_or_create(pk=1)-style singleton accessor
 ```
-EntityGroup section in parent detail view:
-┌─────────────────────────────────────────────┐
-│ Allegati                           [+ Add]  │
-├──────────────────────┬──────────────────────┤
-│ contratto.pdf  120KB │  [Edit]  [Delete]    │
-│ offerta.docx   45KB  │  [Edit]  [Delete]    │
-└──────────────────────┴──────────────────────┘
+
+```python
+# urls.py — registered explicitly, NOT auto-mirrored by GUIRouter
+gui_router.add_page('settings/',      SettingsView.as_view(),                name='settings')
+gui_router.add_page('settings/edit/', SettingsView.as_view(edit_mode=True),  name='settings-edit')
 ```
 
-The parent ViewSet handles all nested CRUD via `@action` methods (no separate ViewSet for inline entities). `GUIRouter` auto-generates the modal routes from `EntityGroup` declarations.
+`GET /settings/` shows the read-only detail with an Edit button; `GET /settings/edit/` shows the edit form; `POST`/`PATCH`/`PUT` on either URL upserts the singleton and redirects back to the detail page. Since `add_page()` registers a plain URL rather than mirroring a router entry, link to it from a menu with `MenuItem(url_name='settings', ...)` rather than `action='...'` (see §4.3).
 
-**Why modal forms and not a single-form with inlines**: DRF writable nested serializers require complex `create()`/`update()` overrides and the payload stops being standard REST. Modal forms give a 1:1 map between GUI operations and API endpoints, are auto-generatable, and eliminate the "forgot to save inline" problem.
+### 4.3 App Menu
 
-### 4.3 List Views
+A navbar entry is opt-in per top-level ViewSet, via `Sebastian.menu`:
+
+```python
+from sebastian.config import MenuGroup, MenuItem, MenuDivider
+
+class Sebastian:
+    menu = MenuGroup('Requests', icon='clipboard-check', items=[
+        MenuItem('List', action='list', icon='list-ul'),
+        MenuItem('New',  action='new',  icon='plus-circle', permission=perm_is_admin),
+        MenuDivider(),
+        MenuItem('Settings', url_name='settings', icon='gear'),  # points at an add_page() URL
+    ])
+```
+
+`MenuItem.action` resolves against the *declaring* ViewSet's own generated routes (`'list'`, `'new'`, or any non-detail `@action` method name); `MenuItem.url_name` points at an arbitrary Django URL name instead, for custom pages or cross-ViewSet links. `MenuItem.permission` and `MenuGroup.permission` follow the same `(request, obj=None)` callable/list-of-callables protocol as field groups, and respect `SEBASTIAN['HIDE_UNAUTHORIZED_ACTIONS']` (hide vs. render disabled).
+
+`SebastianMenuView`, auto-registered at `/api/menu/` (JSON) and `/gui/menu/` (HTML fragment), aggregates every registered ViewSet's `Sebastian.menu` into one navbar. `base.html` loads it via `hx-get="/gui/menu/" hx-trigger="load, menuRefresh from:body"`, and re-fetches it on every HTMX navigation so the active-item highlighting (longest-prefix match against `HX-Current-URL`) stays correct without a full page reload.
+
+### 4.4 List Views
 
 Auto-generated from the ViewSet's serializer, filterset, and ordering configuration:
 
 ```python
-class RichiestaViewSet(GUIMixin, viewsets.ModelViewSet):
-    queryset         = Richiesta.objects.all()
-    serializer_class = RichiestaSerializer
-    filterset_fields = ['stato', 'fornitore']
-    ordering_fields  = ['created_at', 'budget']
-    search_fields    = ['titolo', 'descrizione']
+class RequestViewSet(GUIMixin, viewsets.ModelViewSet):
+    queryset         = Request.objects.all()
+    serializer_class = RequestSerializer
+    filterset_class  = RequestFilter   # django-filter FilterSet
 ```
 
-Generates:
-- Filter inputs for `stato` and `fornitore`
-- Full-text search box for `titolo` and `descrizione`
-- Sortable columns for `created_at` and `budget`
-- Pagination controls showing current position, filtered count, and total count
-- **New** button (shown if user has create permission)
+Generates a filter form from the `FilterSet`, a sortable-columns widget from `Sebastian.ordering` (§4.7), and pagination controls. A **New** button is shown if the user has create permission.
 
-### 4.4 Detail Views
+### 4.5 Detail Views
 
 Auto-generated from serializer fields and `@action` methods:
 
-- Field groups rendered as Bootstrap tabs (in declaration order)
-- Entity group sections rendered as inline tables with HTMX add/edit/delete
-- Action buttons for all `@action` methods the current user has permission for
+- Field groups rendered as tabs (htmx pack) or `<details>` accordion sections (plain pack), in declaration order
+- Nested resource sections rendered as inline tables with HTMX add/edit/delete
+- Action buttons for every `@action` the current user has permission for, per `Sebastian.get_available_actions()`
 - **Edit** button (shown if user has update permission)
 
-### 4.5 Forms (Create / Update)
+### 4.6 Forms (Create / Update)
 
 Auto-generated from serializer fields grouped by field groups:
 
-- Field types → HTML input types (`CharField` → `text`, `DecimalField` → `number`, `DateField` → `date`, etc.)
+- Field types → HTML input types (`CharField` → `text`, `DecimalField` → `number`, `DateField` → `date`, `BooleanField` → yes/no/unknown select, etc.)
 - `required` → HTML5 `required` attribute
 - `help_text` → field hint
 - `choices` (TextChoices / IntegerChoices) → `<select>` dropdown
-- `read_only` fields → plaintext display (not form inputs)
-- Related fields (`ForeignKey`) → `<select>` (Tom Select with API typeahead, deferred to Phase 4)
+- `read_only` fields (including field-group-restricted ones) → plaintext display, not a form input
+- `FileField`/`ImageField` → file input with current-filename badge and a clear/replace control
+- Related fields (`ForeignKey`) → plain `<select>` by default, or a TomSelect typeahead widget if configured (§4.7)
 
-Serializer constraints are auto-converted to HTML5 attributes:
+### 4.7 Advanced Widgets
+
+Configured per-ViewSet via `Sebastian.ordering`, `Sebastian.field_config`, and `Sebastian.cascading_fields`; rendered with [Tom Select](https://tom-select.js.org/) in the htmx pack, plain `<select>`/sequential dropdowns in the plain pack.
+
+**Ordering** — a multi-column sort widget for list views:
 
 ```python
-budget = serializers.DecimalField(max_digits=12, decimal_places=2, min_value=0)
-# → <input type="number" min="0" step="0.01">
-
-titolo = serializers.CharField(max_length=200, required=True)
-# → <input type="text" maxlength="200" required>
+class Sebastian:
+    ordering = (
+        ('title',   'Title ↑'),
+        ('-title',  'Title ↓'),
+        ('budget',  'Budget ↑'),
+        ('-budget', 'Budget ↓'),
+    )
+    max_ordering_fields = 2   # cap on simultaneous sort keys
 ```
 
-### 4.6 Actions
+`GUIMixin.filter_queryset()` reads `?ordering=f1,f2` from the querystring; undeclared fields are ignored (falls back to the model's default `Meta.ordering`).
+
+**Typeahead** — an async-search `<select>` for `ForeignKey` fields, backed by a `@typeahead`-decorated list action:
+
+```python
+from sebastian.decorators import typeahead
+
+class SupplierViewSet(GUIMixin, viewsets.ModelViewSet):
+    @typeahead(typeahead_chars=1, max_results=40)
+    def suppliers_typeahead(self, request):
+        q = request.query_params.get('q', '')
+        return self.standard_typeahead(filter={'company_name__icontains': q}, order_by='company_name')
+
+class RequestViewSet(GUIMixin, viewsets.ModelViewSet):
+    class Sebastian:
+        field_config = {'supplier': {'typeahead_url': '/api/suppliers/suppliers_typeahead/'}}
+```
+
+`standard_typeahead()` (provided by `GUIMixin`) is a helper that filters/orders/truncates a queryset and returns `[{'value': pk, 'label': str(obj)}, ...]`.
+
+**Cascading dropdowns** — declare related typeahead fields whose options depend on a parent selection:
+
+```python
+class Sebastian:
+    cascading_fields = [('country', 'region', 'city')]  # each must also be in field_config
+```
+
+Selecting `country` clears and reloads `region` and `city`; all fields in a cascade group must already be typeahead-enabled.
+
+### 4.8 GUI-only Computed Fields
+
+`@gui_field` marks a serializer method as a display-only column that never appears in the JSON API response — only in GUI-mode `to_representation()` output:
+
+```python
+from sebastian.serializers import gui_field
+
+class RequestSerializer(GUISerializerMixin, serializers.ModelSerializer):
+    @gui_field('Days open')
+    def days_open(self, obj):
+        return (timezone.now() - obj.created_at).days
+```
+
+Reference the method name (`'days_open'`) in `Sebastian.groups`/`FieldGroup.fields` like any regular field name. Unlike a plain `SerializerMethodField`, it is guaranteed absent from `/api/...` JSON — use a real `SerializerMethodField` instead if the computed value should also be part of the API contract.
+
+### 4.9 Actions
 
 Declared with Sebastian's `@action` decorator (drop-in for DRF's `@action`):
 
 ```python
 from sebastian.decorators import action
+from sebastian.permissions import perm_and, perm_is_admin
 
 @action(
     detail=True,
     methods=['post'],
     permission_classes=[IsAdminUser],
     gui_config={
-        'label':    'Approva',
-        'icon':     'check-circle',   # Bootstrap Icons name
-        'color':    'success',        # Bootstrap colour: primary|success|danger|warning|secondary
-        'confirm':  'Confermi approvazione?',
-        'position': 'detail',         # 'detail' | 'list' | 'both'
+        'label':      'Approve',
+        'icon':       'check-circle',   # Bootstrap Icons name
+        'color':      'success',        # Bootstrap colour: primary|success|danger|warning|secondary
+        'position':   'detail',         # 'detail' | 'list' | 'both'
+        'permission': perm_and(perm_is_admin, some_other_check),
+        'confirmation': {
+            'prompt':     'Confirm approval of $OBJECT?',   # $OBJECT / $ACTION substituted
+            'serializer': None,          # optional plain Serializer class collected in a modal first
+            'icon':       'check-circle',
+            'style':      'success',
+        },
     },
 )
-def approva(self, request, pk=None):
+def approve(self, request, pk=None):
     ...
 ```
 
-`gui_config` is stored on the function as `func.gui_config`. All other DRF `@action` arguments pass through unchanged.
+`gui_config` is stored on the function as `func.gui_config`. All other DRF `@action` arguments pass through unchanged. `GUIRouter` only mirrors `@action` routes that carry `gui_config`; actions without it remain API-only.
 
-`GUIRouter` only mirrors `@action` routes that carry `gui_config`. Actions without `gui_config` remain API-only.
+When `gui_config['confirmation']['serializer']` is set, the button opens a modal collecting that serializer's fields first; the action method receives the validated data via `self._post_confirmation_action(action_name, instance)` and a pair of `{action}_get(instance)` / `{action}_valid(instance, serializer)` hooks. Without a `serializer`, `confirmation` is just a yes/no prompt (`hx-confirm` in the htmx pack, a confirm page in the plain pack).
 
-### 4.7 Permission → UI
+Other `gui_config` keys seen in real usage: `hint` (tooltip), `link_field` (paired with `self.download_action()`/`self.preview_action()` for file fields), `row_visible_field` (a boolean serializer field gating per-row visibility in list actions), `open_url` (open the action's GET response in a new tab instead of swapping it in).
+
+### 4.10 Permission → UI
 
 **Record-level**: standard DRF `permission_classes` and `get_permissions()`.
 
-**Field-level**: `FieldGroup.edit_permission` / `visible_permission` callables evaluated in `GUISerializer` (applies to API and GUI alike).
+**Field-level**: `FieldGroup.edit_permission` / `visible_permission` callables evaluated in `GUISerializerMixin` (applies to API and GUI alike).
 
-**Action-level**: `GUIMixin.get_available_actions()` evaluates each `@action`'s `permission_classes` against the current request and returns only the permitted actions. Templates use this list to render buttons.
+**Action-level**: `GUIMixin.get_available_actions()` checks DRF `permission_classes` plus the optional `gui_config['permission']` callable/list, and returns only the permitted actions with their `gui_config` attached. Templates iterate this list to render buttons/links.
 
-```python
-# In templates:
-{% for action in view.get_available_actions %}
-  <button hx-post="..." class="btn btn-{{ action.gui_config.color }}">
-    {{ action.gui_config.label }}
-  </button>
-{% endfor %}
-```
-
-The `SEBASTIAN['HIDE_UNAUTHORIZED_ACTIONS']` setting controls whether unauthorised actions are hidden entirely or rendered disabled.
+The `SEBASTIAN['HIDE_UNAUTHORIZED_ACTIONS']` setting (default `True`) controls whether unauthorised actions (and menu items) are hidden entirely or rendered disabled.
 
 ---
 
@@ -396,120 +485,128 @@ The `SEBASTIAN['HIDE_UNAUTHORIZED_ACTIONS']` setting controls whether unauthoris
 
 ### Partial vs Full-Page Rendering
 
-Sebastian detects HTMX requests via the `HX-Request` header. Full-page navigation renders `base.html` (Bootstrap 5 shell with nav, content area, modal placeholder, toast container). HTMX requests return content fragments only, without the shell. This is handled in the renderer (Phase 2).
+Sebastian detects HTMX requests via the `HX-Request` header. Full-page navigation renders the active pack's `base.html` (shell with navbar, content area, modal placeholder). HTMX requests return only the `{% block content %}` fragment.
 
-### Entity Group Modals
+### Nested Resource Sections
 
-The `modal.html` template renders a Bootstrap modal fragment. The parent detail view loads it into `#sebastian-modal` via `hx-get`. After a successful save or delete, the server returns `HX-Trigger: {"refreshEntity": "<group_name>"}`, which causes HTMX to refresh only the entity group section.
+The parent detail page loads each inline section via `hx-trigger="load"` into `#inline-{mountpoint}`. Add/Edit forms load into the same target; after a successful save or delete, the server returns the freshly-rendered inline list HTML directly (no `HX-Redirect`), so the section updates in place without a browser navigation.
 
 ```html
-<!-- Add button in entity group section -->
-<button hx-get="/gui/richieste/123/allegati/new/"
-        hx-target="#sebastian-modal"
+<!-- New button in an inline section -->
+<button hx-get="/gui/requests/123/attachments/new/"
+        hx-target="#inline-attachments"
         hx-swap="innerHTML">
-  + Add
-</button>
-
-<!-- Edit button per row -->
-<button hx-get="/gui/richieste/123/allegati/7/edit/"
-        hx-target="#sebastian-modal"
-        hx-swap="innerHTML">
-  Edit
+  New
 </button>
 ```
 
-### Action Buttons
+### Action Buttons & Confirmation Modals
+
+A plain confirm action uses `hx-confirm`; an action with `gui_config['confirmation']['serializer']` instead `hx-get`s a modal (`confirm.html`, loaded into `#sebastian-modal`) that `hx-post`s back to the action URL on submit:
 
 ```html
-<button hx-post="/gui/richieste/123/approva/"
+<button hx-post="/gui/requests/123/approve/"
         hx-target="#sebastian-content"
-        hx-confirm="Confermi approvazione?">
-  Approva
+        hx-confirm="Confirm approval of Request #123?">
+  Approve
 </button>
 ```
 
 ---
 
-## 6. Cascading Actions
+## 6. Internal Dispatch
 
-Actions can cascade — a workflow state change on one object may trigger a state change on another. Sebastian provides `dispatch.call()` for internal ViewSet invocation without an HTTP round-trip. Django's nested `transaction.atomic()` (savepoints) handles atomicity:
+`sebastian.dispatch.call()` invokes another ViewSet's action directly, in-process, without an HTTP round-trip — useful when one workflow transition should trigger another (e.g. approving a request activates a linked resource), inside the same database transaction:
 
 ```python
 from django.db import transaction
 from sebastian.dispatch import call
 
-class RichiestaViewSet(GUIMixin, viewsets.ModelViewSet):
+class RequestViewSet(GUIMixin, viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'], ...)
-    def approva(self, request, pk=None):
+    def approve(self, request, pk=None):
         with transaction.atomic():
             instance = self.get_object()
-            instance.stato = 'approvata'
+            instance.status = 'approved'
             instance.save()
-            # Cascade: activate the linked Contratto in the same transaction
-            call(ContrattoViewSet, 'attiva', request, pk=instance.contratto_id)
+            # Cascade: activate a linked resource in the same transaction
+            call(OtherViewSet, 'activate', request, pk=instance.other_id)
         return Response(self.get_serializer(instance).data)
 ```
 
-`call(viewset_class, action_name, request, **kwargs)` instantiates the target ViewSet and calls the action method directly. Permission checks on the target ViewSet still run — enforcement is consistent whether the call comes from HTTP or internally.
+`call(viewset_class, action_name, request, **kwargs)` instantiates the target ViewSet and invokes the action method directly. Permission checks defined on the target ViewSet still run — enforcement is consistent whether the call originates from HTTP or internally; there is currently no mechanism to bypass them for a trusted internal call.
+
+At the time of writing, this is a library primitive with a clean docstring and no consuming example yet in `testproject/demo/` or in production use — treat it as intentionally minimal rather than battle-tested.
 
 ---
 
 ## 7. Frontend Options
 
-### 7.1 Server-Side (Default — HTMX)
+### 7.1 Server-Side (implemented — default)
 
-```python
-SEBASTIAN = {
-    'FRONTEND_MODE': 'server',
-    'TEMPLATE_PACK': 'htmx',
-}
+Two template packs ship today, selected via `SEBASTIAN['TEMPLATE_PACK']`:
+
+- **`htmx`** (default) — Bootstrap 5 + HTMX; each element maps to an API endpoint and loads/updates independently.
+- **`plain`** — no HTMX, no JavaScript required; the same page data is assembled server-side via `{% include_resource %}`, which calls a GUI URL internally and inlines the rendered fragment.
+
+A **skin** (`SEBASTIAN['SKIN']`) is independent of the pack and controls the CSS/icon library — currently `bootstrap5-bi` (Bootstrap Icons) is the maintained default. Consumers can add their own pack under their project's `templates/sebastian/{pack_name}/` and opt it into HTMX-aware behaviour via `SEBASTIAN['HTMX_PACKS']`.
+
+### 7.2 SPA / Schema Mode (deferred idea, not implemented)
+
+A previous draft of this spec described a `FRONTEND_MODE: 'spa'` setting and a `GET /api/{resource}/?_schema` endpoint returning UI metadata for a JS frontend to consume. **Neither exists in the codebase.** There is no `FRONTEND_MODE` setting and no schema endpoint. If this is ever built, it stays out of scope for the current server-rendered architecture and would be a genuinely separate feature, not a `SEBASTIAN` setting flip.
+
+### 7.3 Translating the GUI chrome (i18n)
+
+The library's own chrome — button labels, modal titles, confirmation prompts, the default "Yes"/"No" boolean rendering, and similar fixed UI text baked into `src/sebastian/templates/` and a handful of default strings in `mixins.py`/`serializers.py`/`renderers.py` — is wired through Django's standard translation machinery (`{% trans %}`/`{% blocktrans %}` in templates, `gettext`/`gettext_lazy` in Python), not a `SEBASTIAN` setting. This is deliberate: there were already ~15 independent hardcoded strings (Confirm, Cancel, Edit, New, Filter, Loading, Close, ...), and a dedicated setting per string doesn't scale the way a translation catalog does.
+
+A ready-to-use **Italian** catalog ships with the package at `src/sebastian/locale/it/LC_MESSAGES/`. Any consumer Django project with `USE_I18N = True` (the Django default) and `LANGUAGE_CODE = 'it'` (or an active-language mechanism that resolves to `it`, e.g. `LocaleMiddleware`) gets the translated chrome automatically — Django auto-discovers an installed app's own `locale/` directory, no extra `LOCALE_PATHS` entry needed. No other configuration on the consumer side is required.
+
+This covers only the library's own default UI text. Domain content — your model/serializer field labels, `Sebastian.label`, `MenuItem`/`MenuGroup` labels, `FieldGroup` labels, action `gui_config['label']`/`hint`, confirmation prompts — is defined by the consuming application and is the consuming application's own responsibility to translate (or not) using the same Django i18n primitives in its own code.
+
+To add or update translations, edit `src/sebastian/locale/it/LC_MESSAGES/django.po` (or add a new `<lang>/LC_MESSAGES/django.po`) and run, from inside `src/sebastian/`:
+
+```bash
+DJANGO_SETTINGS_MODULE=settings PYTHONPATH=../:../../testproject \
+  django-admin makemessages -l it --no-location   # regenerate msgids after touching templates/strings
+django-admin compilemessages                       # .po → .mo, required for translations to take effect
 ```
 
-- Auto-generated HTML templates (Bootstrap 5)
-- HTMX for dynamic updates without full page reloads
-- Server-side rendering, SEO-friendly, progressive enhancement
-
-### 7.2 SPA Mode (deferred)
-
-```python
-SEBASTIAN = {
-    'FRONTEND_MODE': 'spa',
-    'SCHEMA_ENDPOINT': True,
-}
-```
-
-- API returns JSON only
-- Additional `GET /api/{resource}/?_schema` endpoint returns UI metadata (fields, types, actions, permissions)
-- Frontend (React/Vue/etc.) builds UI from schema
+`compilemessages` requires GNU `gettext` (`msgfmt`) on the system — a build-time tool, not a runtime dependency of the library.
 
 ---
 
 ## 8. Configuration Reference
 
+Every key below is optional; each has a hard-coded default read by `sebastian/app_settings.py`. This reflects the real accessor functions, not aspirational settings.
+
 ```python
 # settings.py
 SEBASTIAN = {
-    # Frontend mode
-    'FRONTEND_MODE': 'server',        # 'server' | 'spa'
-
-    # Template settings
-    'TEMPLATE_PACK':  'htmx',   # 'htmx' | 'plain' | [ 'custom']
-    'BASE_TEMPLATE':  'sebastian/base.html',
-
-    # UI defaults
-    'DEFAULT_PAGE_SIZE':     25,
-    'MAX_PAGE_SIZE':         100,
-    'SHOW_FIELD_HELP_TEXT':  True,
-
-    # Action button defaults
-    'DEFAULT_ACTION_COLOR':     'primary',
-    'DEFAULT_CONFIRM_ACTIONS':  ['delete', 'remove'],
+    # Template / skin
+    'TEMPLATE_PACK': 'htmx',            # 'htmx' | 'plain' | a custom pack name
+    'SKIN':          'bootstrap5-bi',
+    'HTMX_PACKS':    ['htmx'],          # which pack names get HTMX-aware behaviour
 
     # Permission display
-    'HIDE_UNAUTHORIZED_ACTIONS': True,   # False = show disabled
+    'HIDE_UNAUTHORIZED_ACTIONS': True,  # False = render disabled instead of hiding
+
+    # Confirmation dialogs
+    'CONFIRM_DELETIONS': True,          # confirm before every delete (used by GUIMixin)
+    'CONFIRM_ACTIONS':   False,         # declared but not yet consulted anywhere — see below
+
+    # Branding / auth
+    'BRAND':     'Sebastian',           # navbar product name
+    'LOGIN_URL': '',                    # redirect target for unauthenticated /gui/ requests
+
+    # Display formatting
+    'BOOL_DISPLAY':      'yesno',       # 'yesno' | 'checkmark' | 'icon' | 'truefalse'
+    'DATE_FORMAT':       '%d/%m/%Y',
+    'DATETIME_FORMAT':   '%d/%m/%Y %H:%M',
 }
 ```
+
+**Known gap**: `CONFIRM_ACTIONS` is read by `app_settings.confirm_actions()` but that function is not called anywhere else in the library — unlike `CONFIRM_DELETIONS`, which `GUIMixin` does consult. Setting it currently has no effect. See the roadmap for tracking.
 
 ---
 
@@ -534,49 +631,50 @@ from django import template
 register = template.Library()
 
 @register.filter
-def euro(value):
-    return f'€ {value:,.2f}'
+def usd(value):
+    return f'${value:,.2f}'
 ```
 
 ### 9.3 ViewSet Hooks
 
-`GUIMixin` provides overridable hooks:
+`GUIMixin` provides overridable hooks, all with sensible defaults derived from `Sebastian`:
 
 ```python
-class RichiestaViewSet(GUIMixin, viewsets.ModelViewSet):
+class RequestViewSet(GUIMixin, viewsets.ModelViewSet):
 
     def get_sebastian_config(self):
-        """Returns ViewSet.Sebastian inner class, or None."""
+        """Returns the ViewSet's Sebastian inner class, or None."""
         return super().get_sebastian_config()
 
     def get_groups(self):
-        """Returns groups list from Sebastian.groups, or []."""
+        """Returns Sebastian.groups, or []."""
         return super().get_groups()
 
     def get_available_actions(self):
-        """Returns gui_config metadata for permitted @actions."""
+        """Returns gui_config metadata for @actions the current user may use."""
         return super().get_available_actions()
 ```
 
 ### 9.4 Template Override per ViewSet
 
 ```python
-class RichiestaViewSet(GUIMixin, viewsets.ModelViewSet):
+class RequestViewSet(GUIMixin, viewsets.ModelViewSet):
 
     class Sebastian:
-        groups          = [...]
-        list_template   = 'selco/richieste_list.html'
-        detail_template = 'selco/richieste_detail.html'
-        form_template   = 'selco/richieste_form.html'
+        groups    = [...]
+        templates = {
+            'list':   'demo/custom_request_list.html',
+            'detail': 'demo/custom_request_detail.html',
+        }
 ```
 
-### 9.5 Works with APIView
+### 9.5 Works with plain `APIView` / `GenericAPIView`
 
-`GUIMixin` works with `GenericAPIView` and its subclasses (including all ViewSets) automatically — DRF places `view` in the serializer context via `get_serializer_context()`.
+`GUIMixin` works with `GenericAPIView` and its subclasses (including all ViewSets and, via `SingletonGUIMixin`, plain `GenericAPIView` singletons) automatically — DRF places `view` in the serializer context via `get_serializer_context()`.
 
-For plain `APIView`, the developer must pass `context={'view': self, 'request': request}` when instantiating serializers — standard DRF practice.
+For a bare `APIView` outside that hierarchy, the developer must pass `context={'view': self, 'request': request}` when instantiating serializers — standard DRF practice.
 
-`GUIRouter` mirrors ViewSets registered in the API router. Plain `APIView`-based views are wired manually in `urls.py` — they can still use `GUIMixin` for content negotiation, just without auto-mirroring.
+`GUIRouter` mirrors ViewSets registered in the API router, and singleton/custom pages registered via `add_page()`. Anything else is wired manually in `urls.py`.
 
 ---
 
@@ -592,17 +690,24 @@ djangorestframework >= 3.14
 ### Optional Dependencies
 
 ```
-django-filter >= 23.0    # For filterset_fields support
-django-htmx >= 1.17      # For enhanced HX-Request utilities (optional)
+django-filter >= 23.0    # FilterSet-based list filtering (filter extra)
+django-htmx >= 1.17      # enhanced HX-Request utilities (htmx extra)
 ```
 
-### Frontend Assets (server mode, loaded via CDN in `base.html`)
+### Frontend Assets (loaded via CDN in `base.html`)
 
 ```html
 <link  href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
 <link  href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 <script src="https://unpkg.com/htmx.org@2.0.4"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2/dist/js/tom-select.complete.min.js"></script>
+```
+
+### Documentation Tooling
+
+```
+pdoc >= 14.0   # API reference generated to docs/api/ — see README and tools/gen-docs.sh
 ```
 
 ---
@@ -612,33 +717,41 @@ django-htmx >= 1.17      # For enhanced HX-Request utilities (optional)
 ```
 drf-sebastian/
 ├── pyproject.toml              distribution: drf-sebastian, import: sebastian
-├── .venv/
+├── README.md
+├── docs/
+│   ├── roadmap.md
+│   ├── sebastian-spec.md       this document
+│   └── api/                    pdoc-generated API reference (docs/api/index.html)
 ├── src/sebastian/
 │   ├── apps.py
-│   ├── config.py               FieldGroup, EntityGroup
-│   ├── decorators.py           @action wrapper
-│   ├── dispatch.py             call()
-│   ├── mixins.py               GUIMixin
-│   ├── renderers.py            SebastianHTMLRenderer
-│   ├── routers.py              GUIRouter
-│   ├── serializers.py          GUISerializer
+│   ├── app_settings.py         SEBASTIAN settings accessors
+│   ├── config.py                FieldGroup, MenuItem, MenuGroup, MenuDivider
+│   ├── decorators.py            @action wrapper, @typeahead
+│   ├── dispatch.py              call()
+│   ├── mixins.py                GUIMixin, NestedGUIMixin, SingletonGUIMixin
+│   ├── permissions.py           perm_is_admin, perm_is_staff, perm_is_action, perm_or, perm_and
+│   ├── renderers.py             SebastianHTMLRenderer
+│   ├── routers.py               SebastianRouter, GUIRouter
+│   ├── serializers.py           GUISerializerMixin, gui_field, NullableFileField
+│   ├── views.py                  SebastianMenuView
+│   ├── static/sebastian/         widgets.js, sebastian.css
 │   ├── templatetags/
-│   │   └── sebastian_tags.py   get_item, input_type, field_value
-│   └── templates/sebastian/
-│       ├── base.html           Bootstrap 5 + HTMX shell
-│       ├── list.html
-│       ├── detail.html
-│       ├── form.html
-│       └── modal.html          EntityGroup HTMX modal
-├── testproject/
+│   │   └── sebastian_tags.py     icon, display_value, data_keys, input_type, field_value, ...
+│   ├── templates/sebastian/
+│   │   ├── htmx/                 default pack (list/detail/form/confirm/menu/...)
+│   │   └── plain/                no-JS pack
+│   └── locale/it/LC_MESSAGES/    bundled Italian translation of the GUI chrome (see §7.3)
+├── testproject/                  runnable demo — see README Quick Start
 │   ├── manage.py
 │   ├── settings.py
-│   ├── urls.py                 api_router + GUIRouter wired
-│   └── selco/
-│       ├── models.py           Fornitore, Richiesta, Allegato
+│   ├── urls.py                  api_router + GUIRouter + add_page() wired
+│   └── demo/
+│       ├── models.py            Supplier, Request, Attachment, Settings
 │       ├── serializers.py
-│       ├── views.py            ViewSets with Sebastian inner class
-│       └── urls.py
+│       ├── views.py             ViewSets/views with Sebastian inner class
+│       ├── filters.py
+│       ├── admin.py
+│       └── management/commands/seed_demo_data.py
 └── tests/
     └── conftest.py
 ```
@@ -649,52 +762,53 @@ drf-sebastian/
 
 ### Unit Tests
 
-- `GUIRouter` URL generation matches expected patterns
-- `GUIMixin` sets `request.sebastian_gui` correctly
-- `GUISerializer.get_fields()` respects `FieldGroup` permissions
-- `SebastianHTMLRenderer` selects correct template per action
+- `GUIRouter`/`SebastianRouter` URL generation matches expected patterns (top-level and nested)
+- `GUIMixin`/`SingletonGUIMixin` set `request.sebastian_gui` correctly and restrict renderers accordingly
+- `GUISerializerMixin.get_fields()` respects `FieldGroup` permissions; `@gui_field` methods stay out of the API response
+- `SebastianHTMLRenderer` selects the correct template per action and pack
+- Template tag filters (`data_keys`, `display_value`, `input_type`, ...) — pure Python, no DB
 
-### Integration Tests
+### Integration Tests (`tests/`, run against `testproject/demo`)
 
-- Full CRUD via GUI endpoints (list → detail → edit → save)
-- `@action` execution via GUI route
-- Filter/search functionality
-- Field group visibility/editability enforcement on `PUT`
+- Full CRUD via GUI endpoints (list → detail → edit → save), top-level and nested
+- `@action` execution via GUI route, including confirmation modals
+- Filter/search functionality, ordering widget, typeahead endpoints
+- Field group visibility/editability enforcement on `PUT`/`PATCH`
+- App menu: JSON and HTML rendering, active-item matching, permission-gated items
+- Both template packs (`htmx`, `plain`) exercised against the same ViewSets
 
-### Browser Tests (Playwright — Phase 4)
+### Browser Tests
 
-- HTMX interactions (row click, form submit, partial swap)
-- Entity group modal: add, edit, delete, section refresh
-- Action confirmation dialogs
-- Form validation error display
+Not implemented — current coverage is Django `Client`-based HTTP/HTML assertions (see `tests/test_gui_views.py`), not a real browser. A Playwright suite covering live HTMX interactions, modal focus/dismiss behaviour, and TomSelect widgets remains a gap (see roadmap).
 
 ---
 
 ## 13. Open Issues
 
-1. **Related fields in forms**: FK fields currently render as `<select>` with all options. Tom Select with API typeahead (for large datasets) is deferred to Phase 4.
-2. **Nested API routes for EntityGroup**: parent ViewSet handles nested CRUD via `@action`. Route generation from `EntityGroup` declarations is Phase 3.
-3. **HTMX partial rendering**: renderer currently always returns full-page HTML. Partial fragment detection (`HX-Request` header → skip `base.html`) is Phase 2.
-4. **Bulk actions**: how to handle `@action` on multiple selected list items — not yet designed.
-5. **File uploads**: `FileField` / `ImageField` form handling (enctype, preview) — not yet designed.
-6. **Menu generation**: auto-generate nav menu from router registry, store visible items in session — deferred.
-7. **Breadcrumbs**: auto-generate from URL structure — deferred.
-8. **SPA schema endpoint**: `GET /api/{resource}/?_schema` — deferred.
-9. **`dispatch.call()` permission bypass**: currently the target ViewSet's permissions still run; if an internal call legitimately needs to bypass them, an explicit flag will be needed — not yet designed.
-10. **EntityGroup `model=None` pattern**: the current workaround for circular imports (patch after class body) should be replaced with a lazy resolution mechanism.
+1. **`CONFIRM_ACTIONS` setting is unwired**: declared and defaulted in `app_settings.py`, but no code path currently reads it — only `CONFIRM_DELETIONS` is consulted. Either wire it up (e.g. a global default for `gui_config['confirmation']` on non-destructive actions) or remove it.
+2. **`dispatch.call()` has no real-world example yet**: works and is tested at the unit level conceptually via its docstring, but no ViewSet in `testproject/demo/` or in the author's other projects exercises it yet.
+3. **Bulk actions**: acting on multiple selected list rows at once — not designed.
+4. **Breadcrumbs**: auto-generating them from URL/menu structure — deferred.
+5. **SPA / schema mode**: a `GET /api/{resource}/?_schema` endpoint for JS-frontend consumption — deferred idea, not designed, not started (see §7.2).
+6. **Browser test coverage**: no Playwright/browser-level suite yet (see §12).
+7. **`management` command for exporting/customizing templates**: proposed in earlier planning, not built.
+8. **`modal.html` (both packs) is dead code**: leftover from the pre-Phase-3 `EntityGroup` design, superseded by `NestedGUIMixin` inline sections; nothing in `src/sebastian/*.py` references it anymore. Not removed yet — do so once confirmed nothing external depends on it.
 
 ---
 
 ## Glossary
 
 - **API-first**: Design paradigm where the API is the primary interface; the GUI is derived from it.
-- **Field group**: A named set of serializer fields sharing visibility and editability permissions. Declared in `ViewSet.Sebastian.groups`.
-- **Entity group**: A named inline relation (weak entity) rendered as an HTMX-powered section with per-row modal forms.
-- **GUIMixin**: ViewSet/GenericAPIView mixin that adds HTML rendering and GUI-only actions (`create_form`, `update_form`).
-- **GUIRouter**: Takes a DRF router, mirrors its registry to generate parallel `/gui/` URL patterns.
-- **GUISerializer**: Serializer mixin that enforces field group permissions at the serializer layer.
-- **Sebastian inner class**: `class Sebastian:` declared inside a ViewSet — holds `groups`, template overrides, and other Sebastian metadata. Named `Sebastian` (not `GUIConfig`) because its configuration applies to both API and GUI layers.
+- **Field group**: A named set of serializer fields sharing visibility and editability permissions. Declared in `ViewSet.Sebastian.groups` as a `FieldGroup`.
+- **Nested resource**: A weak-entity relation (e.g. attachments on a request) implemented as an independent `NestedGUIMixin` ViewSet, declared in the parent's `Sebastian.inlines`, and rendered as an inline section in the parent's GUI.
+- **Singleton resource**: A GUI page backed by at most one record per context, implemented with `SingletonGUIMixin` and registered via `GUIRouter.add_page()`.
+- **GUIMixin**: ViewSet/`GenericAPIView` mixin that adds HTML rendering and GUI-only actions (`create_form`, `update_form`).
+- **GUIRouter**: Takes an API router, mirrors its registry to generate parallel `/gui/` URL patterns, plus the app menu and any pages registered via `add_page()`.
+- **GUISerializerMixin**: Serializer mixin that enforces field group permissions and adds GUI-only representation keys (`{field}__display`, `sebastian__str`) at the serializer layer.
+- **`@gui_field`**: Decorator marking a serializer method as a GUI-only computed column, excluded from the JSON API response.
+- **Sebastian inner class**: `class Sebastian:` declared inside a ViewSet or singleton view — holds `groups`, `inlines`, `menu`, template overrides, and other Sebastian metadata. Named `Sebastian` (not `GUIConfig`) because its configuration applies to both API and GUI layers.
+- **Template pack**: A complete set of templates (`htmx` or `plain`) selected via `SEBASTIAN['TEMPLATE_PACK']`; a **skin** is the independent CSS/icon layer on top of it.
 - **ViewSet**: DRF class grouping related API endpoints.
 - **HTMX**: Library for dynamic HTML updates without JavaScript.
-- **Content negotiation**: Automatic response format selection based on `Accept` header or `format` URL kwarg.
+- **Content negotiation**: Automatic response format selection; in Sebastian, gated by the `request.sebastian_gui` flag rather than plain `Accept`-header negotiation (see §3.3).
 - **Snap-in**: A component that adds functionality to existing code with minimal changes.

@@ -1,4 +1,4 @@
-{% load sebastian_tags %}
+{% load i18n sebastian_tags %}
 {% if not is_htmx %}<!doctype html>
 <html lang="en">
 <head>
@@ -55,15 +55,15 @@
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">Conferma</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <h5 class="modal-title">{% trans "Confirm" %}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans 'Close' %}"></button>
       </div>
       <div class="modal-body">
         <div id="sb-action-modal-prompt" class="alert alert-primary mb-0"></div>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annulla</button>
-        <button type="button" id="sb-action-modal-ok" class="btn btn-primary">Conferma</button>
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+        <button type="button" id="sb-action-modal-ok" class="btn btn-primary">{% trans "Confirm" %}</button>
       </div>
     </div>
   </div>
@@ -104,7 +104,7 @@
     if (badge) {
       badge.innerHTML =
         '<span class="badge bg-warning text-dark fw-normal">' +
-        '<i class="bi bi-x-circle me-1"></i>File verrà rimosso</span>';
+        '<i class="bi bi-x-circle me-1"></i>{% trans "File will be removed"|escapejs %}</span>';
     }
   }
 
@@ -146,7 +146,7 @@
       var btn = evt.target.closest('[data-sb-confirm-url]');
       if (!btn) return;
       var url    = btn.dataset.sbConfirmUrl;
-      var prompt = btn.dataset.sbConfirmPrompt || 'Confermare?';
+      var prompt = btn.dataset.sbConfirmPrompt || '{% trans "Confirm?"|escapejs %}';
       var style  = btn.dataset.sbConfirmStyle  || 'primary';
 
       var modal     = document.getElementById('sb-action-modal');

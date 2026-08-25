@@ -11,12 +11,12 @@ from sebastian.templatetags.sebastian_tags import (
 # ── data_keys ─────────────────────────────────────────────────────────────────
 
 def test_data_keys_excludes_display_keys():
-    data = {'id': 1, 'name': 'Acme', 'name__display': 'Acme Srl'}
+    data = {'id': 1, 'name': 'Acme', 'name__display': 'Acme Inc'}
     assert data_keys(data) == ['id', 'name']
 
 
 def test_data_keys_excludes_sebastian_prefix():
-    data = {'id': 1, 'sebastian__str': 'Acme Srl'}
+    data = {'id': 1, 'sebastian__str': 'Acme Inc'}
     assert data_keys(data) == ['id']
 
 
@@ -33,8 +33,8 @@ def test_data_keys_empty_dict():
 # ── display_value ─────────────────────────────────────────────────────────────
 
 def test_display_value_prefers_display_key():
-    data = {'fornitore': 1, 'fornitore__display': 'Acme Srl'}
-    assert display_value(data, 'fornitore') == 'Acme Srl'
+    data = {'supplier': 1, 'supplier__display': 'Acme Inc'}
+    assert display_value(data, 'supplier') == 'Acme Inc'
 
 
 def test_display_value_falls_back_when_display_missing():
@@ -72,8 +72,8 @@ def test_get_item_missing_returns_empty():
 
 def test_get_item_double_underscore_key():
     # Django template variables cannot access __ keys but our filter can
-    data = {'sebastian__str': 'Acme Srl'}
-    assert get_item(data, 'sebastian__str') == 'Acme Srl'
+    data = {'sebastian__str': 'Acme Inc'}
+    assert get_item(data, 'sebastian__str') == 'Acme Inc'
 
 
 def test_get_item_none_returns_empty():

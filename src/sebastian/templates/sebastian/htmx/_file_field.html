@@ -1,4 +1,4 @@
-{% load sebastian_tags %}
+{% load i18n sebastian_tags %}
 {% with current=instance|get_item:field_name %}
 <div class="mb-3">
   <label class="form-label" for="id_{{ field_name }}">
@@ -17,7 +17,7 @@
     <button type="button"
             class="btn btn-outline-danger btn-sm flex-shrink-0"
             onclick="sbFileClear('{{ field_name }}')"
-            title="Rimuovi file">
+            title="{% trans 'Remove file' %}">
       {% icon "x-lg" %}
     </button>
     {% endif %}
@@ -26,7 +26,7 @@
          class="form-control form-control-sm sb-file-input"
          id="id_{{ field_name }}"
          name="{{ field_name }}">
-  <div class="form-text">Seleziona un file per sostituire quello attuale.</div>
+  <div class="form-text">{% trans "Select a file to replace the current one." %}</div>
 
   {% else %}
   {# create mode, or edit with no existing file #}

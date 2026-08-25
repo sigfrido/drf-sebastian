@@ -1,8 +1,8 @@
 {% extends pack_base %}
-{% load sebastian_tags %}
+{% load i18n sebastian_tags %}
 
 {% block title %}
-  {% if data.action == 'create' %}New{% else %}Edit{% endif %}
+  {% if data.action == 'create' %}{% trans "New" %}{% else %}{% trans "Edit" %}{% endif %}
 {% endblock %}
 
 {% block content %}
@@ -10,7 +10,7 @@
 
 <h4>
   {{ view.get_view_name }} —
-  {% if action == 'create' %}New{% else %}Edit{% endif %}
+  {% if action == 'create' %}{% trans "New" %}{% else %}{% trans "Edit" %}{% endif %}
 </h4>
 
 {% if form_errors.non_field_errors %}
@@ -41,8 +41,8 @@
         <label class="form-label" for="id_{{ field_name }}">{{ field.label|default:field_name }}</label>
         <select class="form-select form-select-sm" id="id_{{ field_name }}" name="{{ field_name }}">
           {% if field.allow_null %}<option value="" {% if bval == "" %}selected{% endif %}>-</option>{% endif %}
-          <option value="true"  {% if bval == "true"  %}selected{% endif %}>Sì</option>
-          <option value="false" {% if bval == "false" %}selected{% endif %}>No</option>
+          <option value="true"  {% if bval == "true"  %}selected{% endif %}>{% trans "Yes" %}</option>
+          <option value="false" {% if bval == "false" %}selected{% endif %}>{% trans "No" %}</option>
         </select>
         {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
       </div>
@@ -105,11 +105,11 @@
   {% endfor %}
 
   <div class="d-flex gap-2">
-    <button type="submit" class="btn btn-primary">Save</button>
+    <button type="submit" class="btn btn-primary">{% trans "Save" %}</button>
     {% if cancel_url %}
-    <a href="{{ cancel_url }}" class="btn btn-outline-secondary">Cancel</a>
+    <a href="{{ cancel_url }}" class="btn btn-outline-secondary">{% trans "Cancel" %}</a>
     {% else %}
-    <a href="{{ request.path }}../" class="btn btn-outline-secondary">Cancel</a>
+    <a href="{{ request.path }}../" class="btn btn-outline-secondary">{% trans "Cancel" %}</a>
     {% endif %}
   </div>
 

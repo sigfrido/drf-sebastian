@@ -1,7 +1,7 @@
 {% extends pack_base %}
-{% load sebastian_tags %}
+{% load i18n sebastian_tags %}
 
-{% block title %}Conferma{% endblock %}
+{% block title %}{% trans "Confirm" %}{% endblock %}
 
 {% block content %}
 <div class="mb-4">
@@ -74,9 +74,9 @@
 
   <div class="d-flex gap-2">
     <button type="submit" class="btn btn-{{ data.confirm_style|default:'primary' }}">
-      {% if data.confirm_icon %}{% icon data.confirm_icon %} {% endif %}Conferma
+      {% if data.confirm_icon %}{% icon data.confirm_icon %} {% endif %}{% trans "Confirm" %}
     </button>
-    <a href="{{ data.cancel_url }}" class="btn btn-outline-secondary">Annulla</a>
+    <a href="{{ data.cancel_url }}" class="btn btn-outline-secondary">{% trans "Cancel" %}</a>
   </div>
 </form>
 {% endblock %}

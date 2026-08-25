@@ -110,7 +110,7 @@ class GUIRouter:
 
     Usage:
         api_router = SebastianRouter()
-        api_router.register('richieste', RichiestaViewSet, basename='richiesta')
+        api_router.register('requests', RequestViewSet, basename='request')
 
         gui_router = GUIRouter(api_router)
 

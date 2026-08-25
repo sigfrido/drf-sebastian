@@ -1,7 +1,7 @@
 from django.apps import AppConfig
 
 
-class SelcoConfig(AppConfig):
-    name = 'selco'
-    verbose_name = 'SELCO'
+class DemoConfig(AppConfig):
+    name = 'demo'
+    verbose_name = 'Demo'
     default_auto_field = 'django.db.models.BigAutoField'

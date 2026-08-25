@@ -1,13 +1,15 @@
 from django.contrib import admin
 from django.urls import path, include
 from sebastian.routers import SebastianRouter, GUIRouter
-from selco.views import FornitoreViewSet, RichiestaViewSet
+from demo.views import SupplierViewSet, RequestViewSet, SettingsView
 
 api_router = SebastianRouter()
-api_router.register('fornitori', FornitoreViewSet, basename='fornitore')
-api_router.register('richieste', RichiestaViewSet, basename='richiesta')
+api_router.register('suppliers', SupplierViewSet, basename='supplier')
+api_router.register('requests', RequestViewSet, basename='request')
 
 gui_router = GUIRouter(api_router)
+gui_router.add_page('settings/', SettingsView.as_view(), name='settings')
+gui_router.add_page('settings/edit/', SettingsView.as_view(edit_mode=True), name='settings-edit')
 
 urlpatterns = [
     path('admin/', admin.site.urls),

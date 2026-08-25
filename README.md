@@ -20,18 +20,129 @@ With Sebastian, you implement your business logic in your DRF API's Views and Se
 
 Sebastian has been written with **HTMX** in mind. The _htmx_ template pack allows for more dynamic pages where each element maps to an API endpoint and can be loaded autonomously - which makes master/detail forms more responsive. But there is also a _plain_ template pack which does not rely on HTMX, and handles the web page as a whole, building it via internal calls to the different enpoints which yield the page data.
 
+Sebastian's own GUI chrome (buttons, modal titles, confirmation prompts, ...) is translatable via Django's standard i18n — set `LANGUAGE_CODE` in your project and it picks up the bundled translation automatically, no extra config. An Italian catalog ships with the package; see [drf-sebastian framework specifications §7.3](docs/sebastian-spec.md#73-translating-the-gui-chrome-i18n) for details and for how to add another language.
+
+## Quick Start
+
+### Try the bundled demo
+
+The fastest way to see Sebastian in action is to run the demo project shipped in this repo (`testproject/`):
+
+```bash
+git clone https://github.com/sigfrido/drf-sebastian.git
+cd drf-sebastian
+python -m venv .venv && source .venv/bin/activate
+pip install -e ".[filter,htmx,dev]"
+
+cd testproject
+python manage.py migrate
+python manage.py seed_demo_data   # creates sample suppliers, requests, attachments and the admin/admin superuser
+python manage.py runserver
+```
+
+Then open [http://127.0.0.1:8000/gui/](http://127.0.0.1:8000/gui/) and log in with `admin` / `admin`.
+
+### Add Sebastian to your own project
+
+```bash
+pip install drf-sebastian[filter,htmx]
+```
+
+```python
+# settings.py
+INSTALLED_APPS = [
+    ...,
+    "rest_framework",
+    "django_filters",
+    "sebastian",
+    "library",
+]
+
+REST_FRAMEWORK = {
+    "DEFAULT_RENDERER_CLASSES": [
+        "rest_framework.renderers.JSONRenderer",
+        "sebastian.renderers.SebastianHTMLRenderer",
+    ],
+}
+
+SEBASTIAN = {
+    "TEMPLATE_PACK": "htmx",
+}
+```
+
+```python
+# library/models.py
+from django.db import models
+
+class Book(models.Model):
+    title  = models.CharField(max_length=200)
+    author = models.CharField(max_length=200)
+```
+
+```python
+# library/serializers.py
+from rest_framework import serializers
+from sebastian.serializers import GUISerializerMixin
+from .models import Book
+
+class BookSerializer(GUISerializerMixin, serializers.ModelSerializer):
+    class Meta:
+        model  = Book
+        fields = ["id", "title", "author"]
+```
+
+```python
+# library/views.py
+from rest_framework import viewsets
+from sebastian.mixins import GUIMixin
+from .models import Book
+from .serializers import BookSerializer
+
+class BookViewSet(GUIMixin, viewsets.ModelViewSet):
+    queryset         = Book.objects.all()
+    serializer_class = BookSerializer
+
+    class Sebastian:
+        label = "Books"
+```
+
+```python
+# urls.py
+from django.urls import path, include
+from sebastian.routers import SebastianRouter, GUIRouter
+from library.views import BookViewSet
+
+api_router = SebastianRouter()
+api_router.register("books", BookViewSet, basename="book")
+
+gui_router = GUIRouter(api_router)
+
+urlpatterns = [
+    path("api/", include(api_router.urls)),  # JSON API
+    path("gui/", include(gui_router.urls)),  # HTML GUI
+]
+```
+
+```bash
+python manage.py migrate
+python manage.py runserver
+```
+
+Visit `/gui/` for the auto-generated list/detail/form pages, or `/api/` for the plain JSON API — same ViewSet, same Serializer, no duplicated logic.
+
+From here, see [drf-sebastian framework specifications](docs/sebastian-spec.md) for field groups, permissions, nested resources, actions, the app menu, and the other features demonstrated in `testproject/demo/`.
+
 ## Project status
 
-Still in active development.
+Still in active development, but stable enough for real-world use — it already powers the GUI of another project of mine in daily use.
 
 Sebastian started as a side-project for handling the GUI of my Django-DRF-based BPM Framework; I expect to introduce many changes and - hopefully - improvements as soon as new use cases or problems may surface.
-
-A first official release should see the light by the end of july 2026.
 
 ## Project docs
 
 - [Project roadmap](docs/roadmap.md)
 - [drf-sebastian framework specifications](docs/sebastian-spec.md)
+- [API reference](docs/api/index.html) (generated with [pdoc](https://pdoc.dev/); regenerate with `tools/gen-docs.sh`)
 
 ## Comparison to Alternatives
 

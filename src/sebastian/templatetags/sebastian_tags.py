@@ -155,10 +155,10 @@ def input_type(field) -> str:
 
 @register.filter
 def form_input_value(data, field_name) -> str:
-    """Come get_item, ma formatta datetime → YYYY-MM-DDTHH:MM per datetime-local input.
+    """Like get_item, but formats datetime → YYYY-MM-DDTHH:MM for a datetime-local input.
 
-    Il browser ignora i valori datetime con timezone (es. +02:00); questo filter
-    ritorna la stringa troncata al minuto senza offset.
+    Browsers ignore datetime values with a timezone offset (e.g. +02:00); this
+    filter returns the string truncated to the minute, with no offset.
     """
     val = get_item(data, field_name)
     if not val:

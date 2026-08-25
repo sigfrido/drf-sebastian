@@ -4,6 +4,7 @@ and adds GUI display helpers for RelatedField values.
 """
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import models as django_models
+from django.utils.translation import gettext
 from rest_framework import serializers
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.relations import RelatedField
@@ -62,8 +63,8 @@ class GUISerializerMixin:
     Override get_sebastian_description() to customize per-field display:
 
         def get_sebastian_description(self, field_name, related_obj):
-            if field_name == 'fornitore':
-                return related_obj.ragione_sociale
+            if field_name == 'supplier':
+                return related_obj.company_name
             return super().get_sebastian_description(field_name, related_obj)
 
     @gui_field protocol
@@ -158,7 +159,7 @@ class GUISerializerMixin:
 
         Format is determined by ``self.bool_display`` (per-serializer override)
         or the ``SEBASTIAN['BOOL_DISPLAY']`` setting.  Formats:
-        - ``'yesno'``     → "Sì" / "No"
+        - ``'yesno'``     → "Yes" / "No"
         - ``'checkmark'`` → "✓" / "✗"
         - ``'icon'``      → Bootstrap ``bi-check-circle-fill`` / ``bi-x-circle``
         - ``'truefalse'`` → no transform (returns None; template shows raw True/False)
@@ -178,7 +179,7 @@ class GUISerializerMixin:
                 return format_html('<i class="bi bi-check-circle-fill text-success"></i>')
             return format_html('<i class="bi bi-x-circle text-danger"></i>')
         # default: 'yesno'
-        return 'Sì' if value else 'No'
+        return gettext('Yes') if value else gettext('No')
 
     def _render_date(self, value):
         """Format a DateField value using SEBASTIAN['DATE_FORMAT'] or self.date_format.

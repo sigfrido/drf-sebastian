@@ -21,13 +21,14 @@ dev = [
     "pytest>=8.0",
     "pytest-django>=4.8",
     "django-filter>=23.0",
+    "pdoc>=14.0",
 ]
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.setuptools.package-data]
-sebastian = ["templates/**/*.html", "static/**/*"]
+sebastian = ["templates/**/*.html", "static/**/*", "locale/**/*"]
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "settings"
