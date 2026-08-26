@@ -588,15 +588,21 @@ prompt = sgettext('Delete $OBJECT?')
 
 **The one thing to remember**: `django-admin makemessages` extracts strings by pattern-matching the built-in `{% trans %}`/`{% blocktrans %}` tags and a fixed list of real Python function names (`gettext`, `pgettext`, ...) — it has no idea `{% strans %}` or `sgettext()` exist, so a string that only ever appears through one of them **silently disappears from the .po file**, no warning. `src/sebastian/_translatable_strings.py` exists purely to work around this: it's a dead-code registry that calls the real `pgettext('sebastian', ...)` for every string used via `{% strans %}`/`sgettext()` elsewhere, so makemessages' ordinary Python-file scan picks them up. **Whenever you add or change a translatable string, add or update its line in that file too** — its own docstring explains why and links back here. `{% blocktrans context "sebastian" %}` (used for the pluralized record count in `list.html`) is the one exception: it's a built-in tag, so makemessages understands it natively and needs no registry entry.
 
-To add or update translations, edit `src/sebastian/locale/it/LC_MESSAGES/django.po` (or add a new `<lang>/LC_MESSAGES/django.po`) and run, from inside `src/sebastian/`:
+**Maintainer checklist: adding or changing a translatable string**
 
-```bash
-DJANGO_SETTINGS_MODULE=settings PYTHONPATH=../:../../testproject \
-  django-admin makemessages -l it --no-location   # regenerate msgids after touching templates/strings
-django-admin compilemessages                       # .po → .mo, required for translations to take effect
-```
-
-`compilemessages` requires GNU `gettext` (`msgfmt`) on the system — a build-time tool, not a runtime dependency of the library.
+1. Write the call site with `{% strans "..." %}` (templates) or `sgettext("...")` (Python) — never hand-write `context "sebastian"` / `pgettext('sebastian', ...)` at the call site.
+2. Add or update the matching `pgettext('sebastian', "...")` line in `src/sebastian/_translatable_strings.py`. If the string has a placeholder (e.g. `$OBJECT`), put the `# Translators:` comment explaining it directly above that line — makemessages only reads comments adjacent to the literal extraction point, which is always this file, never the `sgettext()` call site.
+3. Regenerate the catalog, from the repo root:
+   ```bash
+   source .venv/bin/activate
+   PYTHONPATH=src:testproject DJANGO_SETTINGS_MODULE=settings \
+     django-admin makemessages -l it --no-location \
+     --ignore='docs/*' --ignore='testproject/*' --ignore='.venv/*'
+   ```
+   All three `--ignore` flags are required: `docs/*` because pdoc renders `{% strans %}` as literal text inside `docs/api/*.html`, which crashes makemessages' template parser (`SyntaxError: Translation blocks must not include other block tags: strans`); `testproject/*` because the demo app isn't part of the library's own catalog; `.venv/*` to skip installed dependencies.
+4. New entries land in `django.po` with an empty `msgstr ""` — write the Italian translation by hand (or add a new `<lang>/LC_MESSAGES/django.po` for another language).
+5. Compile: `cd src/sebastian && django-admin compilemessages -l it` (requires GNU `gettext`/`msgfmt` on the system — a build-time tool, not a runtime dependency of the library).
+6. Run the test suite — `tests/test_i18n.py::test_strans_and_sgettext_usages_are_all_in_the_extraction_registry` specifically fails if step 2 was forgotten, before the omission can silently reach a release.
 
 ---
 
