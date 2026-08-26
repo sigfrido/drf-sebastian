@@ -161,6 +161,7 @@ These are pinned to a single tested version each; no compatibility range across 
 
 ## Project docs
 
+- [Changelog](CHANGELOG.md)
 - [Project roadmap](docs/roadmap.md)
 - [drf-sebastian framework specifications](docs/sebastian-spec.md)
 - [API reference](docs/api/index.html) (generated with [pdoc](https://pdoc.dev/); regenerate with `tools/gen-docs.sh`)
