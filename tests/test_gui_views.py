@@ -411,17 +411,124 @@ class TestRequestActionsGUI:
 @pytest.mark.django_db
 class TestFieldGroupPermissions:
     def test_management_fields_readonly_for_non_admin(self, regular_client, purchase_request):
-        """Non-admin: edit_permission=perm_is_admin → management fields read-only in form."""
+        """Non-admin: edit_permission requires perm_is_admin → read-only regardless of status."""
+        from demo.models import Request as R
+        purchase_request.status = R.Status.SUBMITTED
+        purchase_request.save()
         r = regular_client.get(f'/gui/requests/{purchase_request.pk}/edit/', **HTMX)
         assert r.status_code == 200
         assert b'form-control-plaintext' in r.content
         assert b'name="manager_notes"' not in r.content
 
-    def test_management_fields_editable_for_admin(self, auth_client, purchase_request):
-        """Admin: edit_permission passes → management fields rendered as inputs."""
+    def test_management_fields_readonly_for_admin_on_draft(self, auth_client, purchase_request):
+        """Admin, but status is still draft: management fields are not editable yet."""
+        r = auth_client.get(f'/gui/requests/{purchase_request.pk}/edit/', **HTMX)
+        assert r.status_code == 200
+        assert b'name="manager_notes"' not in r.content
+
+    def test_management_fields_editable_for_admin_on_submitted(self, auth_client, purchase_request):
+        """Admin + status=submitted: both conditions pass → management fields are inputs."""
+        from demo.models import Request as R
+        purchase_request.status = R.Status.SUBMITTED
+        purchase_request.save()
         r = auth_client.get(f'/gui/requests/{purchase_request.pk}/edit/', **HTMX)
         assert r.status_code == 200
         assert b'name="manager_notes"' in r.content
+
+    def test_general_fields_editable_on_draft(self, auth_client, purchase_request):
+        """General fields (title, description, budget, supplier) are editable in draft."""
+        r = auth_client.get(f'/gui/requests/{purchase_request.pk}/edit/', **HTMX)
+        assert r.status_code == 200
+        assert b'name="title"' in r.content
+
+    def test_general_fields_readonly_after_submit(self, auth_client, purchase_request):
+        """Once submitted, General fields are no longer editable (requester can't change them)."""
+        from demo.models import Request as R
+        purchase_request.status = R.Status.SUBMITTED
+        purchase_request.save()
+        r = auth_client.get(f'/gui/requests/{purchase_request.pk}/edit/', **HTMX)
+        assert r.status_code == 200
+        assert b'name="title"' not in r.content
+
+    def test_general_fields_editable_when_creating(self, auth_client):
+        """New instance (no object yet): General fields must still be fillable."""
+        r = auth_client.get('/gui/requests/new/', **HTMX)
+        assert r.status_code == 200
+        assert b'name="title"' in r.content
+
+    def test_status_field_never_writable_via_api(self, auth_client, purchase_request):
+        """status is serializer-level read_only — direct API writes are silently ignored,
+        not just hidden/blocked in the GUI."""
+        r = auth_client.patch(f'/api/requests/{purchase_request.pk}/', {'status': 'approved'})
+        assert r.status_code == 200
+        purchase_request.refresh_from_db()
+        assert purchase_request.status == 'draft'
+
+    def test_record_locked_when_approved(self, auth_client, purchase_request):
+        """Record-level lock: once approved, no field (even ones an admin could
+        otherwise edit) can be written any more — a 403, not just a read-only form."""
+        from demo.models import Request as R
+        purchase_request.status = R.Status.APPROVED
+        purchase_request.save()
+        r = auth_client.patch(f'/api/requests/{purchase_request.pk}/', {'title': 'Changed'})
+        assert r.status_code == 403
+        r = auth_client.get(f'/gui/requests/{purchase_request.pk}/', **HTMX)
+        assert b'Edit' not in r.content
+
+    def test_record_locked_when_rejected(self, auth_client, purchase_request):
+        from demo.models import Request as R
+        purchase_request.status = R.Status.REJECTED
+        purchase_request.save()
+        r = auth_client.patch(f'/api/requests/{purchase_request.pk}/', {'title': 'Changed'})
+        assert r.status_code == 403
+
+    def test_record_still_writable_when_submitted(self, auth_client, purchase_request):
+        """Sanity check: the record-level lock only fires for approved/rejected, not submitted."""
+        from demo.models import Request as R
+        purchase_request.status = R.Status.SUBMITTED
+        purchase_request.save()
+        r = auth_client.patch(f'/api/requests/{purchase_request.pk}/', {'manager_notes': 'ok'})
+        assert r.status_code == 200
+
+    def test_delete_blocked_when_approved(self, auth_client, purchase_request):
+        """API-level record lock also covers DELETE, not just PATCH/PUT."""
+        from demo.models import Request as R
+        purchase_request.status = R.Status.APPROVED
+        purchase_request.save()
+        r = auth_client.delete(f'/api/requests/{purchase_request.pk}/')
+        assert r.status_code == 403
+
+
+@pytest.mark.django_db
+class TestRejectAction:
+    def test_reject_from_submitted(self, auth_client, purchase_request):
+        from demo.models import Request as R
+        purchase_request.status = R.Status.SUBMITTED
+        purchase_request.save()
+        r = auth_client.post(f'/api/requests/{purchase_request.pk}/reject/')
+        assert r.status_code == 200
+        purchase_request.refresh_from_db()
+        assert purchase_request.status == 'rejected'
+
+    def test_reject_on_draft_returns_400(self, auth_client, purchase_request):
+        r = auth_client.post(f'/api/requests/{purchase_request.pk}/reject/')
+        assert r.status_code == 400
+
+    def test_reject_requires_admin(self, auth_client_regular, purchase_request):
+        from demo.models import Request as R
+        purchase_request.status = R.Status.SUBMITTED
+        purchase_request.save()
+        r = auth_client_regular.post(f'/api/requests/{purchase_request.pk}/reject/')
+        assert r.status_code == 403
+
+    def test_reject_button_visible_for_admin_on_submitted(self, auth_client, purchase_request):
+        from demo.models import Request as R
+        purchase_request.status = R.Status.SUBMITTED
+        purchase_request.save()
+        with override_settings(SEBASTIAN={'HIDE_UNAUTHORIZED_ACTIONS': True}):
+            r = auth_client.get(f'/gui/requests/{purchase_request.pk}/', **HTMX)
+        assert r.status_code == 200
+        assert b'Reject' in r.content
 
     def test_hide_false_renders_disabled_button(self, regular_client, purchase_request):
         """HIDE_UNAUTHORIZED_ACTIONS=False: unauthorized action rendered as disabled button."""

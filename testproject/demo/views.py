@@ -1,4 +1,5 @@
 from rest_framework import viewsets, permissions, generics
+from rest_framework.permissions import BasePermission, SAFE_METHODS
 from rest_framework.response import Response
 from sebastian.mixins import GUIMixin, NestedGUIMixin, SingletonGUIMixin
 from sebastian.config import FieldGroup, MenuGroup, MenuItem, MenuDivider
@@ -20,6 +21,26 @@ def perm_request_status(*statuses):
             return False
         return _obj.status in statuses
     return _has_perm
+
+
+def perm_editable_or_new(*statuses):
+    """Editable while creating a new instance (no object yet), or once saved,
+    only when the object's status is one of *statuses."""
+    def _has_perm(request, obj):
+        if obj is None:
+            return True
+        return obj.status in statuses
+    return _has_perm
+
+
+class RequestNotFinalized(BasePermission):
+    """Record-level lock: once a Request is approved or rejected, it is read-only —
+    no field group, action, or direct API write can change it any more."""
+
+    def has_object_permission(self, request, view, obj):
+        if request.method in SAFE_METHODS:
+            return True
+        return obj.status not in (Request.Status.APPROVED, Request.Status.REJECTED)
 
 
 class SupplierViewSet(GUIMixin, viewsets.ModelViewSet):
@@ -115,9 +136,25 @@ class AttachmentViewSet(NestedGUIMixin, viewsets.ModelViewSet):
 
 
 class RequestViewSet(GUIMixin, viewsets.ModelViewSet):
-    queryset         = Request.objects.select_related('supplier').all()
-    serializer_class = RequestSerializer
-    filterset_class  = RequestFilter
+    queryset           = Request.objects.select_related('supplier').all()
+    serializer_class   = RequestSerializer
+    filterset_class    = RequestFilter
+    permission_classes = [RequestNotFinalized]
+
+    def can_update(self):
+        # RequestNotFinalized.has_object_permission() only rejects unsafe methods;
+        # the default can_update() evaluates it against *this* (GET) request, which
+        # is always safe, so it would never hide the Edit button on its own.
+        obj = getattr(self, '_sebastian_obj', None)
+        if obj is not None and obj.status in (Request.Status.APPROVED, Request.Status.REJECTED):
+            return False
+        return super().can_update()
+
+    def can_delete(self):
+        obj = getattr(self, '_sebastian_obj', None)
+        if obj is not None and obj.status in (Request.Status.APPROVED, Request.Status.REJECTED):
+            return False
+        return super().can_delete()
 
     class Sebastian:
         label = 'Requests'
@@ -144,12 +181,16 @@ class RequestViewSet(GUIMixin, viewsets.ModelViewSet):
                 'general',
                 ['title', 'description', 'budget', 'status', 'supplier'],
                 label='General',
+                edit_permission=perm_editable_or_new(Request.Status.DRAFT),
             ),
             FieldGroup(
                 'management',
                 ['manager_notes', 'reference_code'],
                 label='Management',
-                edit_permission=(perm_is_admin, ),
+                edit_permission=perm_and(
+                    perm_is_admin,
+                    perm_request_status(Request.Status.SUBMITTED),
+                ),
             ),
             FieldGroup(
                 'submit',
@@ -225,6 +266,34 @@ class RequestViewSet(GUIMixin, viewsets.ModelViewSet):
         if instance.status != Request.Status.SUBMITTED:
             return Response({'detail': 'Only submitted requests can be approved.'}, status=400)
         instance.status = Request.Status.APPROVED
+        instance.save()
+        return Response(self.get_serializer(instance).data)
+
+    @action(
+        detail=True,
+        methods=['post'],
+        permission_classes=[permissions.IsAdminUser],
+        gui_config={
+            'label':    'Reject',
+            'icon':     'x-circle',
+            'color':    'danger',
+            'position': 'detail',
+            'permission': perm_and(
+                perm_is_admin,
+                perm_request_status(Request.Status.SUBMITTED),
+            ),
+            'confirmation': {
+                'prompt': 'Confirm rejection of $OBJECT?',
+                'icon':   'x-circle',
+                'style':  'danger',
+            },
+        },
+    )
+    def reject(self, request, pk=None, **kwargs):
+        instance = self.get_object()
+        if instance.status != Request.Status.SUBMITTED:
+            return Response({'detail': 'Only submitted requests can be rejected.'}, status=400)
+        instance.status = Request.Status.REJECTED
         instance.save()
         return Response(self.get_serializer(instance).data)
 

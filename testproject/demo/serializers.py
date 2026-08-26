@@ -56,7 +56,7 @@ class RequestSerializer(GUISerializerMixin, serializers.ModelSerializer):
             'manager_notes', 'reference_code', 'justification',
             'created_at', 'updated_at', 'num_attachments',
         ]
-        read_only_fields = ['created_at', 'updated_at', 'num_attachments']
+        read_only_fields = ['status', 'created_at', 'updated_at', 'num_attachments']
 
     def get_sebastian_description(self, field_name, related_obj):
         if field_name == 'supplier':
