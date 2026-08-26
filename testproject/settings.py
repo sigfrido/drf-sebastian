@@ -1,5 +1,7 @@
 from pathlib import Path
 
+LANGUAGE_CODE = 'en'
+
 BASE_DIR = Path(__file__).resolve().parent
 
 SECRET_KEY = 'django-insecure-sebastian-testproject-do-not-use-in-production'

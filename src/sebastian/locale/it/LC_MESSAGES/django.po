@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: drf-sebastian 0.1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-26 09:58-0500\n"
+"POT-Creation-Date: 2026-08-26 10:46-0500\n"
 "PO-Revision-Date: 2026-08-26 06:45-0500\n"
 "Last-Translator: Luca Sigfrido Percich\n"
 "Language-Team: Italian\n"
@@ -97,6 +97,10 @@ msgid "Home"
 msgstr "Home"
 
 msgctxt "sebastian"
+msgid "Invalid username or password."
+msgstr "Nome utente o password non validi."
+
+msgctxt "sebastian"
 msgid "List"
 msgstr "Elenco"
 
@@ -121,6 +125,10 @@ msgid "No records found."
 msgstr "Nessun elemento trovato."
 
 msgctxt "sebastian"
+msgid "Password"
+msgstr "Password"
+
+msgctxt "sebastian"
 msgid "Remove file"
 msgstr "Rimuovi file"
 
@@ -133,6 +141,10 @@ msgid "Select a file to replace the current one."
 msgstr "Seleziona un file per sostituire quello attuale."
 
 msgctxt "sebastian"
+msgid "Sign in"
+msgstr "Accedi"
+
+msgctxt "sebastian"
 msgid "Sort by"
 msgstr "Ordina per"
 
@@ -143,6 +155,10 @@ msgstr "Ordina per…"
 msgctxt "sebastian"
 msgid "Then by"
 msgstr "Poi per"
+
+msgctxt "sebastian"
+msgid "Username"
+msgstr "Nome utente"
 
 msgctxt "sebastian"
 msgid "Yes"

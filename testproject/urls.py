@@ -16,8 +16,9 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     # Not registered via gui_router.add_page(): that wrapper redirects
     # unauthenticated requests to LOGIN_URL, which is this same page.
+    # template_name is omitted: 'registration/login.html' is both Django's
+    # own default and the template sebastian ships at that same path.
     path('gui/login/', auth_views.LoginView.as_view(
-        template_name='registration/login.html',
         redirect_authenticated_user=True,
     ), name='login'),
     path('gui/logout/', auth_views.LogoutView.as_view(), name='logout'),
