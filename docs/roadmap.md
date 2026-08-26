@@ -194,6 +194,15 @@ Prompted directly by pushback on Phase 13's fix: typing `context "sebastian"` / 
 - [x] `tests/test_strans_and_sgettext_usages_are_all_in_the_extraction_registry` — statically scans every template and `.py` file for `{% strans %}`/`sgettext()` calls and fails if any string is missing from the registry, so forgetting to update it (as happened twice while building this) fails a test instead of silently breaking translation the next time someone runs `makemessages`
 - [x] Documented the two-tier system (ergonomic wrapper for call sites + registry for extraction) in spec §7.3, including why the registry exists and the discipline it requires
 
+## Phase 15 — Login template moved into the library; vendored frontend assets (done)
+
+- [x] `registration/login.html` moved from `testproject/` into `src/sebastian/templates/registration/` — it's generic username/password chrome with zero domain content, so every consumer needed it, not just the demo. Works via Django's normal template-shadow override (project `TEMPLATES[0]['DIRS']` beats app `APP_DIRS`), no urls.py changes needed since `LoginView`'s `template_name` already defaulted to this same path. Its strings now use `{% strans %}`/context `"sebastian"` like the rest of the library chrome (previously drafted with plain `{% trans %}` while it still lived in `testproject`, then corrected after the move)
+- [x] Bootstrap 5.3.3, Bootstrap Icons 1.11.3, Tom Select 2.3.1, and htmx 2.0.4 — previously loaded from jsdelivr/unpkg CDNs — are now vendored under `src/sebastian/static/sebastian/vendor/` and served via `{% static %}`. Downloaded files were verified byte-identical to the SRI hashes that were already pinned in the CDN `<link>`/`<script>` tags. Motivation: no runtime dependency on internet access or third-party hosts (relevant for intranet/air-gapped deployments), consistent with the library already vendoring its own `sebastian.css`/`widgets.js`
+- [x] Override works "for free" via the same shadow mechanism as templates: a consuming project can replace any vendored file by placing one at the identical relative path under its own `STATICFILES_DIRS`. No settings key or template tag needed for this — considered and rejected a `{% lib "bootstrap" %}`-style indirection as unnecessary complexity for what Django's finder precedence already gives
+- [x] Documented the vendored libraries and their pinned versions in the README
+
+Release-checklist note for future maintainers: at each release, check whether any vendored library has a newer version worth pulling in (security fixes especially) — there is currently no automated tracking of this, and no tested compatibility *range* per library, only the single pinned version in use.
+
 ## Deferred
 
 - Management command `sebastian-templates` for exporting/customizing templates

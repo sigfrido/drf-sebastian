@@ -146,6 +146,19 @@ Still in active development, but stable enough for real-world use — it already
 
 Sebastian started as a side-project for handling the GUI of my Django-DRF-based BPM Framework; I expect to introduce many changes and - hopefully - improvements as soon as new use cases or problems may surface.
 
+## Frontend dependencies
+
+Sebastian's default GUI chrome vendors its own copies of these libraries under `src/sebastian/static/sebastian/vendor/` (served via `{% static %}`, no CDN/internet access required at runtime). A consuming project can override any of them by placing a file at the same relative path under its own `STATICFILES_DIRS` — Django's static-file finder checks project-level dirs before app-level ones, so the project's copy wins.
+
+| Library | Vendored version | Local file name | Used by |
+|---|---|---|---|
+| [Bootstrap](https://getbootstrap.com/) | 5.3.3 | `bootstrap/bootstrap.min.css`, `bootstrap/bootstrap.bundle.min.js` | both packs (CSS); `htmx` pack only (JS bundle) |
+| [Bootstrap Icons](https://icons.getbootstrap.com/) | 1.11.3 | `bootstrap-icons/bootstrap-icons.min.css` (+ `fonts/bootstrap-icons.woff`, `.woff2`) | both packs |
+| [Tom Select](https://tom-select.js.org/) | 2.3.1 | `tom-select/tom-select.bootstrap5.min.css`, `tom-select/tom-select.complete.min.js` | `htmx` pack only |
+| [htmx](https://htmx.org/) | 2.0.4 | `htmx/htmx.min.js` | `htmx` pack only |
+
+These are pinned to a single tested version each; no compatibility range across versions has been established yet (see roadmap). When bumping one, re-run the full test suite and a manual smoke test of both packs before releasing.
+
 ## Project docs
 
 - [Project roadmap](docs/roadmap.md)

@@ -36,10 +36,10 @@ class TestPackContext:
         assert b'hx-target' in r.content.lower()
 
     def test_bootstrap5_skin_fragment_included(self, auth_client):
-        """Skin fragment CDN links appear in the full-page response."""
+        """Skin fragment vendored asset links appear in the full-page response."""
         r = auth_client.get('/gui/suppliers/', **GUI)
-        assert b'bootstrap@5.3.3' in r.content
-        assert b'bootstrap-icons' in r.content
+        assert b'sebastian/vendor/bootstrap/bootstrap.min.css' in r.content
+        assert b'sebastian/vendor/bootstrap-icons/bootstrap-icons.min.css' in r.content
 
 
 # ---------------------------------------------------------------------------
