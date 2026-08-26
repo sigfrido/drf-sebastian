@@ -36,7 +36,7 @@ ROOT_URLCONF = 'urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -76,8 +76,13 @@ REST_FRAMEWORK = {
     ],
 }
 
+LOGIN_URL = '/gui/login/'
+LOGIN_REDIRECT_URL = '/gui/'
+LOGOUT_REDIRECT_URL = '/gui/login/'
+
 SEBASTIAN = {
     'TEMPLATE_PACK': 'htmx',
     # 'TEMPLATE_PACK': 'plain',
     'HIDE_UNAUTHORIZED_ACTIONS': False, # Disable instead
+    'LOGIN_URL': LOGIN_URL,
 }

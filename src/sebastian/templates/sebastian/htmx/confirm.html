@@ -1,13 +1,13 @@
-{% load i18n sebastian_tags %}
+{% load sebastian_tags %}
 <div class="modal fade" id="sb-confirm-modal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
 
       <div class="modal-header">
         <h5 class="modal-title">
-          {% if data.confirm_icon %}{% icon data.confirm_icon %} {% endif %}{% trans "Confirm" %}
+          {% if data.confirm_icon %}{% icon data.confirm_icon %} {% endif %}{% strans "Confirm" %}
         </h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans 'Close' %}"></button>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% strans 'Close' %}"></button>
       </div>
 
       <div class="modal-body">
@@ -84,10 +84,10 @@
       </div>
 
       <div class="modal-footer">
-        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{% strans "Cancel" %}</button>
         <button type="submit" form="sb-confirm-form"
                 class="btn btn-{{ data.confirm_style|default:'primary' }}">
-          {% if data.confirm_icon %}{% icon data.confirm_icon %} {% endif %}{% trans "Confirm" %}
+          {% if data.confirm_icon %}{% icon data.confirm_icon %} {% endif %}{% strans "Confirm" %}
         </button>
       </div>
 

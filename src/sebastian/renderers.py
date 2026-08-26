@@ -1,7 +1,7 @@
 from django.template.loader import render_to_string
-from django.utils.translation import gettext
 from rest_framework.renderers import BaseRenderer
 from . import app_settings
+from .i18n import sgettext
 
 
 def _find_in_mro(view, attr):
@@ -172,7 +172,7 @@ class SebastianHTMLRenderer(BaseRenderer):
         if isinstance(data, dict):
             detail = data.get('detail', '') or data.get('message', '')
         if not detail:
-            error_label = gettext('Error')
+            error_label = sgettext('Error')
             detail = f'{error_label} {response.status_code}'
         return render_to_string(f'sebastian/{pack}/error.html', {
             'error_detail':    str(detail),

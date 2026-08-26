@@ -1,10 +1,12 @@
 from pathlib import Path
 
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from django.core.files import File
 from django.core.management.base import BaseCommand
 
 from demo.models import Supplier, Request, Attachment, Settings
+from demo.permissions import MANAGERS, USERS
 
 SAMPLE_FILES_DIR = Path(__file__).resolve().parent.parent.parent / 'fixtures' / 'sample_files'
 
@@ -17,6 +19,15 @@ class Command(BaseCommand):
         if not User.objects.filter(username='admin').exists():
             User.objects.create_superuser('admin', 'admin@example.com', 'admin')
             self.stdout.write(self.style.SUCCESS('Created superuser admin/admin'))
+
+        managers_group, _ = Group.objects.get_or_create(name=MANAGERS)
+        users_group, _ = Group.objects.get_or_create(name=USERS)
+
+        for username, group in [('manager', managers_group), ('user', users_group)]:
+            if not User.objects.filter(username=username).exists():
+                account = User.objects.create_user(username, f'{username}@example.com', username)
+                account.groups.add(group)
+                self.stdout.write(self.style.SUCCESS(f'Created user {username}/{username} ({group.name})'))
 
         suppliers = {}
         for name, tax_code in [

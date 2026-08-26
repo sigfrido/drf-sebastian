@@ -6,6 +6,8 @@ from django.utils.dateparse import parse_datetime
 from django.utils.safestring import mark_safe
 from rest_framework import serializers as drf_serializers
 
+from ..i18n import sgettext
+
 register = template.Library()
 
 _ICON_RENDERERS = {
@@ -22,12 +24,34 @@ def icon(context, name, extra_class=''):
     return mark_safe(_ICON_RENDERERS[key](name, extra_class))
 
 
+@register.simple_tag
+def strans(text):
+    """Shorthand for ``{% trans text context "sebastian" %}``.
+
+    NOTE for makemessages: this custom tag is invisible to Django's template
+    string extractor (it only recognizes the built-in trans/blocktrans tags),
+    so every string passed to {% strans %} must also appear as a real
+    ``pgettext('sebastian', ...)`` call somewhere makemessages *does* scan —
+    see ``sebastian/_translatable_strings.py``, kept in sync by hand.
+    """
+    return sgettext(text)
+
+
 @register.filter
 def get_item(obj, key):
-    """Get a value from a mapping (dict, BindingDict…) or object attribute by key."""
+    """Get a value from a mapping (dict, BindingDict…) or object attribute by key.
+
+    Strings are deliberately excluded from the attribute-lookup fallback: a str
+    has real methods named after common field names (``title``, ``upper``,
+    ``strip``, ``format``, ...), so ``getattr('', 'title')`` returns the bound
+    method instead of a missing-value default. A bare string is never a valid
+    "object with fields" here, so it should just fall through to ''.
+    """
     try:
         return obj[key]
     except (KeyError, IndexError, TypeError):
+        if isinstance(obj, str):
+            return ''
         return getattr(obj, key, '')
 
 
@@ -94,6 +118,8 @@ def display_value(data, field_name):
     try:
         return data[field_name]
     except (KeyError, TypeError):
+        if isinstance(data, str):
+            return ''
         return getattr(data, field_name, '')
 
 

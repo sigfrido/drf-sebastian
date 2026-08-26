@@ -181,6 +181,17 @@ class TestSupplierGUIDetail:
         assert r.status_code == 200
         assert b'Acme Inc' in r.content
 
+    def test_delete_button_visible_next_to_edit_for_manager(self, manager_client, supplier):
+        r = manager_client.get(f'/gui/suppliers/{supplier.pk}/', **HTMX)
+        assert r.status_code == 200
+        assert f'{supplier.pk}/delete/'.encode() in r.content
+        assert b'Edit' in r.content
+
+    def test_delete_button_hidden_for_regular_user(self, regular_client, supplier):
+        r = regular_client.get(f'/gui/suppliers/{supplier.pk}/', **HTMX)
+        assert r.status_code == 200
+        assert f'{supplier.pk}/delete/'.encode() not in r.content
+
 
 @pytest.mark.django_db
 class TestAttachmentInlineGUI:
@@ -377,15 +388,26 @@ class TestRequestActionsGUI:
         assert r.status_code == 200
         assert b'Approve' not in r.content
 
-    def test_approve_button_visible_for_admin_on_submitted(self, auth_client, purchase_request):
-        """Admin on submitted: both callables pass → button visible."""
+    def test_approve_button_visible_for_manager_on_submitted(self, manager_client, purchase_request):
+        """Manager on submitted: both callables pass → button visible."""
+        from demo.models import Request as R
+        purchase_request.status = R.Status.SUBMITTED
+        purchase_request.save()
+        with override_settings(SEBASTIAN={'HIDE_UNAUTHORIZED_ACTIONS': True}):
+            r = manager_client.get(f'/gui/requests/{purchase_request.pk}/', **HTMX)
+        assert r.status_code == 200
+        assert b'Approve' in r.content
+
+    def test_approve_button_hidden_for_admin_who_is_not_manager(self, auth_client, purchase_request):
+        """Admin (superuser) on submitted: not a manager → button hidden, matching
+        the literal rule that only managers approve."""
         from demo.models import Request as R
         purchase_request.status = R.Status.SUBMITTED
         purchase_request.save()
         with override_settings(SEBASTIAN={'HIDE_UNAUTHORIZED_ACTIONS': True}):
             r = auth_client.get(f'/gui/requests/{purchase_request.pk}/', **HTMX)
         assert r.status_code == 200
-        assert b'Approve' in r.content
+        assert b'Approve' not in r.content
 
     def test_submit_button_hidden_after_submission(self, auth_client, purchase_request):
         """Submit has permission=status==DRAFT → hidden once status changes."""
@@ -441,6 +463,12 @@ class TestFieldGroupPermissions:
         assert r.status_code == 200
         assert b'name="title"' in r.content
 
+    def test_general_fields_editable_by_any_authenticated_user_on_draft(self, regular_client, purchase_request):
+        """No role restriction on General — any logged-in user, not just admin/manager."""
+        r = regular_client.get(f'/gui/requests/{purchase_request.pk}/edit/', **HTMX)
+        assert r.status_code == 200
+        assert b'name="title"' in r.content
+
     def test_general_fields_readonly_after_submit(self, auth_client, purchase_request):
         """Once submitted, General fields are no longer editable (requester can't change them)."""
         from demo.models import Request as R
@@ -455,6 +483,16 @@ class TestFieldGroupPermissions:
         r = auth_client.get('/gui/requests/new/', **HTMX)
         assert r.status_code == 200
         assert b'name="title"' in r.content
+
+    def test_create_form_title_field_value_is_empty_not_bound_method(self, auth_client):
+        """Regression: the create form for a model with a 'title' field used to
+        render value="<built-in method title of str object at 0x...>" — see
+        get_item()/create_form() fix. Any str-method-named field is affected,
+        'title' just happens to be this project's example."""
+        r = auth_client.get('/gui/requests/new/', **HTMX)
+        assert r.status_code == 200
+        assert b'built-in method' not in r.content
+        assert b'name="title"\n               value=""' in r.content
 
     def test_status_field_never_writable_via_api(self, auth_client, purchase_request):
         """status is serializer-level read_only — direct API writes are silently ignored,
@@ -498,35 +536,111 @@ class TestFieldGroupPermissions:
         r = auth_client.delete(f'/api/requests/{purchase_request.pk}/')
         assert r.status_code == 403
 
+    def test_delete_draft_by_any_authenticated_user(self, regular_client, purchase_request):
+        """Draft requests can be deleted by anyone logged in, not just managers/admin."""
+        r = regular_client.delete(f'/api/requests/{purchase_request.pk}/')
+        assert r.status_code == 204
 
-@pytest.mark.django_db
-class TestRejectAction:
-    def test_reject_from_submitted(self, auth_client, purchase_request):
+    def test_delete_submitted_forbidden_for_regular_user(self, regular_client, purchase_request):
         from demo.models import Request as R
         purchase_request.status = R.Status.SUBMITTED
         purchase_request.save()
-        r = auth_client.post(f'/api/requests/{purchase_request.pk}/reject/')
+        r = regular_client.delete(f'/api/requests/{purchase_request.pk}/')
+        assert r.status_code == 403
+
+    def test_delete_submitted_allowed_for_manager(self, manager_client, purchase_request):
+        from demo.models import Request as R
+        purchase_request.status = R.Status.SUBMITTED
+        purchase_request.save()
+        r = manager_client.delete(f'/api/requests/{purchase_request.pk}/')
+        assert r.status_code == 204
+
+    def test_delete_submitted_allowed_for_admin(self, auth_client, purchase_request):
+        from demo.models import Request as R
+        purchase_request.status = R.Status.SUBMITTED
+        purchase_request.save()
+        r = auth_client.delete(f'/api/requests/{purchase_request.pk}/')
+        assert r.status_code == 204
+
+    def test_delete_button_visible_next_to_edit_on_draft(self, regular_client, purchase_request):
+        r = regular_client.get(f'/gui/requests/{purchase_request.pk}/', **HTMX)
+        assert r.status_code == 200
+        assert f'{purchase_request.pk}/delete/'.encode() in r.content
+        assert b'Edit' in r.content
+
+    def test_delete_button_hidden_for_regular_user_on_submitted(self, regular_client, purchase_request):
+        from demo.models import Request as R
+        purchase_request.status = R.Status.SUBMITTED
+        purchase_request.save()
+        r = regular_client.get(f'/gui/requests/{purchase_request.pk}/', **HTMX)
+        assert r.status_code == 200
+        assert f'{purchase_request.pk}/delete/'.encode() not in r.content
+
+    def test_delete_button_visible_for_manager_on_submitted(self, manager_client, purchase_request):
+        from demo.models import Request as R
+        purchase_request.status = R.Status.SUBMITTED
+        purchase_request.save()
+        r = manager_client.get(f'/gui/requests/{purchase_request.pk}/', **HTMX)
+        assert r.status_code == 200
+        assert f'{purchase_request.pk}/delete/'.encode() in r.content
+
+    def test_delete_button_hidden_when_approved(self, auth_client, purchase_request):
+        """Even admin/manager: the record-level lock wins, no exception for delete."""
+        from demo.models import Request as R
+        purchase_request.status = R.Status.APPROVED
+        purchase_request.save()
+        r = auth_client.get(f'/gui/requests/{purchase_request.pk}/', **HTMX)
+        assert r.status_code == 200
+        assert f'{purchase_request.pk}/delete/'.encode() not in r.content
+
+    def test_delete_from_detail_page_redirects_to_list(self, regular_client, purchase_request):
+        """The button added to detail.html hx-gets the confirm modal, which then
+        POSTs to the same /delete/ URL used from the list — same redirect either
+        way, since the detail page for a now-deleted object can't stay open."""
+        r = regular_client.get(f'/gui/requests/{purchase_request.pk}/delete/', **HTMX)
+        assert r.status_code == 200
+        assert b'sb-confirm-modal' in r.content
+        r = regular_client.post(f'/gui/requests/{purchase_request.pk}/delete/', **HTMX)
+        assert r.status_code == 200
+        assert r['HX-Redirect'] == '/gui/requests/'
+
+
+@pytest.mark.django_db
+class TestRejectAction:
+    def test_reject_from_submitted(self, manager_client, purchase_request):
+        from demo.models import Request as R
+        purchase_request.status = R.Status.SUBMITTED
+        purchase_request.save()
+        r = manager_client.post(f'/api/requests/{purchase_request.pk}/reject/')
         assert r.status_code == 200
         purchase_request.refresh_from_db()
         assert purchase_request.status == 'rejected'
 
-    def test_reject_on_draft_returns_400(self, auth_client, purchase_request):
-        r = auth_client.post(f'/api/requests/{purchase_request.pk}/reject/')
+    def test_reject_on_draft_returns_400(self, manager_client, purchase_request):
+        r = manager_client.post(f'/api/requests/{purchase_request.pk}/reject/')
         assert r.status_code == 400
 
-    def test_reject_requires_admin(self, auth_client_regular, purchase_request):
+    def test_reject_requires_manager(self, auth_client_regular, purchase_request):
         from demo.models import Request as R
         purchase_request.status = R.Status.SUBMITTED
         purchase_request.save()
         r = auth_client_regular.post(f'/api/requests/{purchase_request.pk}/reject/')
         assert r.status_code == 403
 
-    def test_reject_button_visible_for_admin_on_submitted(self, auth_client, purchase_request):
+    def test_reject_forbidden_for_admin_who_is_not_manager(self, auth_client, purchase_request):
+        """Same 'only managers' rule as approve — admin alone isn't enough."""
+        from demo.models import Request as R
+        purchase_request.status = R.Status.SUBMITTED
+        purchase_request.save()
+        r = auth_client.post(f'/api/requests/{purchase_request.pk}/reject/')
+        assert r.status_code == 403
+
+    def test_reject_button_visible_for_manager_on_submitted(self, manager_client, purchase_request):
         from demo.models import Request as R
         purchase_request.status = R.Status.SUBMITTED
         purchase_request.save()
         with override_settings(SEBASTIAN={'HIDE_UNAUTHORIZED_ACTIONS': True}):
-            r = auth_client.get(f'/gui/requests/{purchase_request.pk}/', **HTMX)
+            r = manager_client.get(f'/gui/requests/{purchase_request.pk}/', **HTMX)
         assert r.status_code == 200
         assert b'Reject' in r.content
 
@@ -580,22 +694,34 @@ class TestAppMenu:
         assert b'dropdown-divider' in r.content
         assert b'Settings' in r.content
 
-    def test_menu_item_permission_hidden_for_non_admin(self, regular_client):
+    def test_new_request_visible_for_any_authenticated_user(self, regular_client):
+        """Any authenticated user can create a Request (draft) — menu item is unrestricted."""
         with override_settings(SEBASTIAN={'HIDE_UNAUTHORIZED_ACTIONS': True}):
             r = regular_client.get('/gui/menu/', **GUI)
         assert r.status_code == 200
-        assert b'Requests' in r.content   # group still visible
-        # "New request" is admin-only (perm_is_admin); "New supplier" has no such
-        # restriction, so check the specific URL rather than the shared "New" label.
-        assert b'/gui/requests/new/' not in r.content
+        assert b'/gui/requests/new/' in r.content
 
-    def test_menu_item_permission_disabled_for_non_admin(self, regular_client):
+    def test_new_supplier_hidden_for_non_manager(self, regular_client):
+        """Suppliers can only be created/edited by managers or admin."""
+        with override_settings(SEBASTIAN={'HIDE_UNAUTHORIZED_ACTIONS': True}):
+            r = regular_client.get('/gui/menu/', **GUI)
+        assert r.status_code == 200
+        assert b'Suppliers' in r.content   # group still visible
+        assert b'/gui/suppliers/new/' not in r.content
+
+    def test_new_supplier_visible_for_manager(self, manager_client):
+        with override_settings(SEBASTIAN={'HIDE_UNAUTHORIZED_ACTIONS': True}):
+            r = manager_client.get('/gui/menu/', **GUI)
+        assert r.status_code == 200
+        assert b'/gui/suppliers/new/' in r.content
+
+    def test_new_supplier_disabled_for_non_manager(self, regular_client):
         import re
         with override_settings(SEBASTIAN={'HIDE_UNAUTHORIZED_ACTIONS': False}):
             r = regular_client.get('/gui/menu/', **GUI)
         assert r.status_code == 200
         # Disabled items render as a <span class="dropdown-item disabled"> with no
-        # href, so "New request" is only findable by structure, not by URL.
+        # href, so "New" is only findable by structure, not by URL.
         assert re.search(rb'<span class="dropdown-item disabled">\s*.*?New\s*</span>', r.content, re.DOTALL)
 
     @override_settings(**SEBASTIAN_HTMX)

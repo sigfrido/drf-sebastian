@@ -4,10 +4,11 @@ and adds GUI display helpers for RelatedField values.
 """
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import models as django_models
-from django.utils.translation import gettext
 from rest_framework import serializers
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.relations import RelatedField
+
+from .i18n import sgettext
 
 
 class NullableFileField(serializers.FileField):
@@ -179,7 +180,7 @@ class GUISerializerMixin:
                 return format_html('<i class="bi bi-check-circle-fill text-success"></i>')
             return format_html('<i class="bi bi-x-circle text-danger"></i>')
         # default: 'yesno'
-        return gettext('Yes') if value else gettext('No')
+        return sgettext('Yes') if value else sgettext('No')
 
     def _render_date(self, value):
         """Format a DateField value using SEBASTIAN['DATE_FORMAT'] or self.date_format.
@@ -233,9 +234,9 @@ class GUISerializerMixin:
         readonly = getattr(self, '_permission_readonly_fields',  set())
         for attr in self.initial_data:
             if attr in hidden:
-                raise PermissionDenied(f"Field '{attr}' is not accessible.")
+                raise PermissionDenied(sgettext("Field '$FIELD' is not accessible.").replace('$FIELD', attr))
             if attr in readonly:
-                raise PermissionDenied(f"Field '{attr}' is read-only.")
+                raise PermissionDenied(sgettext("Field '$FIELD' is read-only.").replace('$FIELD', attr))
 
         if not self.SKIP_MODEL_VALIDATION:
             # We call clean() only — not full_clean() — to avoid re-running

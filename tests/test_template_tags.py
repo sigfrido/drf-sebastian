@@ -60,6 +60,14 @@ def test_display_value_non_dict_returns_empty():
     assert display_value(None, 'key') == ''
 
 
+def test_display_value_empty_string_does_not_leak_str_method():
+    # Regression: getattr('', 'title') would otherwise return the bound
+    # str.title method instead of a missing-value default (any other str
+    # method name — upper, strip, replace, ... — triggers the same bug).
+    assert display_value('', 'title') == ''
+    assert display_value('', 'upper') == ''
+
+
 # ── get_item ──────────────────────────────────────────────────────────────────
 
 def test_get_item_dict():
@@ -78,6 +86,15 @@ def test_get_item_double_underscore_key():
 
 def test_get_item_none_returns_empty():
     assert get_item(None, 'key') == ''
+
+
+def test_get_item_empty_string_does_not_leak_str_method():
+    # Regression: create_form() context used to omit 'instance' entirely, and
+    # Django silently resolves a missing template variable to '' rather than
+    # None — get_item('', 'title') then returned <built-in method title of
+    # str ...> instead of '', because every str genuinely has a .title method.
+    assert get_item('', 'title') == ''
+    assert get_item('', 'upper') == ''
 
 
 # ── input_type ────────────────────────────────────────────────────────────────

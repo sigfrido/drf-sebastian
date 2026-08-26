@@ -11,6 +11,10 @@ from .serializers import (
     SubmitSerializer, SettingsSerializer,
 )
 from .filters import SupplierFilter, RequestFilter
+from .permissions import (
+    IsManager, IsManagerOrAdminForUnsafeMethods,
+    perm_is_manager, perm_is_manager_or_admin,
+)
 
 
 # Permissions
@@ -43,16 +47,39 @@ class RequestNotFinalized(BasePermission):
         return obj.status not in (Request.Status.APPROVED, Request.Status.REJECTED)
 
 
+class CanDeleteRequest(BasePermission):
+    """Draft requests can be deleted by anyone (authenticated); submitted ones
+    only by a manager or admin. Approved/rejected are already unreachable via
+    DELETE thanks to RequestNotFinalized -- this class doesn't need to repeat
+    that check."""
+
+    def has_object_permission(self, request, view, obj):
+        if request.method != 'DELETE':
+            return True
+        if obj.status == Request.Status.DRAFT:
+            return True
+        if obj.status == Request.Status.SUBMITTED:
+            return perm_is_manager_or_admin(request)
+        return True
+
+
 class SupplierViewSet(GUIMixin, viewsets.ModelViewSet):
-    queryset         = Supplier.objects.all()
-    serializer_class = SupplierSerializer
-    filterset_class  = SupplierFilter
+    queryset           = Supplier.objects.all()
+    serializer_class   = SupplierSerializer
+    filterset_class    = SupplierFilter
+    permission_classes = [IsManagerOrAdminForUnsafeMethods]
+
+    def can_update(self):
+        return perm_is_manager_or_admin(self.request) and super().can_update()
+
+    def can_delete(self):
+        return perm_is_manager_or_admin(self.request) and super().can_delete()
 
     class Sebastian:
         label = 'Suppliers'
         menu = MenuGroup('Suppliers', icon='building', items=[
             MenuItem('List', action='list', icon='list-ul'),
-            MenuItem('New',  action='new',  icon='plus-circle'),
+            MenuItem('New',  action='new',  icon='plus-circle', permission=perm_is_manager_or_admin),
         ])
         groups = [
             FieldGroup('info', ['company_name', 'tax_code', 'active'],
@@ -139,7 +166,7 @@ class RequestViewSet(GUIMixin, viewsets.ModelViewSet):
     queryset           = Request.objects.select_related('supplier').all()
     serializer_class   = RequestSerializer
     filterset_class    = RequestFilter
-    permission_classes = [RequestNotFinalized]
+    permission_classes = [permissions.IsAuthenticated, RequestNotFinalized, CanDeleteRequest]
 
     def can_update(self):
         # RequestNotFinalized.has_object_permission() only rejects unsafe methods;
@@ -151,10 +178,17 @@ class RequestViewSet(GUIMixin, viewsets.ModelViewSet):
         return super().can_update()
 
     def can_delete(self):
+        # Same GET-context blind spot as can_update(): CanDeleteRequest/RequestNotFinalized
+        # only look at request.method == 'DELETE', which is never true while rendering a
+        # page, so the button visibility is worked out here explicitly instead.
         obj = getattr(self, '_sebastian_obj', None)
-        if obj is not None and obj.status in (Request.Status.APPROVED, Request.Status.REJECTED):
+        if obj is None:
+            return super().can_delete()
+        if obj.status in (Request.Status.APPROVED, Request.Status.REJECTED):
             return False
-        return super().can_delete()
+        if obj.status == Request.Status.SUBMITTED:
+            return perm_is_manager_or_admin(self.request)
+        return True  # draft: anyone (already gated by class-level IsAuthenticated)
 
     class Sebastian:
         label = 'Requests'
@@ -172,7 +206,7 @@ class RequestViewSet(GUIMixin, viewsets.ModelViewSet):
         }
         menu = MenuGroup('Requests', icon='clipboard-check', items=[
             MenuItem('List', action='list', icon='list-ul'),
-            MenuItem('New',  action='new',  icon='plus-circle', permission=(perm_is_admin,)),
+            MenuItem('New',  action='new',  icon='plus-circle'),  # any authenticated user (see class docstring)
             MenuDivider(),
             MenuItem('Settings', url_name='settings', icon='gear'),
         ])
@@ -188,7 +222,7 @@ class RequestViewSet(GUIMixin, viewsets.ModelViewSet):
                 ['manager_notes', 'reference_code'],
                 label='Management',
                 edit_permission=perm_and(
-                    perm_is_admin,
+                    perm_is_manager_or_admin,
                     perm_request_status(Request.Status.SUBMITTED),
                 ),
             ),
@@ -244,14 +278,14 @@ class RequestViewSet(GUIMixin, viewsets.ModelViewSet):
     @action(
         detail=True,
         methods=['post'],
-        permission_classes=[permissions.IsAdminUser],
+        permission_classes=[IsManager],
         gui_config={
             'label':    'Approve',
             'icon':     'check-circle',
             'color':    'success',
             'position': 'detail',
             'permission': perm_and(
-                perm_is_admin,
+                perm_is_manager,
                 perm_request_status(Request.Status.SUBMITTED),
             ),
             'confirmation': {
@@ -272,14 +306,14 @@ class RequestViewSet(GUIMixin, viewsets.ModelViewSet):
     @action(
         detail=True,
         methods=['post'],
-        permission_classes=[permissions.IsAdminUser],
+        permission_classes=[IsManager],
         gui_config={
             'label':    'Reject',
             'icon':     'x-circle',
             'color':    'danger',
             'position': 'detail',
             'permission': perm_and(
-                perm_is_admin,
+                perm_is_manager,
                 perm_request_status(Request.Status.SUBMITTED),
             ),
             'confirmation': {

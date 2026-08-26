@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.contrib.auth import views as auth_views
 from django.urls import path, include
 from sebastian.routers import SebastianRouter, GUIRouter
 from demo.views import SupplierViewSet, RequestViewSet, SettingsView
@@ -13,6 +14,13 @@ gui_router.add_page('settings/edit/', SettingsView.as_view(edit_mode=True), name
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    # Not registered via gui_router.add_page(): that wrapper redirects
+    # unauthenticated requests to LOGIN_URL, which is this same page.
+    path('gui/login/', auth_views.LoginView.as_view(
+        template_name='registration/login.html',
+        redirect_authenticated_user=True,
+    ), name='login'),
+    path('gui/logout/', auth_views.LogoutView.as_view(), name='logout'),
     path('api/', include(api_router.urls)),
     path('gui/', include(gui_router.urls)),
 ]

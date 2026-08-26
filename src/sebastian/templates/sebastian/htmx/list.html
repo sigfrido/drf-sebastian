@@ -1,7 +1,7 @@
 {% extends pack_base %}
 {% load i18n sebastian_tags %}
 
-{% block title %}{{ view.get_view_name }} — {% trans "List" %}{% endblock %}
+{% block title %}{{ view.get_view_name }} — {% strans "List" %}{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
@@ -12,7 +12,7 @@
      hx-target="{{ htmx_target }}"
      {% if not is_inline %}hx-push-url="true"{% endif %}
      class="btn btn-primary btn-sm">
-    {% icon "plus-lg" %} {% trans "New" %}
+    {% icon "plus-lg" %} {% strans "New" %}
   </a>
   {% endif %}
 </div>
@@ -23,11 +23,11 @@
       {% block filter_form_attrs %}action="{{ request.path }}" method="get" hx-get="{{ request.path }}" hx-target="#sebastian-content" hx-push-url="true"{% endblock %}>
   {% if ordering_config %}
   <div class="col-auto d-flex align-items-center gap-1">
-    <label class="col-form-label col-form-label-sm text-nowrap">{% trans "Sort by" %}</label>
+    <label class="col-form-label col-form-label-sm text-nowrap">{% strans "Sort by" %}</label>
     <select class="form-select form-select-sm sb-ordering"
             data-max-items="{{ ordering_config.max_n }}"
             data-current="{{ ordering_config.ordering_param }}"
-            placeholder="{% trans 'Sort by…' %}">
+            placeholder="{% strans 'Sort by…' %}">
       {% for value, label in ordering_config.fields %}
       <option value="{{ value }}">{{ label }}</option>
       {% endfor %}
@@ -45,8 +45,8 @@
   {% endfor %}
   {% endblock filter_fields %}
   <div class="col-auto align-self-end">
-    <button type="submit" class="btn btn-outline-secondary btn-sm">{% trans "Filter" %}</button>
-    <a href="{{ request.path }}" class="btn btn-link btn-sm">{% trans "Clear" %}</a>
+    <button type="submit" class="btn btn-outline-secondary btn-sm">{% strans "Filter" %}</button>
+    <a href="{{ request.path }}" class="btn btn-link btn-sm">{% strans "Clear" %}</a>
   </div>
 </form>
 {% endif %}
@@ -191,7 +191,7 @@
 
 {% if pagination %}
 <div class="d-flex justify-content-between align-items-center mt-2">
-  <small class="text-muted">{% blocktrans count counter=pagination.count %}{{ counter }} record{% plural %}{{ counter }} records{% endblocktrans %}</small>
+  <small class="text-muted">{% blocktrans context "sebastian" count counter=pagination.count %}{{ counter }} record{% plural %}{{ counter }} records{% endblocktrans %}</small>
   <div>
     {% if pagination.previous %}
     <a href="{{ pagination.previous }}" class="btn btn-outline-secondary btn-sm">
@@ -208,7 +208,7 @@
 {% endif %}
 
 {% else %}
-<p class="text-muted">{% trans "No records found." %}</p>
+<p class="text-muted">{% strans "No records found." %}</p>
 {% endif %}
 
 {% endblock %}

@@ -2,12 +2,17 @@
 # Copyright (C) 2026 Luca Sigfrido Percich
 # This file is distributed under the same license as the drf-sebastian package.
 #
+# Every entry uses msgctxt "sebastian" so these translations can never be
+# silently shadowed by another app's catalog for the same English word (e.g.
+# django.contrib.admin's own Italian catalog also defines "Delete", "Save",
+# "Home", ... — without a distinct context, whichever app happens to merge
+# last during Django's app_configs iteration wins, not necessarily this one).
 msgid ""
 msgstr ""
 "Project-Id-Version: drf-sebastian 0.1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-25 12:37-0500\n"
-"PO-Revision-Date: 2026-08-25 12:37-0500\n"
+"POT-Creation-Date: 2026-08-26 09:58-0500\n"
+"PO-Revision-Date: 2026-08-26 06:45-0500\n"
 "Last-Translator: Luca Sigfrido Percich\n"
 "Language-Team: Italian\n"
 "Language: it\n"
@@ -16,94 +21,136 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#. Translators: $ACTION and $OBJECT are placeholders substituted below — keep them verbatim.
+#. Translators: $<VAR> tokens are placeholders substituted after
+#. translation — keep them verbatim.
+msgctxt "sebastian"
 msgid "Perform $ACTION on $OBJECT?"
 msgstr "Eseguire $ACTION su $OBJECT?"
 
-msgid "Confirm?"
-msgstr "Confermare?"
-
-#. Translators: $OBJECT is a placeholder substituted below — keep it verbatim.
+msgctxt "sebastian"
 msgid "Delete $OBJECT?"
 msgstr "Eliminare $OBJECT?"
 
+msgctxt "sebastian"
 msgid "An error occurred while saving. Please check the entered data."
-msgstr "Si è verificato un errore durante il salvataggio. Verificare i dati inseriti."
+msgstr ""
+"Si è verificato un errore durante il salvataggio. Verificare i dati inseriti."
 
+msgctxt "sebastian"
 msgid "Error"
 msgstr "Errore"
 
-msgid "Yes"
-msgstr "Sì"
+msgctxt "sebastian"
+msgid "Field '$FIELD' is not accessible."
+msgstr "Il campo '$FIELD' non è accessibile."
 
-msgid "No"
-msgstr "No"
+msgctxt "sebastian"
+msgid "Field '$FIELD' is read-only."
+msgstr "Il campo '$FIELD' è di sola lettura."
 
-msgid "Confirm"
-msgstr "Conferma"
-
-msgid "Close"
-msgstr "Chiudi"
-
-msgid "Cancel"
-msgstr "Annulla"
-
-msgid "File will be removed"
-msgstr "Il file verrà rimosso"
-
-msgid "Remove file"
-msgstr "Rimuovi file"
-
-msgid "Select a file to replace the current one."
-msgstr "Seleziona un file per sostituire quello attuale."
-
-msgid "Detail"
-msgstr "Dettaglio"
-
-msgid "Edit"
-msgstr "Modifica"
-
-msgid "Loading…"
-msgstr "Caricamento…"
-
-msgid "New"
-msgstr "Nuovo"
-
-msgid "Save"
-msgstr "Salva"
-
-msgid "Home"
-msgstr "Home"
-
+msgctxt "sebastian"
 msgid "Available modules"
 msgstr "Moduli disponibili"
 
-msgid "No modules registered."
-msgstr "Nessun modulo registrato."
+msgctxt "sebastian"
+msgid "Cancel"
+msgstr "Annulla"
 
-msgid "List"
-msgstr "Elenco"
-
-msgid "Sort by"
-msgstr "Ordina per"
-
-msgid "Sort by…"
-msgstr "Ordina per…"
-
-msgid "Filter"
-msgstr "Filtra"
-
+msgctxt "sebastian"
 msgid "Clear"
 msgstr "Cancella"
 
+msgctxt "sebastian"
+msgid "Close"
+msgstr "Chiudi"
+
+msgctxt "sebastian"
+msgid "Confirm"
+msgstr "Conferma"
+
+msgctxt "sebastian"
+msgid "Confirm?"
+msgstr "Confermare?"
+
+msgctxt "sebastian"
+msgid "Delete"
+msgstr "Elimina"
+
+msgctxt "sebastian"
+msgid "Detail"
+msgstr "Dettaglio"
+
+msgctxt "sebastian"
+msgid "Edit"
+msgstr "Modifica"
+
+msgctxt "sebastian"
+msgid "File will be removed"
+msgstr "Il file verrà rimosso"
+
+msgctxt "sebastian"
+msgid "Filter"
+msgstr "Filtra"
+
+msgctxt "sebastian"
+msgid "Home"
+msgstr "Home"
+
+msgctxt "sebastian"
+msgid "List"
+msgstr "Elenco"
+
+msgctxt "sebastian"
+msgid "Loading…"
+msgstr "Caricamento…"
+
+msgctxt "sebastian"
+msgid "New"
+msgstr "Nuovo"
+
+msgctxt "sebastian"
+msgid "No"
+msgstr "No"
+
+msgctxt "sebastian"
+msgid "No modules registered."
+msgstr "Nessun modulo registrato."
+
+msgctxt "sebastian"
+msgid "No records found."
+msgstr "Nessun elemento trovato."
+
+msgctxt "sebastian"
+msgid "Remove file"
+msgstr "Rimuovi file"
+
+msgctxt "sebastian"
+msgid "Save"
+msgstr "Salva"
+
+msgctxt "sebastian"
+msgid "Select a file to replace the current one."
+msgstr "Seleziona un file per sostituire quello attuale."
+
+msgctxt "sebastian"
+msgid "Sort by"
+msgstr "Ordina per"
+
+msgctxt "sebastian"
+msgid "Sort by…"
+msgstr "Ordina per…"
+
+msgctxt "sebastian"
+msgid "Then by"
+msgstr "Poi per"
+
+msgctxt "sebastian"
+msgid "Yes"
+msgstr "Sì"
+
 #, python-format
+msgctxt "sebastian"
 msgid "%(counter)s record"
 msgid_plural "%(counter)s records"
 msgstr[0] "%(counter)s elemento"
 msgstr[1] "%(counter)s elementi"
-
-msgid "No records found."
-msgstr "Nessun elemento trovato."
-
-msgid "Then by"
-msgstr "Poi per"

@@ -36,11 +36,19 @@ pip install -e ".[filter,htmx,dev]"
 
 cd testproject
 python manage.py migrate
-python manage.py seed_demo_data   # creates sample suppliers, requests, attachments and the admin/admin superuser
+python manage.py seed_demo_data   # creates sample suppliers, requests, attachments, and three demo accounts
 python manage.py runserver
 ```
 
-Then open [http://127.0.0.1:8000/gui/](http://127.0.0.1:8000/gui/) and log in with `admin` / `admin`.
+Every `/gui/` page requires login (`SEBASTIAN['LOGIN_URL']`, see [spec §4.10](docs/sebastian-spec.md#410-permission--ui)); open [http://127.0.0.1:8000/gui/](http://127.0.0.1:8000/gui/) and sign in with one of the seeded accounts (password = username):
+
+| Account | Group | Can do |
+|---|---|---|
+| `admin` | superuser | Everything except approve/reject a Request (see note below); manages Settings |
+| `manager` | `MANAGERS` | Approve/reject submitted Requests; delete submitted Requests; create/edit Suppliers |
+| `user` | `USERS` | Create/edit Requests while in draft, submit them; nothing beyond that |
+
+This intentionally demonstrates that "admin" and "has elevated permissions" aren't the same thing in Sebastian — the demo's `Request` workflow (`testproject/demo/views.py`) restricts **approve**/**reject** to the `MANAGERS` group specifically (`admin`, a superuser but not a manager, is correctly refused), while **deleting** a non-draft Request and editing **Suppliers** accept managers *or* admin. Field-level rules follow the same phase-based pattern: the "General" tab is only editable while a Request is `draft`, "Management" only once it's `submitted`, and the whole record becomes read-only (no field, no action, no delete) once `approved`/`rejected`.
 
 ### Add Sebastian to your own project
 

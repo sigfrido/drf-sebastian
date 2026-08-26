@@ -479,6 +479,10 @@ Other `gui_config` keys seen in real usage: `hint` (tooltip), `link_field` (pair
 
 The `SEBASTIAN['HIDE_UNAUTHORIZED_ACTIONS']` setting (default `True`) controls whether unauthorised actions (and menu items) are hidden entirely or rendered disabled.
 
+**Gotcha — method-sensitive object permissions and button visibility**: `GUIMixin.can_update()`/`can_delete()` decide whether to show the Edit/Delete button by calling `has_object_permission()` from `self.get_permissions()` against the *current* request — which, while rendering a page, is always a `GET`. A `BasePermission` that allows safe methods but blocks writes (e.g. "read-only once finalized") will therefore always report "allowed" through this path, even though the equivalent `PATCH`/`DELETE` would be rejected. If a permission's write/read behaviour actually differs, override `can_update()`/`can_delete()` directly to inspect the object instead of relying on the default DRF-permission-based check — see `testproject/demo/views.py:RequestViewSet` for a worked example (record-level lock once a Request is `approved`/`rejected`).
+
+`testproject/demo/` also demonstrates composing role-based (`is_superuser`) and Django-`Group`-based checks side by side — see `testproject/demo/permissions.py` — including a case where "admin" and a named group (`MANAGERS`) grant *different*, only partially-overlapping sets of permissions (approving a request requires the group specifically; deleting one accepts either).
+
 ---
 
 ## 5. HTMX Integration
@@ -563,6 +567,26 @@ The library's own chrome — button labels, modal titles, confirmation prompts, 
 A ready-to-use **Italian** catalog ships with the package at `src/sebastian/locale/it/LC_MESSAGES/`. Any consumer Django project with `USE_I18N = True` (the Django default) and `LANGUAGE_CODE = 'it'` (or an active-language mechanism that resolves to `it`, e.g. `LocaleMiddleware`) gets the translated chrome automatically — Django auto-discovers an installed app's own `locale/` directory, no extra `LOCALE_PATHS` entry needed. No other configuration on the consumer side is required.
 
 This covers only the library's own default UI text. Domain content — your model/serializer field labels, `Sebastian.label`, `MenuItem`/`MenuGroup` labels, `FieldGroup` labels, action `gui_config['label']`/`hint`, confirmation prompts — is defined by the consuming application and is the consuming application's own responsibility to translate (or not) using the same Django i18n primitives in its own code.
+
+**Every one of these strings carries the translation context `"sebastian"`** rather than being a plain, context-less translation. This is not stylistic: Django merges translation catalogs from every installed app (`django.utils.translation.trans_real._add_installed_apps_translations()`), in **reverse** `INSTALLED_APPS` order, so an app listed *earlier* in `INSTALLED_APPS` is merged *later* and wins on a plain-msgid collision. `django.contrib.admin` ships its own Italian catalog defining plain msgids for common words too — "Delete" → "Cancella", "Home" → "Pagina iniziale", among others — and since `django.contrib.admin` is conventionally listed before a project's own apps, its translations silently shadowed sebastian's for any overlapping word, independent of app order the consumer chooses. `msgctxt`/`pgettext` keys the catalog lookup on `(context, msgid)` instead of `msgid` alone, so a plain "Delete" elsewhere can never collide with `("sebastian", "Delete")` — see `tests/test_i18n.py::test_translations_not_shadowed_by_django_contrib_admin` for the regression this protects against.
+
+**Don't write `context "sebastian"` / `pgettext('sebastian', ...)` by hand** — use the two thin wrappers that bake the context in for you:
+
+```python
+# Python (mixins.py, serializers.py, renderers.py, ...)
+from .i18n import sgettext
+prompt = sgettext('Delete $OBJECT?')
+```
+
+```django
+{# templates — {% load sebastian_tags %} #}
+{% strans "Delete" %}
+{% strans "Close" as close_label %}   {# 'as' works exactly like {% trans %} #}
+```
+
+`{% strans %}` (`templatetags/sebastian_tags.py`) and `sgettext()` (`i18n.py`) are both defined in terms of the single `CONTEXT = 'sebastian'` constant in `i18n.py`, so the literal string only exists in one place.
+
+**The one thing to remember**: `django-admin makemessages` extracts strings by pattern-matching the built-in `{% trans %}`/`{% blocktrans %}` tags and a fixed list of real Python function names (`gettext`, `pgettext`, ...) — it has no idea `{% strans %}` or `sgettext()` exist, so a string that only ever appears through one of them **silently disappears from the .po file**, no warning. `src/sebastian/_translatable_strings.py` exists purely to work around this: it's a dead-code registry that calls the real `pgettext('sebastian', ...)` for every string used via `{% strans %}`/`sgettext()` elsewhere, so makemessages' ordinary Python-file scan picks them up. **Whenever you add or change a translatable string, add or update its line in that file too** — its own docstring explains why and links back here. `{% blocktrans context "sebastian" %}` (used for the pluralized record count in `list.html`) is the one exception: it's a built-in tag, so makemessages understands it natively and needs no registry entry.
 
 To add or update translations, edit `src/sebastian/locale/it/LC_MESSAGES/django.po` (or add a new `<lang>/LC_MESSAGES/django.po`) and run, from inside `src/sebastian/`:
 

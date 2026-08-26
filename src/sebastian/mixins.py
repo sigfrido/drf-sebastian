@@ -2,11 +2,12 @@ from django.core.exceptions import ImproperlyConfigured
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.http import FileResponse
-from django.utils.translation import gettext
 from rest_framework import renderers as drf_renderers
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.mixins import CreateModelMixin, UpdateModelMixin
 from rest_framework.response import Response as DRFResponse
+
+from .i18n import sgettext
 
 from .app_settings import hide_unauthorized_actions, pack_uses_htmx, confirm_deletions
 from .config import _check_permission
@@ -220,8 +221,7 @@ class _SebastianBaseMixin:
             return None
         prompt = conf.get('prompt', '')
         if not prompt and confirm_flag is True:
-            # Translators: $ACTION and $OBJECT are placeholders substituted below — keep them verbatim.
-            prompt = gettext('Perform $ACTION on $OBJECT?') if action_name else gettext('Confirm?')
+            prompt = sgettext('Perform $ACTION on $OBJECT?') if action_name else sgettext('Confirm?')
         # Substitute $OBJECT / $ACTION
         if instance is not None:
             prompt = prompt.replace('$OBJECT', str(instance))
@@ -256,8 +256,7 @@ class _SebastianBaseMixin:
             if delete_cfg is not None:
                 raw_conf = delete_cfg.get('confirmation', {})
             elif confirm_deletions():
-                # Translators: $OBJECT is a placeholder substituted below — keep it verbatim.
-                raw_conf = {'prompt': gettext('Delete $OBJECT?'), 'icon': 'trash', 'style': 'danger'}
+                raw_conf = {'prompt': sgettext('Delete $OBJECT?'), 'icon': 'trash', 'style': 'danger'}
             else:
                 raw_conf = {}
             resolved = self._resolve_confirmation(raw_conf, '', instance) if raw_conf else None
@@ -584,7 +583,7 @@ class GUIMixin(_SebastianBaseMixin):
                 {'serializer': serializer, 'instance': merged, 'action': 'update',
                  'submit_url': request.path, 'cancel_url': request.path,
                  'htmx_target': '#sebastian-content',
-                 'form_errors': {'non_field_errors': [gettext('An error occurred while saving. Please check the entered data.')]}},
+                 'form_errors': {'non_field_errors': [sgettext('An error occurred while saving. Please check the entered data.')]}},
                 status=400,
             )
             resp['X-Sebastian-Form-Error'] = 'true'
@@ -628,7 +627,7 @@ class GUIMixin(_SebastianBaseMixin):
         # (relative ../  would resolve against the browser URL, not the form fetch URL)
         submit_url = request.path.rstrip('/').rsplit('/', 1)[0] + '/'
         return DRFResponse({
-            'serializer': serializer, 'action': 'create',
+            'serializer': serializer, 'instance': None, 'action': 'create',
             'submit_url': submit_url, 'cancel_url': submit_url,
             'htmx_target': '#sebastian-content',
         })
@@ -751,7 +750,7 @@ class NestedGUIMixin(GUIMixin):
                 {'serializer': serializer, 'action': 'create',
                  'htmx_target': f'#{container}', 'cancel_url': list_path,
                  'submit_url': list_path,
-                 'form_errors': {'non_field_errors': [gettext('An error occurred while saving. Please check the entered data.')]}},
+                 'form_errors': {'non_field_errors': [sgettext('An error occurred while saving. Please check the entered data.')]}},
                 status=400,
             )
             resp['X-Sebastian-Form-Error'] = 'true'
@@ -808,7 +807,7 @@ class NestedGUIMixin(GUIMixin):
                 {'serializer': serializer, 'instance': merged, 'action': 'update',
                  'htmx_target': f'#{container}', 'cancel_url': cancel_url,
                  'submit_url': submit_url,
-                 'form_errors': {'non_field_errors': [gettext('An error occurred while saving. Please check the entered data.')]}},
+                 'form_errors': {'non_field_errors': [sgettext('An error occurred while saving. Please check the entered data.')]}},
                 status=400,
             )
             resp['X-Sebastian-Form-Error'] = 'true'
@@ -834,6 +833,7 @@ class NestedGUIMixin(GUIMixin):
         list_path  = self._inline_list_path()
         return DRFResponse({
             'serializer':  serializer,
+            'instance':    None,
             'action':      'create',
             'htmx_target': f'#{container}',
             'cancel_url':  list_path,

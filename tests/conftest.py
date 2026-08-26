@@ -22,19 +22,44 @@ def regular_user(db):
 
 
 @pytest.fixture
+def manager_user(db):
+    from django.contrib.auth import get_user_model
+    from django.contrib.auth.models import Group
+    from demo.permissions import MANAGERS
+    User = get_user_model()
+    user = User.objects.create_user('manager_test', 'manager_test@example.com', 'password')
+    group, _ = Group.objects.get_or_create(name=MANAGERS)
+    user.groups.add(group)
+    return user
+
+
+@pytest.fixture
 def regular_client(api_client, regular_user):
+    # force_login() (real session, not just DRF-level auth) is required so that
+    # GUIRouter._wrap()'s login-gate — which reads request.user on the raw Django
+    # request, before DRF's own auth even runs — also sees the user as logged in.
+    api_client.force_login(user=regular_user)
     api_client.force_authenticate(user=regular_user)
     return api_client
 
 
 @pytest.fixture
+def manager_client(api_client, manager_user):
+    api_client.force_login(user=manager_user)
+    api_client.force_authenticate(user=manager_user)
+    return api_client
+
+
+@pytest.fixture
 def auth_client(api_client, admin_user):
+    api_client.force_login(user=admin_user)
     api_client.force_authenticate(user=admin_user)
     return api_client
 
 
 @pytest.fixture
 def auth_client_regular(api_client, regular_user):
+    api_client.force_login(user=regular_user)
     api_client.force_authenticate(user=regular_user)
     return api_client
 

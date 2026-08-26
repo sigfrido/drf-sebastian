@@ -162,6 +162,38 @@ Triggered by a question about configuring the "Yes"/"No" boolean display via a s
 - `workflango` needs the same treatment but lives in its own repo — not started, do in a session scoped to that repo.
 - `opus` gets **no changes** — it's a direct-Italian application with no translation plans of its own; its own hardcoded Italian strings stay as they are. It benefits from this phase only as a side effect: since `sebastian`'s chrome now ships an `it` catalog, opus's `LANGUAGE_CODE` (if set to `'it'`, as expected for an Italian app) picks it up automatically with zero work on opus's side.
 
+## Phase 12 — Login + group-based demo permissions (done)
+
+Prompted by manual testing surfacing an old gap (see Phase 10 note on field-group permissions): the `testproject/demo/` `Request`/`Supplier` permission model is now fleshed out into a real, testable multi-role example instead of a single-admin one.
+
+- [x] `SEBASTIAN['LOGIN_URL']` wired up in `testproject/` (Django's built-in `LoginView`/`LogoutView`, custom Bootstrap template) — every `/gui/` page now requires login, using a mechanism (`GUIRouter._wrap()`) that already existed in the library but had no consumer exercising it
+- [x] Username + Logout shown in the navbar via `{% block navbar_right %}` — project-level override of `sebastian/htmx/base.html`; added the same block to `sebastian/plain/base.html` for pack parity (no project-level override built for `plain`, since it isn't the demo's active pack and isn't split into a thin `base.html`/`_base.html` pair the way `htmx` is)
+- [x] `testproject/demo/permissions.py` — `MANAGERS`/`USERS` Django groups, Sebastian-callable and DRF-`BasePermission` versions of the same group checks side by side
+- [x] `seed_demo_data` now also creates `manager`/`manager` (`MANAGERS`) and `user`/`user` (`USERS`) accounts
+- [x] `Request` field-group permissions became phase-aware: "General" editable only in `draft` (any authenticated user, including while creating); "Management" editable only in `submitted`, by a manager or admin
+- [x] `approve`/`reject` now require `MANAGERS` group membership specifically — a superuser that isn't in the group is correctly refused; this is a deliberate example of "admin" and "elevated permission" *not* being the same thing
+- [x] New `reject` action's authorization mirrors `approve`'s
+- [x] Deleting a `Request`: anyone (authenticated) can delete a draft; only a manager or admin can delete a submitted one; the existing approved/rejected record-level lock still wins over everything, including for managers/admin (no delete-override for finalized records)
+- [x] `Supplier` writes (create/update/delete) restricted to managers or admin; reads stay open
+- [x] Documented a real gotcha found while wiring the Edit/Delete-button visibility to these new rules: `can_update()`/`can_delete()` evaluate object permissions against the *current* (always-safe, `GET`) request, so a permission class that only restricts unsafe methods never hides the button on its own — see spec §4.10
+- [x] README "Try the bundled demo" section rewritten with the three account roles and what each can/can't do
+
+## Phase 13 — Two library bugs found via manual testing (done)
+
+- [x] **`create_form()` context bug**: neither `GUIMixin.create_form()` nor `NestedGUIMixin.create_form()` passed an `'instance'` key in their response — Django silently resolves a missing template variable to `''` rather than `None`, and `get_item('', field_name)` then returns the *bound str method* for any field whose name matches one (`title`, `upper`, `strip`, ...) instead of an empty default, since every string genuinely has those methods. Symptom: a brand-new `Request`'s "title" input showed `<built-in method title of str object at 0x...>` as its value. Fixed by passing `'instance': None` explicitly; hardened `get_item()`/`display_value()` in `sebastian_tags.py` to short-circuit on `isinstance(obj, str)` so the same class of bug can't resurface elsewhere.
+- [x] **Translation collision with `django.contrib.admin`**: added a Delete button to `detail.html` (both packs, next to Edit — previously detail views had no delete action at all, only list rows did), which surfaced a deeper issue — Django merges every installed app's translation catalog in *reversed* `INSTALLED_APPS` order, so `django.contrib.admin` (listed first, thus merged last) silently overrides a plain-context `{% trans %}` in `sebastian` for any msgid they both define ("Delete" → "Cancella", "Home" → "Pagina iniziale", and others that *happened* to already match so were invisible). Fixed by giving every sebastian string the `msgctxt "sebastian"` context (`{% trans ... context "sebastian" %}` / `pgettext('sebastian', ...)`), which keys the catalog lookup on `(context, msgid)` and makes collision with any other app's catalog structurally impossible. See spec §7.3.
+- [x] Both fixes have regression tests that were confirmed to fail without the fix (`tests/test_template_tags.py`, `tests/test_i18n.py::test_translations_not_shadowed_by_django_contrib_admin`, `tests/test_gui_views.py::...test_create_form_title_field_value_is_empty_not_bound_method`)
+
+## Phase 14 — Ergonomic i18n wrappers (done)
+
+Prompted directly by pushback on Phase 13's fix: typing `context "sebastian"` / `pgettext('sebastian', ...)` on every single translatable string was judged (correctly) as too heavy a tax for something call sites will keep doing indefinitely.
+
+- [x] `sebastian/i18n.py` — `sgettext(msg)` (Python) and `{% strans "msg" %}` (`templatetags/sebastian_tags.py`, template) both wrap the same `CONTEXT = 'sebastian'` constant; converted every existing call site in templates and in `mixins.py`/`serializers.py`/`renderers.py` to use them instead of the verbose form
+- [x] Discovered mid-implementation that this reintroduces a *different* silent-failure mode: `django-admin makemessages` only recognizes the literal built-in `{% trans %}`/`{% blocktrans %}` tags and a fixed list of real Python function names (`gettext`, `pgettext`, ...) when scanning source — it has no idea `{% strans %}` or `sgettext()` exist, so a string used *only* through either one would silently stop appearing in the `.po` file with no warning (confirmed by breaking it first: previously-translated strings got marked `#~` obsolete the moment their only reference switched to `sgettext()`)
+- [x] `sebastian/_translatable_strings.py` — a dead-code registry calling the real `pgettext('sebastian', ...)` for every string used via `{% strans %}`/`sgettext()` elsewhere, purely so makemessages' Python-file extraction (which *does* understand real `pgettext()`) picks them up. Never imported at runtime
+- [x] `tests/test_strans_and_sgettext_usages_are_all_in_the_extraction_registry` — statically scans every template and `.py` file for `{% strans %}`/`sgettext()` calls and fails if any string is missing from the registry, so forgetting to update it (as happened twice while building this) fails a test instead of silently breaking translation the next time someone runs `makemessages`
+- [x] Documented the two-tier system (ergonomic wrapper for call sites + registry for extraction) in spec §7.3, including why the registry exists and the discipline it requires
+
 ## Deferred
 
 - Management command `sebastian-templates` for exporting/customizing templates

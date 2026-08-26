@@ -1,18 +1,24 @@
 {% extends pack_base %}
-{% load i18n sebastian_tags %}
+{% load sebastian_tags %}
 
-{% block title %}{% trans "Detail" %}{% endblock %}
+{% block title %}{% strans "Detail" %}{% endblock %}
 
 {% block content %}
 {% with groups=visible_groups %}
 
 <div class="d-flex justify-content-between align-items-center mb-3">
-  <h4><a href="..">{{ view.get_view_name }}</a> — {% trans "Detail" %}</h4>
+  <h4><a href="..">{{ view.get_view_name }}</a> — {% strans "Detail" %}</h4>
   <div class="btn-group">
     {% if view.can_update %}
     <a href="{{ request.path }}edit/"
        class="btn btn-outline-primary btn-sm">
-      {% icon "pencil" %} {% trans "Edit" %}
+      {% icon "pencil" %} {% strans "Edit" %}
+    </a>
+    {% endif %}
+    {% if view.can_delete %}
+    <a href="{{ request.path }}delete/"
+       class="btn btn-outline-danger btn-sm">
+      {% icon "trash" %} {% strans "Delete" %}
     </a>
     {% endif %}
     {% for action in view.get_available_actions %}

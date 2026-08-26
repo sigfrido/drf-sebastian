@@ -38,6 +38,43 @@ class TestSupplierAPI:
 
 
 @pytest.mark.django_db
+class TestSupplierPermissions:
+    """Only managers or admin can write; reads stay open to anyone."""
+
+    def test_anonymous_can_read(self, api_client, supplier):
+        r = api_client.get('/api/suppliers/')
+        assert r.status_code == 200
+
+    def test_regular_user_cannot_create(self, auth_client_regular):
+        r = auth_client_regular.post('/api/suppliers/', {
+            'company_name': 'Blocked Inc', 'tax_code': 'XX1111111111', 'active': True,
+        })
+        assert r.status_code == 403
+
+    def test_regular_user_cannot_update(self, auth_client_regular, supplier):
+        r = auth_client_regular.patch(f'/api/suppliers/{supplier.pk}/', {'company_name': 'Blocked'})
+        assert r.status_code == 403
+
+    def test_regular_user_cannot_delete(self, auth_client_regular, supplier):
+        r = auth_client_regular.delete(f'/api/suppliers/{supplier.pk}/')
+        assert r.status_code == 403
+
+    def test_manager_can_create(self, manager_client):
+        r = manager_client.post('/api/suppliers/', {
+            'company_name': 'Manager Created Inc', 'tax_code': 'XX2222222222', 'active': True,
+        })
+        assert r.status_code == 201
+
+    def test_manager_can_update(self, manager_client, supplier):
+        r = manager_client.patch(f'/api/suppliers/{supplier.pk}/', {'company_name': 'Updated by manager'})
+        assert r.status_code == 200
+
+    def test_manager_can_delete(self, manager_client, supplier):
+        r = manager_client.delete(f'/api/suppliers/{supplier.pk}/')
+        assert r.status_code == 204
+
+
+@pytest.mark.django_db
 class TestAttachmentNestedAPI:
     def test_list_filters_by_parent(self, auth_client, attachment, purchase_request):
         r = auth_client.get(f'/api/requests/{purchase_request.pk}/attachments/')
@@ -179,17 +216,29 @@ class TestRequestActions:
         purchase_request.refresh_from_db()
         assert purchase_request.status == 'submitted'
 
-    def test_approve_after_submit(self, auth_client, purchase_request):
-        """Draft → submit → approve: final status is approved."""
+    def test_approve_after_submit(self, auth_client, manager_client, purchase_request):
+        """Draft → submit → approve: final status is approved. Approve requires a
+        manager specifically — submit can be done by any authenticated user."""
         auth_client.post(f'/api/requests/{purchase_request.pk}/submit/')
-        r = auth_client.post(f'/api/requests/{purchase_request.pk}/approve/')
+        r = manager_client.post(f'/api/requests/{purchase_request.pk}/approve/')
         assert r.status_code == 200
         purchase_request.refresh_from_db()
         assert purchase_request.status == 'approved'
 
-    def test_approve_on_draft_returns_400(self, auth_client, purchase_request):
-        r = auth_client.post(f'/api/requests/{purchase_request.pk}/approve/')
+    def test_approve_on_draft_returns_400(self, manager_client, purchase_request):
+        r = manager_client.post(f'/api/requests/{purchase_request.pk}/approve/')
         assert r.status_code == 400
+
+    def test_approve_requires_manager_not_just_admin(self, auth_client, purchase_request):
+        """'Only managers' means admin (superuser, not in MANAGERS) is also rejected."""
+        auth_client.post(f'/api/requests/{purchase_request.pk}/submit/')
+        r = auth_client.post(f'/api/requests/{purchase_request.pk}/approve/')
+        assert r.status_code == 403
+
+    def test_approve_forbidden_for_regular_user(self, auth_client, auth_client_regular, purchase_request):
+        auth_client.post(f'/api/requests/{purchase_request.pk}/submit/')
+        r = auth_client_regular.post(f'/api/requests/{purchase_request.pk}/approve/')
+        assert r.status_code == 403
 
     def test_submit_already_submitted_returns_400(self, auth_client, purchase_request):
         auth_client.post(f'/api/requests/{purchase_request.pk}/submit/')

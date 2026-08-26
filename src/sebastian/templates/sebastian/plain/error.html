@@ -1,6 +1,6 @@
-{% load i18n sebastian_tags %}
+{% load sebastian_tags %}
 <div class="alert alert-{{ alert_class }} alert-dismissible fade show d-flex align-items-center gap-2" role="alert">
   {% icon "exclamation-triangle-fill" "flex-shrink-0" %}
   <span>{{ error_detail }}</span>
-  <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="{% trans 'Close' %}"></button>
+  <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="{% strans 'Close' %}"></button>
 </div>
