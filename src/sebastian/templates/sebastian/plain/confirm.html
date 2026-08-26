@@ -27,7 +27,7 @@
   {% if data.confirm_serializer %}
   {% for field_name, field in data.confirm_serializer.fields.items %}
   {% if not field.read_only %}
-  {% if field|input_type == 'checkbox' %}
+  {% if field|input_type == 'bool-select' %}
   <div class="form-check mb-3">
     <input type="checkbox"
            class="form-check-input{% with field_errors=form_errors|get_item:field_name %}{% if field_errors %} is-invalid{% endif %}{% endwith %}"

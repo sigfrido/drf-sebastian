@@ -335,6 +335,10 @@ class TestRequestActionsGUI:
         assert b'sb-confirm-form' in r.content
         assert b'justification' in r.content
         assert b'confirmed' in r.content
+        # Regression: BooleanField in a confirmation serializer must render as a
+        # real checkbox, not fall through to <input type="bool-select"> (text box).
+        assert b'type="checkbox"' in r.content
+        assert b'name="confirmed"' in r.content
 
     def test_gui_approve_full_flow(self, auth_client, purchase_request):
         """Draft → submit → approve: redirect to detail, final status approved."""

@@ -127,6 +127,15 @@ class TestPlainPack:
         assert r.status_code == 200
         assert b'method="get"' in r.content
 
+    def test_plain_confirm_renders_boolean_as_checkbox(self, auth_client, purchase_request):
+        """Regression: BooleanField in a confirmation serializer must render as a
+        real checkbox in the plain pack too, not <input type="bool-select">."""
+        with PLAIN_SETTINGS:
+            r = auth_client.get(f'/gui/requests/{purchase_request.pk}/submit/confirm/', **GUI)
+        assert r.status_code == 200
+        assert b'type="checkbox"' in r.content
+        assert b'name="confirmed"' in r.content
+
     def test_plain_detail_renders_inline_directly(self, auth_client, purchase_request):
         """Inline section is embedded server-side (no hx-trigger=load)."""
         with PLAIN_SETTINGS:
