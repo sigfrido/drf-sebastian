@@ -10,7 +10,8 @@
   <link rel="stylesheet" href="{% static 'sebastian/vendor/bootstrap-icons/bootstrap-icons.min.css' %}">
   <link rel="stylesheet" href="{% static 'sebastian/sebastian.css' %}">
   <link rel="stylesheet" href="{% static 'sebastian/vendor/tom-select/tom-select.bootstrap5.min.css' %}">
-  {% block extra_css %}{% endblock %}
+  {% for css_file in skin_css_files %}<link rel="stylesheet" href="{% static css_file %}">
+  {% endfor %}{% block extra_css %}{% endblock %}
 </head>
 <body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
 

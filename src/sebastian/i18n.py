@@ -13,7 +13,7 @@ Use `sgettext()` from Python and the `{% strans %}` template tag
 around this same context, so the literal string "sebastian" only needs to be
 typed once, here.
 """
-from django.utils.translation import pgettext
+from django.utils.translation import pgettext, pgettext_lazy
 
 CONTEXT = 'sebastian'
 
@@ -22,3 +22,9 @@ def sgettext(message: str) -> str:
     """`pgettext(CONTEXT, message)` — Python-side shorthand; mirrors the
     `{% strans %}` template tag."""
     return pgettext(CONTEXT, message)
+
+
+def sgettext_lazy(message: str):
+    """`pgettext_lazy(CONTEXT, message)` — lazy variant for module-level
+    constants that must not call the translation machinery at import time."""
+    return pgettext_lazy(CONTEXT, message)

@@ -395,7 +395,11 @@ class GUIRouter:
                 from django.http import HttpResponseRedirect
                 return HttpResponseRedirect(f'{_login}?next={request.path}')
             pack      = app_settings.template_pack()
-            skin_name = app_settings.skin()
+            skin_name = (
+                getattr(request, 'sebastian_skin', None)
+                or app_settings.skin()
+            )
+            skin_files = app_settings.skin_css_files(skin_name)
             try:
                 menu_url = reverse('sebastian-menu')
             except NoReverseMatch:
@@ -427,6 +431,7 @@ class GUIRouter:
                 'pack_name':         pack,
                 'pack_base':         f'sebastian/{pack}/base.html',
                 'skin_name':         skin_name,
+                'skin_css_files':    skin_files,
                 'menu_url':          menu_url,
                 'file_field_template': f'sebastian/{pack}/_file_field.html',
             })

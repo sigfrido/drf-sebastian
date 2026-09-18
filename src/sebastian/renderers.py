@@ -66,7 +66,11 @@ class SebastianHTMLRenderer(BaseRenderer):
             return self._render_error(data, response, request)
 
         pack      = app_settings.template_pack()
-        skin_name = app_settings.skin()
+        skin_name = (
+            getattr(renderer_context.get('request'), 'sebastian_skin', None)
+            or app_settings.skin()
+        )
+        skin_files = app_settings.skin_css_files(skin_name)
         template_name = self._resolve_template(view, pack)
         if is_confirm:
             template_name = self._resolve_confirm_template(view, pack)
@@ -155,6 +159,7 @@ class SebastianHTMLRenderer(BaseRenderer):
             'pack_name':          pack,
             'pack_base':          f'sebastian/{pack}/base.html',
             'skin_name':          skin_name,
+            'skin_css_files':     skin_files,
             'lookup_field':       lookup_field,
             'list_link_field':    getattr(sebastian_config, 'list_link_field', None),
             'menu_url':           menu_url,
@@ -165,7 +170,11 @@ class SebastianHTMLRenderer(BaseRenderer):
 
     def _render_error(self, data, response, request) -> str:
         pack = app_settings.template_pack()
-        skin_name = app_settings.skin()
+        skin_name = (
+            getattr(request, 'sebastian_skin', None)
+            or app_settings.skin()
+        )
+        skin_files = app_settings.skin_css_files(skin_name)
         alert_map = {400: 'warning', 403: 'danger', 404: 'warning'}
         alert_class = alert_map.get(response.status_code, 'danger')
         detail = ''
@@ -180,6 +189,7 @@ class SebastianHTMLRenderer(BaseRenderer):
             'pack_name':       pack,
             'pack_base':       f'sebastian/{pack}/base.html',
             'skin_name':       skin_name,
+            'skin_css_files':  skin_files,
         }, request=request)
 
     def _resolve_template(self, view, pack: str = None) -> str:

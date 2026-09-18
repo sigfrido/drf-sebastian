@@ -11,6 +11,7 @@ override, e.g.::
     }
 """
 from django.conf import settings
+from .i18n import sgettext_lazy as _sl
 
 
 def _sebastian(key, default):
@@ -29,8 +30,37 @@ def template_pack() -> str:
 
 
 def skin() -> str:
-    """``SKIN`` — active CSS/icon skin. Default: ``'bootstrap5-bi'``."""
+    """``SKIN`` — active skin key. Default: ``'bootstrap5-bi'``."""
     return _sebastian('SKIN', 'bootstrap5-bi')
+
+
+_DEFAULT_SKINS = [
+    ('bootstrap5-bi', _sl('Light theme'),      'sebastian/skins/light.css'),
+    ('dark',          _sl('Dark theme'),       'sebastian/skins/dark.css'),
+    ('accessible',    _sl('Accessible theme'), 'sebastian/skins/accessible.css'),
+]
+
+
+def skins() -> list:
+    """``SKINS`` — registry of available skins as ``(key, label, css_paths)`` tuples.
+    ``css_paths`` can be a single string or a list of strings (static file paths)."""
+    return _sebastian('SKINS', _DEFAULT_SKINS)
+
+
+def skin_css_files(key: str) -> list[str]:
+    """Return the list of static CSS paths for the given skin key.
+    Falls back to the first available skin if the key is not found."""
+    for sk, _label, paths in skins():
+        if sk == key:
+            return [paths] if isinstance(paths, str) else list(paths)
+    _, _label, paths = skins()[0]
+    return [paths] if isinstance(paths, str) else list(paths)
+
+
+def skin_choices() -> list[tuple[str, str]]:
+    """Return ``(key, label)`` pairs for all registered skins — ready for a
+    form ``choices`` argument."""
+    return [(key, label) for key, label, _paths in skins()]
 
 
 def available_packs() -> list:

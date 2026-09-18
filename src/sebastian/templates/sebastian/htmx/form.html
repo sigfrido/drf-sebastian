@@ -95,7 +95,7 @@
           {% endif %}
         </select>
         {% else %}
-        <select class="form-select {% if fc.widget == 'ts-select' %}ts-select{% endif %}"
+        <select class="form-select ts-select"
                 id="id_{{ field_name }}" name="{{ field_name }}"
                 {% if field.required %}required{% endif %}>
           <option value="">---------</option>

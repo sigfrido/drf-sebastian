@@ -80,4 +80,8 @@ def _strings():  # pragma: no cover - never called, see module docstring
         pgettext('sebastian', 'Then by'),
         pgettext('sebastian', 'Username'),
         pgettext('sebastian', 'Yes'),
+        # Default skin labels (app_settings._DEFAULT_SKINS, via sgettext_lazy):
+        pgettext('sebastian', 'Light theme'),
+        pgettext('sebastian', 'Dark theme'),
+        pgettext('sebastian', 'Accessible theme'),
     )

@@ -1,0 +1,91 @@
+:root {
+  --bs-body-bg: #212529;
+  --bs-body-color: #dee2e6;
+  --bs-secondary-color: rgba(222, 226, 230, 0.75);
+  --bs-tertiary-color: rgba(222, 226, 230, 0.5);
+  --bs-border-color: #495057;
+  --bs-secondary-bg: #343a40;
+  --bs-tertiary-bg: #2b3035;
+  --bs-emphasis-color: #ffffff;
+  --sb-navbar-bg: #1a1d20;
+  --sb-navbar-fg: #dee2e6;
+  --sb-subform-header-bg: #343a40;
+  --sb-field-label-color: #adb5bd;
+}
+
+body {
+  background-color: var(--bs-body-bg);
+  color: var(--bs-body-color);
+}
+
+.card {
+  --bs-card-bg: #2b3035;
+  --bs-card-border-color: #495057;
+}
+
+.table {
+  --bs-table-bg: transparent;
+  --bs-table-striped-bg: #2b3035;
+  --bs-table-hover-bg: #343a40;
+  --bs-table-border-color: #495057;
+  color: var(--bs-body-color);
+}
+
+.form-control, .form-select {
+  background-color: #2b3035;
+  border-color: #495057;
+  color: var(--bs-body-color);
+}
+
+.form-control:focus, .form-select:focus {
+  background-color: #2b3035;
+  color: var(--bs-body-color);
+}
+
+.modal-content {
+  background-color: #2b3035;
+  border-color: #495057;
+}
+
+.dropdown-menu {
+  --bs-dropdown-bg: #2b3035;
+  --bs-dropdown-border-color: #495057;
+  --bs-dropdown-link-color: #dee2e6;
+  --bs-dropdown-link-hover-bg: #343a40;
+  --bs-dropdown-link-hover-color: #ffffff;
+}
+
+.btn-outline-secondary {
+  --bs-btn-color: #adb5bd;
+  --bs-btn-border-color: #6c757d;
+  --bs-btn-hover-bg: #6c757d;
+}
+
+.list-group-item {
+  background-color: #2b3035;
+  border-color: #495057;
+  color: var(--bs-body-color);
+}
+
+.input-group-text {
+  background-color: #343a40;
+  border-color: #495057;
+  color: var(--bs-body-color);
+}
+
+.bg-light {
+  background-color: var(--bs-secondary-bg) !important;
+  color: var(--bs-body-color) !important;
+}
+
+.text-dark {
+  color: var(--bs-body-color) !important;
+}
+
+.table-light {
+  --bs-table-bg: #343a40;
+  --bs-table-color: #dee2e6;
+  --bs-table-striped-bg: #3d4349;
+  --bs-table-hover-bg: #454d55;
+  --bs-table-border-color: #495057;
+}

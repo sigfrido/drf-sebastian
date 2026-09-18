@@ -1,0 +1,25 @@
+:root {
+  font-size: 1.125rem;
+  --sb-navbar-bg: #000000;
+  --sb-navbar-fg: #ffffff;
+  --sb-field-label-color: #212529;
+}
+
+.sb-field-label {
+  font-size: 1rem;
+}
+
+:focus-visible {
+  outline: 3px solid #0d6efd;
+  outline-offset: 2px;
+}
+
+.btn:focus-visible {
+  outline: 3px solid #0d6efd;
+  outline-offset: 2px;
+}
+
+a:focus-visible {
+  outline: 3px solid #0d6efd;
+  outline-offset: 2px;
+}

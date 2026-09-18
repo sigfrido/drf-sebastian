@@ -69,6 +69,7 @@
       var cascadeField = el.dataset.cascadeField  || '';
 
       new TomSelect(el, {
+        dropdownParent: document.body,
         valueField:    'value',
         labelField:    'label',
         // Also search 'text' — options pre-loaded from the native <select> use
@@ -187,7 +188,7 @@
       }
       var opts = el.multiple
         ? { plugins: ['remove_button'], closeAfterSelect: false }
-        : { allowEmptyOption: true };
+        : { allowEmptyOption: true, dropdownParent: document.body };
       new TomSelect(el, opts);
     });
   }
