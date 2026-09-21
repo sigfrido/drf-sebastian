@@ -47,3 +47,18 @@
 .sb-icon {
   vertical-align: -0.125em;
 }
+
+/* ── TomSelect fixes ─────────────────────────────────────── */
+
+/* Bootstrap .form-select adds a dropdown-arrow background-image that bleeds
+   through on multi-select TomSelect wrappers (TomSelect removes it only for
+   .single). Suppress it explicitly for multi. */
+.ts-wrapper.multi.form-select {
+  background-image: none !important;
+}
+
+/* Multi-select TomSelect in filter forms: cap width so selected tags wrap
+   inside the control after 2-3 selections rather than stretching the row. */
+#sb-filter-form .ts-wrapper.multi {
+  max-width: 14rem;
+}

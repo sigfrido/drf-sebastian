@@ -69,7 +69,7 @@
       var cascadeField = el.dataset.cascadeField  || '';
 
       new TomSelect(el, {
-        dropdownParent: document.body,
+        dropdownParent: 'body',
         valueField:    'value',
         labelField:    'label',
         // Also search 'text' — options pre-loaded from the native <select> use
@@ -187,8 +187,19 @@
         try { el.tomselect.destroy(); } catch (_) {}
       }
       var opts = el.multiple
-        ? { plugins: ['remove_button'], closeAfterSelect: false }
-        : { allowEmptyOption: true, dropdownParent: document.body };
+        ? { plugins: ['remove_button'], closeAfterSelect: false, placeholder: '' }
+        : {
+            allowEmptyOption: true,
+            dropdownParent: 'body',
+            onDropdownOpen: function (dropdown) {
+              var rect = this.control.getBoundingClientRect();
+              dropdown.style.position = 'fixed';
+              dropdown.style.top    = rect.bottom + 'px';
+              dropdown.style.left   = rect.left   + 'px';
+              dropdown.style.width  = rect.width  + 'px';
+              dropdown.style.zIndex = '9999';
+            },
+          };
       new TomSelect(el, opts);
     });
   }
