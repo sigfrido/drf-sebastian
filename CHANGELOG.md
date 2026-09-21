@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented here, starting from this release. Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.0.0rc3] - unreleased
+
+### Fixed
+
+- **Typeahead dropdown hidden behind Bootstrap modal**: `initTypeahead` lacked the `onDropdownOpen` hook already present in `initTsSelect`. Typeaheads rendered inside a Bootstrap modal (z-index 1055) had their dropdown obscured by the backdrop. Added the same `position: fixed` + `getBoundingClientRect` + `zIndex: 9999` override
+
 ## [1.0.0rc2] - 2026-09-21
 
 ### Added

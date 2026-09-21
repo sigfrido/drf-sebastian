@@ -78,6 +78,14 @@
         // scores[7] === scores['7'] in JS — hideSelected would delete API results whose integer PK matches the native option's string value.
         hideSelected:  false,
         preload:       minChars === 0,
+        onDropdownOpen: function (dropdown) {
+          var rect = this.control.getBoundingClientRect();
+          dropdown.style.position = 'fixed';
+          dropdown.style.top      = rect.bottom + 'px';
+          dropdown.style.left     = rect.left   + 'px';
+          dropdown.style.width    = rect.width  + 'px';
+          dropdown.style.zIndex   = '9999';
+        },
         // Render both remote options ({label}) and native-<select> options ({text}).
         render: {
           option: function (data, escape) {
