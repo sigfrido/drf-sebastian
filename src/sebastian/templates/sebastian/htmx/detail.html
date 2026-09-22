@@ -14,7 +14,7 @@
   <div class="d-flex gap-1 flex-shrink-0">
     {% if view.can_update %}
     <a href="{{ request.path }}edit/"
-       class="btn btn-outline-primary btn-sm">
+       class="btn {{ 'edit'|btn_class:skin_name }} btn-sm">
       {% icon "pencil" %} {% strans "Edit" %}
     </a>
     {% endif %}
@@ -22,7 +22,7 @@
     <button hx-get="{{ request.path }}delete/"
             hx-target="#sebastian-modal"
             hx-swap="innerHTML"
-            class="btn btn-outline-danger btn-sm">
+            class="btn {{ 'delete'|btn_class:skin_name }} btn-sm">
       {% icon "trash" %} {% strans "Delete" %}
     </button>
     {% endif %}

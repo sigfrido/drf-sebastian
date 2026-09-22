@@ -359,6 +359,40 @@ def include_resource(context, url):
         return mark_safe(f'<!-- include_resource error: {exc} -->')
 
 
+@register.filter
+def btn_class(style, skin_name=''):
+    """Map a semantic button style to a Bootstrap CSS class.
+
+    Usage: ``{{ 'edit'|btn_class:skin_name }}``.
+
+    Unknown styles fall back to ``btn-{style}`` so that raw Bootstrap modifiers
+    (e.g. ``'outline-primary'``) continue to work as before.
+    """
+    from ..app_settings import button_styles_for_skin
+    if not style:
+        return 'btn-secondary'
+    mapping = button_styles_for_skin(skin_name or '')
+    return mapping.get(style, f'btn-{style}')
+
+
+@register.filter
+def btn_class_cfg(cfg, skin_name=''):
+    """Like btn_class but takes a full gui_config dict.
+
+    Resolves ``style`` → ``color`` → ``'secondary'`` fallback chain without
+    relying on dict-key filter arguments, which raise VariableDoesNotExist
+    when keys are absent.
+
+    Usage: ``{{ cfg|btn_class_cfg:skin_name }}``.
+    """
+    from ..app_settings import button_styles_for_skin
+    if not isinstance(cfg, dict):
+        return 'btn-secondary'
+    style = cfg.get('style') or cfg.get('color') or 'secondary'
+    mapping = button_styles_for_skin(skin_name or '')
+    return mapping.get(style, f'btn-{style}')
+
+
 @register.simple_tag(takes_context=True)
 def actions(context, group='actions'):
     """Render action buttons for the given group.

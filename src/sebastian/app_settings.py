@@ -106,6 +106,40 @@ def login_url() -> str:
     return _sebastian('LOGIN_URL', '')
 
 
+_DEFAULT_BUTTON_STYLES = {
+    'new':       'btn-primary',
+    'edit':      'btn-primary',
+    'delete':    'btn-danger',
+    'view':      'btn-outline-secondary',
+    'info':      'btn-info',
+    'warning':   'btn-warning',
+    'success':   'btn-success',
+    'secondary': 'btn-secondary',
+}
+
+
+def button_styles_for_skin(skin_key: str) -> dict:
+    """Resolve semantic button style → Bootstrap CSS class for the given skin.
+
+    The result is built from ``_DEFAULT_BUTTON_STYLES``, then overridden by
+    ``SEBASTIAN['BUTTON_STYLES']['*']`` (all skins), then by the skin-specific
+    key.  Consumer projects add custom semantic styles the same way::
+
+        SEBASTIAN = {
+            'BUTTON_STYLES': {
+                '*':    {'edit': 'btn-success', 'anteprima': 'btn-info'},
+                'dark': {'edit': 'btn-outline-primary'},
+            }
+        }
+    """
+    overrides = _sebastian('BUTTON_STYLES', {})
+    return {
+        **_DEFAULT_BUTTON_STYLES,
+        **overrides.get('*', {}),
+        **overrides.get(skin_key, {}),
+    }
+
+
 def bool_display() -> str:
     """How to render boolean fields in GUI mode.
 

@@ -448,7 +448,8 @@ from sebastian.permissions import perm_and, perm_is_admin
     gui_config={
         'label':      'Approve',
         'icon':       'check-circle',   # Bootstrap Icons name
-        'color':      'success',        # Bootstrap colour: primary|success|danger|warning|secondary
+        'style':      'success',        # semantic style name resolved via BUTTON_STYLES (§4.11)
+        'color':      'success',        # raw Bootstrap colour suffix — fallback when 'style' absent
         'position':   'detail',         # 'detail' | 'list' | 'both'
         'permission': perm_and(perm_is_admin, some_other_check),
         'confirmation': {
@@ -467,7 +468,40 @@ def approve(self, request, pk=None):
 
 When `gui_config['confirmation']['serializer']` is set, the button opens a modal collecting that serializer's fields first; the action method receives the validated data via `self._post_confirmation_action(action_name, instance)` and a pair of `{action}_get(instance)` / `{action}_valid(instance, serializer)` hooks. Without a `serializer`, `confirmation` is just a yes/no prompt (`hx-confirm` in the htmx pack, a confirm page in the plain pack).
 
-Other `gui_config` keys seen in real usage: `hint` (tooltip), `link_field` (paired with `self.download_action()`/`self.preview_action()` for file fields), `row_visible_field` (a boolean serializer field gating per-row visibility in list actions), `open_url` (open the action's GET response in a new tab instead of swapping it in).
+Other `gui_config` keys seen in real usage: `hint` (tooltip), `group` (action group name for `{% actions %}`, default `'actions'`), `link_field` (paired with `self.download_action()`/`self.preview_action()` for file fields), `row_visible_field` (a boolean serializer field gating per-row visibility in list actions), `open_url` (open the action's GET response in a new tab instead of swapping it in).
+
+**`{% actions "group" %}` template tag**: renders action buttons belonging to the named group. Extending templates (e.g. workflango workflow cards) use this to place actions outside the default header strip without hardcoding application-specific position logic into sebastian's own templates:
+
+```django
+{# inside a custom detail block override — only workflow-group actions appear here #}
+{% actions "workflow" %}
+
+{# the header strip shows the remaining actions #}
+{% actions "actions" %}  {# this is the default, used by sebastian/htmx/detail.html etc. #}
+```
+
+Actions with no explicit `group` key default to `'actions'`.
+
+### 4.11 Semantic Button Styles
+
+Each action button carries a **semantic style name** (`gui_config['style']`) that the template resolves to a concrete Bootstrap class via a per-skin mapping. The built-in default styles are:
+
+| Name | Default Bootstrap class |
+|---|---|
+| `new` | `btn-primary` |
+| `edit` | `btn-primary` |
+| `delete` | `btn-danger` |
+| `view` | `btn-outline-secondary` |
+| `info` | `btn-info` |
+| `warning` | `btn-warning` |
+| `success` | `btn-success` |
+| `secondary` | `btn-secondary` |
+
+Override or add styles per-skin via `SEBASTIAN['BUTTON_STYLES']` (see §8). Templates use `{{ cfg|btn_class_cfg:skin_name }}`, which resolves the `style → color → 'secondary'` chain safely from a gui_config dict without relying on template variable lookups for potentially-absent keys. For a hardcoded semantic name, use `{{ 'edit'|btn_class:skin_name }}`.
+
+If `style` is absent, `color` is used as a raw Bootstrap suffix (retrocompat). If both are absent, `secondary` is the fallback. Unknown names fall back to `btn-{name}` so any raw Bootstrap modifier still works.
+
+**Adding a custom semantic style**: declare it in `BUTTON_STYLES` and set `'style': 'my-style'` in `gui_config`. Consumer projects can define styles unknown to the library defaults; the skin mapping merges cleanly.
 
 ### 4.10 Permission → UI
 
@@ -617,6 +651,12 @@ SEBASTIAN = {
     'TEMPLATE_PACK': 'htmx',            # 'htmx' | 'plain' | a custom pack name
     'SKIN':          'bootstrap5-bi',
     'HTMX_PACKS':    ['htmx'],          # which pack names get HTMX-aware behaviour
+
+    # Button styles (semantic name → Bootstrap class, merged per skin)
+    'BUTTON_STYLES': {
+        '*':         {'edit': 'btn-success'},        # override for ALL skins
+        'dark':      {'edit': 'btn-outline-primary'}, # override for skin 'dark' only
+    },
 
     # Permission display
     'HIDE_UNAUTHORIZED_ACTIONS': True,  # False = render disabled instead of hiding

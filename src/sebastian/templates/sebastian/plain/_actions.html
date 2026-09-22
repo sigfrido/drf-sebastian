@@ -1,21 +1,21 @@
 {% load sebastian_tags %}
 {% for action in action_buttons %}{% with cfg=action.gui_config %}
 {% if action.disabled %}
-<button class="btn btn-{{ cfg.color|default:'secondary' }} btn-sm" disabled
+<button class="btn {{ cfg|btn_class_cfg:skin_name }} btn-sm" disabled
         title="{{ cfg.hint|default:cfg.label|default:action.name }}">
   {% if cfg.icon %}{% icon cfg.icon %}{% endif %}
   {{ cfg.label }}
 </button>
 {% elif cfg.confirmation %}
 <a href="{{ object_url }}{{ action.name }}/confirm/"
-   class="btn btn-{{ cfg.color|default:'secondary' }} btn-sm"
+   class="btn {{ cfg|btn_class_cfg:skin_name }} btn-sm"
    title="{{ cfg.hint|default:cfg.label|default:action.name }}">
   {% if cfg.icon %}{% icon cfg.icon %}{% endif %}
   {{ cfg.label }}
 </a>
 {% elif action.method == 'get' %}
 <a href="{{ object_url }}{{ action.name }}/"
-   class="btn btn-{{ cfg.color|default:'secondary' }} btn-sm"
+   class="btn {{ cfg|btn_class_cfg:skin_name }} btn-sm"
    title="{{ cfg.hint|default:cfg.label|default:action.name }}">
   {% if cfg.icon %}{% icon cfg.icon %}{% endif %}
   {{ cfg.label }}
@@ -23,7 +23,7 @@
 {% else %}
 <form method="post" action="{{ object_url }}{{ action.name }}/" style="display:inline">
   {% csrf_token %}
-  <button type="submit" class="btn btn-{{ cfg.color|default:'secondary' }} btn-sm"
+  <button type="submit" class="btn {{ cfg|btn_class_cfg:skin_name }} btn-sm"
           title="{{ cfg.hint|default:cfg.label|default:action.name }}">
     {% if cfg.icon %}{% icon cfg.icon %}{% endif %}
     {{ cfg.label }}

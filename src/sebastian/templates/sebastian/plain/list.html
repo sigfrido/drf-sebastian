@@ -7,7 +7,7 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h4>{{ view.get_view_name }}</h4>
   {% if view.can_create %}
-  <a href="{{ request.path }}new/" class="btn btn-primary btn-sm">
+  <a href="{{ request.path }}new/" class="btn {{ 'new'|btn_class:skin_name }} btn-sm">
     {% icon "plus-lg" %} {% strans "New" %}
   </a>
   {% endif %}
@@ -94,7 +94,7 @@
         <td class="text-end text-nowrap">
           {% if not is_inline and not list_link_field %}
           <a href="{{ request.path }}{{ item|get_item:lookup_field }}/"
-             class="btn btn-outline-secondary btn-sm">
+             class="btn {{ 'view'|btn_class:skin_name }} btn-sm">
             {% icon "eye" %}
           </a>
           {% endif %}
@@ -104,14 +104,14 @@
               {% if not cfg.row_visible_field or item|get_item:cfg.row_visible_field %}
               {% if not cfg.link_field %}
                 {% if action.disabled %}
-                <button class="btn btn-{{ cfg.color|default:'secondary' }} btn-sm" disabled
+                <button class="btn {{ cfg|btn_class_cfg:skin_name }} btn-sm" disabled
                         title="{{ cfg.hint|default:cfg.label|default:action.name }}">
                   {% if cfg.icon %}{% icon cfg.icon %}{% endif %}
                   {{ cfg.label }}
                 </button>
                 {% else %}
                 <a href="{{ request.path }}{{ item|get_item:lookup_field }}/{{ action.name }}/"
-                   class="btn btn-{{ cfg.color|default:'secondary' }} btn-sm"
+                   class="btn {{ cfg|btn_class_cfg:skin_name }} btn-sm"
                    title="{{ cfg.hint|default:cfg.label|default:action.name }}">
                   {% if cfg.icon %}{% icon cfg.icon %}{% endif %}
                   {{ cfg.label }}
@@ -124,13 +124,13 @@
           {% endfor %}
           {% if item|row_can_update:view %}
           <a href="{{ request.path }}{{ item|get_item:lookup_field }}/edit/"
-             class="btn btn-outline-primary btn-sm">
+             class="btn {{ 'edit'|btn_class:skin_name }} btn-sm">
             {% icon "pencil" %}
           </a>
           {% endif %}
           {% if item|row_can_delete:view %}
           <a href="{{ request.path }}{{ item|get_item:lookup_field }}/delete/"
-             class="btn btn-outline-danger btn-sm">
+             class="btn {{ 'delete'|btn_class:skin_name }} btn-sm">
             {% icon "trash" %}
           </a>
           {% endif %}
