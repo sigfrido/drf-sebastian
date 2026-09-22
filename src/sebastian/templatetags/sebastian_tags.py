@@ -358,3 +358,40 @@ def include_resource(context, url):
     except Exception as exc:
         return mark_safe(f'<!-- include_resource error: {exc} -->')
 
+
+@register.simple_tag(takes_context=True)
+def actions(context, group='actions'):
+    """Render action buttons for the given group.
+
+    Each action is included when ``action.gui_config.get('group', 'actions') == group``
+    and it is not a link-type action (``link_field``).  The partial template
+    ``sebastian/{pack}/_actions.html`` handles the actual rendering so that
+    each template pack (htmx, plain, …) can define its own button markup.
+    """
+    from django.template.loader import render_to_string
+
+    view = context.get('view')
+    if view is None or not hasattr(view, 'get_available_actions'):
+        return mark_safe('')
+
+    pack = context.get('pack_name', 'htmx')
+    request = context.get('request')
+    filtered = [
+        a for a in view.get_available_actions()
+        if a['gui_config'].get('group', 'actions') == group
+        and not a['gui_config'].get('link_field')
+    ]
+
+    sub_ctx = {
+        'action_buttons': filtered,
+        'object_url': context.get('object_url', request.path if request else ''),
+        'instance': context.get('instance'),
+        'skin_name': context.get('skin_name', ''),
+        'request': request,
+    }
+    return mark_safe(render_to_string(
+        f'sebastian/{pack}/_actions.html',
+        sub_ctx,
+        request=request,
+    ))
+

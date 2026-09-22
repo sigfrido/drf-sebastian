@@ -1,0 +1,46 @@
+{% load sebastian_tags %}
+{% for action in action_buttons %}{% with cfg=action.gui_config %}
+{% if action.disabled %}
+<button class="btn btn-{{ cfg.color|default:'secondary' }} btn-sm" disabled
+        title="{{ cfg.hint|default:cfg.label|default:action.name }}">
+  {% if cfg.icon %}{% icon cfg.icon %}{% endif %}
+  {{ cfg.label }}
+</button>
+{% elif cfg.confirmation %}
+<button class="btn btn-{{ cfg.color|default:'secondary' }} btn-sm"
+        data-sb-confirm-url="{{ object_url }}{{ action.name }}/"
+        data-sb-confirm-prompt="{{ cfg.confirmation.prompt|resolve_confirm:instance }}"
+        data-sb-confirm-style="{{ cfg.confirmation.style|default:'primary' }}"
+        title="{{ cfg.hint|default:cfg.label|default:action.name }}">
+  {% if cfg.icon %}{% icon cfg.icon %}{% endif %}
+  {{ cfg.label }}
+</button>
+{% elif cfg.open_url %}
+<a href="{{ object_url }}{{ action.name }}/"
+   target="_blank"
+   rel="noopener"
+   class="btn btn-{{ cfg.color|default:'secondary' }} btn-sm"
+   title="{{ cfg.hint|default:cfg.label|default:action.name }}">
+  {% if cfg.icon %}{% icon cfg.icon %}{% endif %}
+  {{ cfg.label }}
+</a>
+{% elif action.method == 'get' %}
+<a href="{{ object_url }}{{ action.name }}/"
+   hx-get="{{ object_url }}{{ action.name }}/"
+   hx-target="#sebastian-content"
+   hx-push-url="true"
+   class="btn btn-{{ cfg.color|default:'secondary' }} btn-sm"
+   title="{{ cfg.hint|default:cfg.label|default:action.name }}">
+  {% if cfg.icon %}{% icon cfg.icon %}{% endif %}
+  {{ cfg.label }}
+</a>
+{% else %}
+<button class="btn btn-{{ cfg.color|default:'secondary' }} btn-sm"
+        hx-post="{{ object_url }}{{ action.name }}/"
+        hx-target="#sebastian-content"
+        title="{{ cfg.hint|default:cfg.label|default:action.name }}">
+  {% if cfg.icon %}{% icon cfg.icon %}{% endif %}
+  {{ cfg.label }}
+</button>
+{% endif %}
+{% endwith %}{% endfor %}
