@@ -120,10 +120,11 @@ class GUIRouter:
         ]
     """
 
-    def __init__(self, api_router: BaseRouter):
-        self.api_router   = api_router
-        self._menu_groups = []   # resolved menu structure, built in _build_urls()
-        self._extra_urls  = []   # custom pages registered via add_page()
+    def __init__(self, api_router: BaseRouter, *, messages_view=None):
+        self.api_router      = api_router
+        self._menu_groups    = []   # resolved menu structure, built in _build_urls()
+        self._extra_urls     = []   # custom pages registered via add_page()
+        self._messages_view  = messages_view  # callable (view) or None → default empty view
 
     @property
     def urls(self):
@@ -132,9 +133,12 @@ class GUIRouter:
     def _build_urls(self):
         self._menu_groups = self._build_menu_groups()
         menu_view = self._build_menu_view()
+        from .views import SebastianMessagesView
+        messages_view = self._messages_view or SebastianMessagesView.as_view()
         urls = [
             path('', self._home_view(), name='sebastian-home'),
             path('menu/', self._wrap(menu_view), {'format': 'html'}, name='sebastian-menu'),
+            path('messages/', self._wrap(messages_view), name='sebastian-messages'),
         ]
         for prefix, viewset, basename in self.api_router.registry:
             urls += self._routes_for(prefix, viewset, basename)

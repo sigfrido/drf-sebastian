@@ -34,9 +34,8 @@
 <div class="container-fluid mt-3">
   <div class="row">
     <main class="col" id="sebastian-content">
-    <div id="sebastian-messages" class="mb-2"></div>
 {% endif %}
-
+{% block messages %}{% if messages_url %}<div id="sebastian-messages" hx-get="{{ messages_url }}" hx-trigger="load" hx-swap="outerHTML" class="mb-2"></div>{% else %}<div id="sebastian-messages" class="mb-2"></div>{% endif %}{% endblock %}
 {% block content %}{% endblock %}
 
 {% if not is_htmx %}

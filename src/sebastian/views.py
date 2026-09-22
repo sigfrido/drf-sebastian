@@ -3,8 +3,15 @@ Sebastian built-in views.
 
 SebastianMenuView — serves the application menu at /api/menu/ (JSON) and
 /gui/menu/ (HTML fragment). Auto-registered by GUIRouter and SebastianRouter.
+
+SebastianMessagesView — returns the messages HTML fragment. The default
+implementation returns an empty container. Subclass and override get_html()
+to provide project-specific message rendering.  Pass the subclass to
+GUIRouter(messages_view=...) so it is registered at /gui/messages/.
 """
+from django.http import HttpResponse
 from django.urls import reverse, NoReverseMatch
+from django.views import View
 from rest_framework import renderers as drf_renderers
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -103,3 +110,18 @@ class SebastianMenuView(APIView):
             current_url = urlparse(current_url).path
         menu = _evaluate_menu(request, self._menu_groups, current_url)
         return Response({'menu_groups': menu})
+
+
+class SebastianMessagesView(View):
+    """Messages fragment endpoint — returns the #sebastian-messages div.
+
+    Default returns an empty container.  Subclass and override ``get_html()``
+    to render project-specific messages (e.g. Django session messages).
+    Pass the subclass to ``GUIRouter(messages_view=MyMessagesView.as_view())``.
+    """
+
+    def get_html(self, request) -> str:
+        return '<div id="sebastian-messages" class="mb-2"></div>'
+
+    def get(self, request, *args, **kwargs):
+        return HttpResponse(self.get_html(request), content_type='text/html')

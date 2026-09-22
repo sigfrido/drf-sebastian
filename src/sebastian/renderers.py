@@ -125,6 +125,10 @@ class SebastianHTMLRenderer(BaseRenderer):
             menu_url = reverse('sebastian-menu')
         except NoReverseMatch:
             menu_url = ''
+        try:
+            messages_url = reverse('sebastian-messages')
+        except NoReverseMatch:
+            messages_url = ''
 
         sebastian_config = getattr(view.__class__, 'Sebastian', None) if view else None
         action = getattr(view, 'action', None) if view else None
@@ -164,6 +168,7 @@ class SebastianHTMLRenderer(BaseRenderer):
             'lookup_field':       lookup_field,
             'list_link_field':    getattr(sebastian_config, 'list_link_field', None),
             'menu_url':           menu_url,
+            'messages_url':       messages_url,
             'file_field_template': f'sebastian/{pack}/_file_field.html',
         }
 

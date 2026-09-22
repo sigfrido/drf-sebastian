@@ -346,7 +346,8 @@ class _SebastianBaseMixin:
         else:
             redirect_url = path.rsplit('/', 2)[0] + '/'
         if request.META.get('HTTP_HX_REQUEST'):
-            resp = DRFResponse({}, status=200)
+            from django.http import HttpResponse
+            resp = HttpResponse('', status=200)
             resp['HX-Redirect'] = redirect_url
             return resp
         from django.http import HttpResponseRedirect
@@ -600,7 +601,8 @@ class GUIMixin(_SebastianBaseMixin):
         else:
             detail_url = request.path.rstrip('/').rsplit('/', 1)[0] + '/'
         if is_htmx:
-            resp = DRFResponse(serializer.data, status=200)
+            from django.http import HttpResponse
+            resp = HttpResponse('', status=200)
             resp['HX-Redirect'] = detail_url
             return resp
         from django.http import HttpResponseRedirect
@@ -1076,7 +1078,8 @@ class SingletonGUIMixin(_SebastianBaseMixin):
             raise
 
         if request.META.get('HTTP_HX_REQUEST'):
-            resp = DRFResponse(serializer.data, status=200)
+            from django.http import HttpResponse
+            resp = HttpResponse('', status=200)
             resp['HX-Redirect'] = detail_url
             return resp
         from django.http import HttpResponseRedirect

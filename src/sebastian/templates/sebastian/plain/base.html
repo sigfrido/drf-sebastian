@@ -26,8 +26,8 @@
 <div class="container-fluid mt-3">
   <div class="row">
     <main class="col" id="sebastian-content">
-    <div id="sebastian-messages" class="mb-2"></div>
 {% endif %}
+{% block messages %}<div id="sebastian-messages" class="mb-2"></div>{% endblock messages %}
 
 {% block content %}{% endblock %}
 
