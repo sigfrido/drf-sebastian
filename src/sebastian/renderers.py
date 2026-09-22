@@ -53,13 +53,14 @@ class SebastianHTMLRenderer(BaseRenderer):
         request  = renderer_context.get('request')
         response = renderer_context.get('response')
 
+        is_dict = isinstance(data, dict)
         is_confirm = (
-            isinstance(data, dict) and data.get('action') == 'confirm'
+            is_dict and data.get('action') == 'confirm'
             and 'confirm_prompt' in data
         )
         is_form_error = (
             response and response.status_code >= 400
-            and isinstance(data, dict) and 'serializer' in data
+            and is_dict and 'serializer' in data
             and not is_confirm
         )
         if response and response.status_code >= 400 and not is_form_error and not is_confirm:
@@ -81,7 +82,7 @@ class SebastianHTMLRenderer(BaseRenderer):
         is_htmx = bool(request and request.META.get('HTTP_HX_REQUEST'))
 
         # Unpack DRF paginated response so templates always get a plain list
-        if isinstance(data, dict) and 'results' in data:
+        if is_dict and 'results' in data:
             items      = data['results']
             pagination = {k: data[k] for k in ('count', 'next', 'previous') if k in data}
         else:
@@ -95,17 +96,17 @@ class SebastianHTMLRenderer(BaseRenderer):
         else:
             htmx_target = '#sebastian-content'
         # Forms pass htmx_target/cancel_url in response data; pull them into context.
-        if isinstance(data, dict) and 'htmx_target' in data:
+        if is_dict and 'htmx_target' in data:
             htmx_target = data['htmx_target']
-        cancel_url = data.get('cancel_url', '') if isinstance(data, dict) else ''
-        submit_url = data.get('submit_url', '') if isinstance(data, dict) else ''
+        cancel_url = data.get('cancel_url', '') if is_dict else ''
+        submit_url = data.get('submit_url', '') if is_dict else ''
         is_serializer_error = is_form_error or (
             is_confirm and response and response.status_code >= 400
-            and isinstance(data, dict) and 'confirm_serializer' in data
+            and is_dict and 'confirm_serializer' in data
             and data.get('confirm_serializer') is not None
         )
         if is_serializer_error:
-            explicit = data.get('form_errors') if isinstance(data, dict) else None
+            explicit = data.get('form_errors') if is_dict else None
             if explicit:
                 form_errors = explicit
             elif 'serializer' in data:
@@ -114,7 +115,7 @@ class SebastianHTMLRenderer(BaseRenderer):
                 form_errors = data['confirm_serializer'].errors
             else:
                 form_errors = {}
-        elif isinstance(data, dict) and 'form_errors' in data:
+        elif is_dict and 'form_errors' in data:
             form_errors = data['form_errors']
         else:
             form_errors = {}
@@ -178,7 +179,9 @@ class SebastianHTMLRenderer(BaseRenderer):
         alert_map = {400: 'warning', 403: 'danger', 404: 'warning'}
         alert_class = alert_map.get(response.status_code, 'danger')
         detail = ''
-        if isinstance(data, dict):
+        if isinstance(data, list) and data:
+            detail = str(data[0])
+        elif isinstance(data, dict):
             detail = data.get('detail', '') or data.get('message', '')
         if not detail:
             error_label = sgettext('Error')
