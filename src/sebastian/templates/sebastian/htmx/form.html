@@ -35,7 +35,7 @@
     {% for group in groups %}
     {% if group.fields %}
     <li class="nav-item">
-      <button class="nav-link {% if forloop.first %}active{% endif %}"
+      <button class="nav-link {% if first_editable_group and group.name == first_editable_group or not first_editable_group and forloop.first %}active{% endif %}"
               data-bs-toggle="tab"
               data-bs-target="#ftab-{{ group.name }}"
               type="button">
@@ -51,7 +51,7 @@
   {% for group in groups %}
   {% if group.fields %}
   {% if group.label %}
-  <div class="tab-pane fade {% if forloop.first %}show active{% endif %}"
+  <div class="tab-pane fade {% if first_editable_group and group.name == first_editable_group or not first_editable_group and forloop.first %}show active{% endif %}"
        id="ftab-{{ group.name }}">
   {% endif %}
     {% for field_name in group.fields %}

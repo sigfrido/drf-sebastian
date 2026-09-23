@@ -62,3 +62,7 @@
 #sb-filter-form .ts-wrapper.multi {
   max-width: 14rem;
 }
+
+.nav-tabs .nav-link.active {
+  font-weight: bold;
+}

@@ -153,6 +153,7 @@ class SebastianHTMLRenderer(BaseRenderer):
             'response':           response,
             'sebastian_config':   sebastian_config,
             'visible_groups':     self._get_visible_groups(sebastian_config, data, action),
+            'first_editable_group': self._get_first_editable_group(sebastian_config, data, action),
             'field_labels':       self._get_field_labels(view, getattr(view, '_sebastian_obj', None)),
             'filter_form':        self._get_filter_form(view, request),
             'ordering_config':    self._get_ordering_config(view, request),
@@ -290,6 +291,30 @@ class SebastianHTMLRenderer(BaseRenderer):
                 return [SimpleNamespace(name='__default__', label='', fields=list(serializer_fields.keys()))]
 
         return all_groups
+
+    def _get_first_editable_group(self, sebastian_config, data, action) -> str:
+        """Return the name of the first FieldGroup with at least one editable field.
+
+        Used by the form template to auto-activate the right tab on update_form.
+        Returns None when not in update_form context or no editable group is found.
+        """
+        if action != 'update_form' or not isinstance(data, dict):
+            return None
+        serializer = data.get('serializer')
+        if serializer is None:
+            return None
+        from sebastian.config import FieldGroup
+        all_groups = list(getattr(sebastian_config, 'groups', []) or []) if sebastian_config else []
+        serializer_fields = getattr(serializer, 'fields', {})
+        for group in all_groups:
+            if not isinstance(group, FieldGroup):
+                continue
+            if any(
+                f in serializer_fields and not serializer_fields[f].read_only
+                for f in group.fields
+            ):
+                return group.name
+        return None
 
     def _get_display_fields(self, sebastian_config, items) -> list:
         explicit = getattr(sebastian_config, 'list_fields', None) if sebastian_config else None
