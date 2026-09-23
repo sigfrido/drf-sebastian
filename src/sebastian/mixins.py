@@ -134,7 +134,7 @@ class _SebastianBaseMixin:
         Default: checks permission_classes via has_object_permission when an instance
         is available (_sebastian_obj set by retrieve). Returns True in list context
         (no object available — ownership is checked at form load time).
-        Override for custom logic (e.g. WorkflowViewSetMixin checks wfm ownership).
+        Override for custom logic
         """
         obj = getattr(self, '_sebastian_obj', None)
         if obj is None:
@@ -157,6 +157,14 @@ class _SebastianBaseMixin:
             if not perm.has_object_permission(self.request, self, obj):
                 return False
         return True
+
+    def extra_context(self) -> dict:
+        """Return extra key/value pairs merged into the renderer template context.
+
+        Override in subclasses to inject view-specific context without modifying
+        the renderer.
+        """
+        return {}
 
     def get_available_actions(self):
         """
@@ -911,22 +919,16 @@ class NestedGUIMixin(GUIMixin):
         serializer.save(**{field: parent})
 
     # ------------------------------------------------------------------ #
-    # Edit permissions — inherit from parent's workflow state              #
+    # Edit permissions — by default, inherit from parent
     # ------------------------------------------------------------------ #
 
     def _parent_is_editable(self) -> bool:
         """Return True if the parent object permits editing this nested resource.
 
-        For workflow-managed parents: requires that the user is the owner (or
-        admin) and that the parent is not suspended.
-
-        Additionally, if this nested viewset declares ``Sebastian.edit_permission``
-        (a callable ``(request, parent_obj) -> bool``), that permission is checked
-        after the ownership check.  This lets per-phase rules be expressed:
-
-            class RequisitoViewSet(NestedGUIMixin, ...):
-                class Sebastian:
-                    edit_permission = perm_fase('richiesta')
+        Calls ``parent_is_editable()`` first; if that returns False the result is
+        False immediately.  Otherwise, if ``Sebastian.edit_permission`` is declared
+        on this viewset (a callable ``(request, parent_obj) -> bool``), it is
+        evaluated as the final gate.
 
         The result is cached on the viewset instance so that repeated calls
         (one per row in a list) do not issue extra DB queries.
@@ -940,18 +942,9 @@ class NestedGUIMixin(GUIMixin):
             self._parent_is_editable_cache = True
             return True
 
-        user = self.request.user
-
-        # Duck-type check for workflow-managed parents.
-        if hasattr(parent, 'wfm_state') and hasattr(parent, 'wfm'):
-            state = parent.wfm_state
-            if state:
-                if state.suspended:
-                    self._parent_is_editable_cache = False
-                    return False
-                if not parent.wfm.is_owner(user) and not parent.wfm.can_admin(user):
-                    self._parent_is_editable_cache = False
-                    return False
+        if not self.parent_is_editable(parent):
+            self._parent_is_editable_cache = False
+            return False
 
         # Optional per-viewset phase/role restriction.
         from .config import _check_permission
@@ -963,6 +956,14 @@ class NestedGUIMixin(GUIMixin):
             return result
 
         self._parent_is_editable_cache = True
+        return True
+
+    def parent_is_editable(self, parent) -> bool:
+        """Return False if the parent object should block editing of this nested resource.
+
+        Base implementation always returns True. Override in subclasses to add
+        parent-level access restrictions.
+        """
         return True
 
     def can_create(self):

@@ -8,7 +8,7 @@ def _find_in_mro(view, attr):
     """Return the first value of `attr` defined explicitly in the MRO of view's class.
 
     Uses __dict__ lookup so that inherited None values (e.g. from _SebastianBaseMixin)
-    do not shadow a non-None value defined by a later mixin such as WorkflowViewSetMixin.
+    do not shadow a non-None value defined by a later mixin.
     """
     for cls in type(view).__mro__:
         val = cls.__dict__.get(attr)
@@ -159,8 +159,8 @@ class SebastianHTMLRenderer(BaseRenderer):
             'field_config':       self._get_field_config(sebastian_config),
             'cascading_fields':   getattr(sebastian_config, 'cascading_fields', []) or [],
             'inlines':            self._get_inlines(view),
-            'workflow_transitions': self._get_workflow_transitions(view),
             'form_errors':        form_errors,
+            **(view.extra_context() if view and hasattr(view, 'extra_context') else {}),
             'pack_name':          pack,
             'pack_base':          f'sebastian/{pack}/base.html',
             'skin_name':          skin_name,
@@ -446,26 +446,6 @@ class SebastianHTMLRenderer(BaseRenderer):
             return candidate
         except TemplateDoesNotExist:
             return default
-
-    def _get_workflow_transitions(self, view):
-        """Return WorkflowTransitions for the current instance, or None.
-
-        Called only when the view exposes get_workflow_transitions() (i.e. when
-        WorkflowViewSetMixin is in the MRO) and _sebastian_obj is set (i.e. in
-        retrieve/detail context).
-        """
-        if not view:
-            return None
-        get_wt = getattr(view, 'get_workflow_transitions', None)
-        if not callable(get_wt):
-            return None
-        obj = getattr(view, '_sebastian_obj', None)
-        if obj is None:
-            return None
-        try:
-            return get_wt(obj)
-        except Exception:
-            return None
 
     def _get_object_url(self, view, request) -> str:
         """Canonical GUI detail URL for the current object.
