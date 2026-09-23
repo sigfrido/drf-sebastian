@@ -14,6 +14,24 @@ from .config import _check_permission
 from .renderers import SebastianHTMLRenderer
 
 
+def _form_errors_from_exc(exc):
+    """Convert a perform_create/perform_update exception to a form_errors dict.
+
+    DRF ValidationError with a dict detail maps field names to error lists.
+    A list detail or any other exception maps to non_field_errors.
+    """
+    from rest_framework.exceptions import ValidationError as DRFValidationError
+    if isinstance(exc, DRFValidationError):
+        detail = exc.detail
+        if isinstance(detail, dict):
+            return {k: [str(e) for e in v] if isinstance(v, list) else [str(v)]
+                    for k, v in detail.items()}
+        if isinstance(detail, list):
+            return {'non_field_errors': [str(e) for e in detail]}
+        return {'non_field_errors': [str(detail)]}
+    return {'non_field_errors': [str(exc)]}
+
+
 # ====================================================================== #
 # Shared infrastructure                                                    #
 # ====================================================================== #
@@ -753,14 +771,11 @@ class NestedGUIMixin(GUIMixin):
             with transaction.atomic():
                 self.perform_create(serializer)
         except Exception as exc:
-            from rest_framework.exceptions import ValidationError as DRFValidationError
-            if isinstance(exc, DRFValidationError):
-                raise
             resp = DRFResponse(
                 {'serializer': serializer, 'action': 'create',
                  'htmx_target': f'#{container}', 'cancel_url': list_path,
                  'submit_url': list_path,
-                 'form_errors': {'non_field_errors': [sgettext('An error occurred while saving. Please check the entered data.')]}},
+                 'form_errors': _form_errors_from_exc(exc)},
                 status=400,
             )
             resp['X-Sebastian-Form-Error'] = 'true'
@@ -809,15 +824,12 @@ class NestedGUIMixin(GUIMixin):
             with transaction.atomic():
                 self.perform_update(serializer)
         except Exception as exc:
-            from rest_framework.exceptions import ValidationError as DRFValidationError
-            if isinstance(exc, DRFValidationError):
-                raise
             merged = {**instance_data, **{k: v for k, v in data.items()}}
             resp = DRFResponse(
                 {'serializer': serializer, 'instance': merged, 'action': 'update',
                  'htmx_target': f'#{container}', 'cancel_url': cancel_url,
                  'submit_url': submit_url,
-                 'form_errors': {'non_field_errors': [sgettext('An error occurred while saving. Please check the entered data.')]}},
+                 'form_errors': _form_errors_from_exc(exc)},
                 status=400,
             )
             resp['X-Sebastian-Form-Error'] = 'true'
