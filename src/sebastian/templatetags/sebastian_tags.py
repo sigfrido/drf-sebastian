@@ -123,6 +123,26 @@ def display_value(data, field_name):
         return getattr(data, field_name, '')
 
 
+@register.simple_tag
+def render_display(data, field_name, fc=None):
+    """Render a field value in detail view using the display renderer from field_config.
+
+    Built-in renderers: 'textbr' — linebreaksbr for multiline text.
+    Also accepts a callable display(value) -> SafeString.
+    Default: same as display_value (honours __display key).
+    """
+    fc = fc if isinstance(fc, dict) else {}
+    display = fc.get('display')
+    if display == 'textbr':
+        from django.template.defaultfilters import linebreaksbr
+        raw = data.get(field_name, '') if isinstance(data, dict) else ''
+        return linebreaksbr(str(raw)) if raw is not None else ''
+    if callable(display):
+        raw = data.get(field_name) if isinstance(data, dict) else None
+        return display(raw)
+    return display_value(data, field_name)
+
+
 @register.filter
 def data_items(data):
     """Iterate data items skipping internal __display keys added by GUISerializer."""

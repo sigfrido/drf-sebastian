@@ -52,7 +52,7 @@
           {% endif %}
         {% else %}—{% endif %}
         {% endwith %}
-        {% else %}{{ data|display_value:field_name }}{% endif %}
+        {% else %}{% with fc=field_config|get_item:field_name %}{% render_display data field_name fc %}{% endwith %}{% endif %}
       </dd>
     </div>
     {% endfor %}
@@ -84,7 +84,7 @@
         {% endif %}
       {% else %}—{% endif %}
       {% endwith %}
-      {% else %}{{ data|display_value:key }}{% endif %}
+      {% else %}{% with fc=field_config|get_item:key %}{% render_display data key fc %}{% endwith %}{% endif %}
     </dd>
   </div>
   {% endfor %}

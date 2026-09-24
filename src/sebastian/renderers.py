@@ -157,7 +157,7 @@ class SebastianHTMLRenderer(BaseRenderer):
             'field_labels':       self._get_field_labels(view, getattr(view, '_sebastian_obj', None)),
             'filter_form':        self._get_filter_form(view, request),
             'ordering_config':    self._get_ordering_config(view, request),
-            'field_config':       self._get_field_config(sebastian_config),
+            'field_config':       self._get_field_config(sebastian_config, view),
             'cascading_fields':   getattr(sebastian_config, 'cascading_fields', []) or [],
             'inlines':            self._get_inlines(view),
             'form_errors':        form_errors,
@@ -393,7 +393,7 @@ class SebastianHTMLRenderer(BaseRenderer):
             'ordering_param': ','.join(current),
         }
 
-    def _get_field_config(self, sebastian_config) -> dict:
+    def _get_field_config(self, sebastian_config, view=None) -> dict:
         raw = getattr(sebastian_config, 'field_config', None) or {}
         result = {}
         for field_name, config in raw.items():
@@ -401,6 +401,16 @@ class SebastianHTMLRenderer(BaseRenderer):
             if 'typeahead_url' in entry and 'typeahead_chars' not in entry:
                 entry['typeahead_chars'] = self._resolve_typeahead_chars(entry['typeahead_url'])
             result[field_name] = entry
+        if view is not None:
+            try:
+                for field_name, field in view.get_serializer().fields.items():
+                    style = getattr(field, 'style', {})
+                    if style.get('base_template') == 'textarea.html':
+                        entry = result.setdefault(field_name, {})
+                        entry.setdefault('widget', 'textarea')
+                        entry.setdefault('display', 'textbr')
+            except Exception:
+                pass
         return result
 
     def _resolve_typeahead_chars(self, url: str) -> int:

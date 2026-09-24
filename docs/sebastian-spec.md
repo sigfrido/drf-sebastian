@@ -418,6 +418,40 @@ class Sebastian:
 
 Selecting `country` clears and reloads `region` and `city`; all fields in a cascade group must already be typeahead-enabled.
 
+**field_config — per-field rendering overrides** — a dict keyed by field name; each entry is itself a dict that may contain any of the keys below:
+
+| Key | Where used | Values | Default |
+|---|---|---|---|
+| `widget` | Edit form | `'textarea'` | auto (from DRF field style) |
+| `display` | Detail view | `'textbr'` or callable | auto (from DRF field style) |
+| `typeahead_url` | Edit form | URL string | — |
+| `typeahead_chars` | Edit form | int | 2 (or from `@typeahead`) |
+| `width` | Form field width | `'xs'`/`'sm'`/`'md'`/`'lg'`/`'full'` | auto |
+| `bool_true` / `bool_false` / `bool_null` | Form (BooleanField) | label strings | `'Yes'`/`'No'`/`'-'` |
+
+`widget` and `display` are auto-detected for `TextField` columns (Django model fields whose DRF serializer counterpart carries `style={'base_template': 'textarea.html'}`): `widget` defaults to `'textarea'` and `display` defaults to `'textbr'`. Declare them explicitly only when you need to override the auto-detected value, or when the serializer field is a plain `CharField` that should still render as a textarea.
+
+```python
+class NoteViewSet(GUIMixin, viewsets.ModelViewSet):
+    class Sebastian:
+        groups = [FieldGroup('main', ['title', 'body', 'summary'])]
+        field_config = {
+            # body is a TextField — widget/display are inferred automatically.
+            # summary is a plain CharField, but we want multiline rendering:
+            'summary': {'widget': 'textarea', 'display': 'textbr'},
+        }
+```
+
+The `'textbr'` display renderer converts `\n` to `<br>` tags (XSS-safe, equivalent to Django's `|linebreaksbr` filter). A callable is also accepted for fully custom rendering:
+
+```python
+from django.utils.html import format_html, escape
+
+field_config = {
+    'url': {'display': lambda v: format_html('<a href="{0}">{0}</a>', v) if v else ''},
+}
+```
+
 ### 4.8 GUI-only Computed Fields
 
 `@gui_field` marks a serializer method as a display-only column that never appears in the JSON API response — only in GUI-mode `to_representation()` output:

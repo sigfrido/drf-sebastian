@@ -140,6 +140,20 @@ Visit `/gui/` for the auto-generated list/detail/form pages, or `/api/` for the 
 
 From here, see [drf-sebastian framework specifications](docs/sebastian-spec.md) for field groups, permissions, nested resources, actions, the app menu, and the other features demonstrated in `testproject/demo/`.
 
+Per-field rendering can be tuned via `Sebastian.field_config`. The two most common keys are `widget` (controls the form input type) and `display` (controls how the value is rendered in the detail view). Both default automatically from the DRF serializer field type — for example, a `TextField` gets `widget='textarea'` and `display='textbr'` (newlines → `<br>`) with no extra config. Explicit overrides look like:
+
+```python
+class Sebastian:
+    field_config = {
+        # CharField that should render as a multiline textarea:
+        'notes': {'widget': 'textarea', 'display': 'textbr'},
+        # Custom callable renderer for a URL field:
+        'homepage': {'display': lambda v: format_html('<a href="{0}">{0}</a>', v) if v else ''},
+    }
+```
+
+See [spec §4.7](docs/sebastian-spec.md#47-advanced-widgets) for the full list of `field_config` keys.
+
 ## Project status
 
 Still in active development, but stable enough for real-world use — it already powers the GUI of another project of mine in daily use.
