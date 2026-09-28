@@ -153,7 +153,7 @@ class SebastianHTMLRenderer(BaseRenderer):
             'response':           response,
             'sebastian_config':   sebastian_config,
             'visible_groups':     self._get_visible_groups(sebastian_config, data, action),
-            'first_editable_group': self._get_first_editable_group(sebastian_config, data, action),
+            'first_editable_group': self._get_active_group(sebastian_config, data, action, form_errors),
             'field_labels':       self._get_field_labels(view, getattr(view, '_sebastian_obj', None)),
             'filter_form':        self._get_filter_form(view, request),
             'ordering_config':    self._get_ordering_config(view, request),
@@ -292,13 +292,34 @@ class SebastianHTMLRenderer(BaseRenderer):
 
         return all_groups
 
+    _FORM_ACTIONS = ('update_form', 'update', 'partial_update', 'create')
+
+    def _get_active_group(self, sebastian_config, data, action, form_errors) -> str:
+        """Return the name of the FieldGroup whose tab the form template activates.
+
+        After a validation error, the first group (in declaration order) holding a field
+        with errors, so the messages are visible; otherwise the first editable group
+        (see _get_first_editable_group). None lets the template activate the first tab.
+        """
+        from sebastian.config import FieldGroup
+        if isinstance(form_errors, dict):
+            error_fields = {f for f in form_errors if f != 'non_field_errors'}
+            if error_fields and action in self._FORM_ACTIONS:
+                all_groups = list(getattr(sebastian_config, 'groups', []) or []) if sebastian_config else []
+                for group in all_groups:
+                    if isinstance(group, FieldGroup) and error_fields.intersection(group.fields):
+                        return group.name
+        return self._get_first_editable_group(sebastian_config, data, action)
+
     def _get_first_editable_group(self, sebastian_config, data, action) -> str:
         """Return the name of the first FieldGroup with at least one editable field.
 
-        Used by the form template to auto-activate the right tab on update_form.
-        Returns None when not in update_form context or no editable group is found.
+        Used by the form template to auto-activate the right tab when the form is opened
+        (update_form) and when it is re-rendered after a failed save (update,
+        partial_update, create). Returns None outside form context or when no editable
+        group is found.
         """
-        if action != 'update_form' or not isinstance(data, dict):
+        if action not in self._FORM_ACTIONS or not isinstance(data, dict):
             return None
         serializer = data.get('serializer')
         if serializer is None:

@@ -854,3 +854,45 @@ class TestTypeahead:
         assert r.status_code == 200
         assert b'sb-typeahead' in r.content
         assert b'suppliers_typeahead' in r.content
+
+
+class TestActiveGroupAfterErrors:
+    """After a failed save the form re-opens on the tab holding the fields in error."""
+
+    def _config(self):
+        from sebastian.config import FieldGroup
+
+        class Sebastian:
+            groups = [
+                FieldGroup('general', ['title', 'budget']),
+                FieldGroup('management', ['manager_notes', 'reference_code']),
+            ]
+        return Sebastian
+
+    def _serializer(self, read_only=()):
+        from types import SimpleNamespace
+        fields = {f: SimpleNamespace(read_only=f in read_only)
+                  for f in ('title', 'budget', 'manager_notes', 'reference_code')}
+        return SimpleNamespace(fields=fields)
+
+    def test_group_with_field_errors_wins(self):
+        from sebastian.renderers import SebastianHTMLRenderer
+        r = SebastianHTMLRenderer()
+        errors = {'reference_code': ['Too long.']}
+        for action in ('partial_update', 'update', 'create'):
+            assert r._get_active_group(self._config(), {'serializer': self._serializer()},
+                                       action, errors) == 'management'
+
+    def test_non_field_errors_fall_back_to_first_editable_group(self):
+        from sebastian.renderers import SebastianHTMLRenderer
+        r = SebastianHTMLRenderer()
+        data = {'serializer': self._serializer(read_only=('title', 'budget'))}
+        assert r._get_active_group(self._config(), data, 'partial_update',
+                                   {'non_field_errors': ['Nope.']}) == 'management'
+
+    def test_no_errors_keeps_update_form_behaviour(self):
+        from sebastian.renderers import SebastianHTMLRenderer
+        r = SebastianHTMLRenderer()
+        data = {'serializer': self._serializer(read_only=('title', 'budget'))}
+        assert r._get_active_group(self._config(), data, 'update_form', {}) == 'management'
+        assert r._get_active_group(self._config(), data, 'retrieve', {}) is None

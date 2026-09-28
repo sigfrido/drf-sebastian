@@ -371,6 +371,7 @@ Auto-generated from serializer fields grouped by field groups:
 - `read_only` fields (including field-group-restricted ones) → plaintext display, not a form input
 - `FileField`/`ImageField` → file input with current-filename badge and a clear/replace control
 - Related fields (`ForeignKey`) → plain `<select>` by default, or a TomSelect typeahead widget if configured (§4.7)
+- Active tab (htmx pack): on opening, the first group with an editable field; after a failed save, the first group (in declaration order) holding a field with validation errors, so the messages are visible — falling back to the first editable group for `non_field_errors`
 
 ### 4.7 Advanced Widgets
 
