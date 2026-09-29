@@ -40,6 +40,15 @@
                     <a class="function" href="#skin">skin</a>
             </li>
             <li>
+                    <a class="function" href="#skins">skins</a>
+            </li>
+            <li>
+                    <a class="function" href="#skin_css_files">skin_css_files</a>
+            </li>
+            <li>
+                    <a class="function" href="#skin_choices">skin_choices</a>
+            </li>
+            <li>
                     <a class="function" href="#available_packs">available_packs</a>
             </li>
             <li>
@@ -56,6 +65,9 @@
             </li>
             <li>
                     <a class="function" href="#login_url">login_url</a>
+            </li>
+            <li>
+                    <a class="function" href="#button_styles_for_skin">button_styles_for_skin</a>
             </li>
             <li>
                     <a class="function" href="#bool_display">bool_display</a>
@@ -99,101 +111,165 @@ override, e.g.::</p>
 
                         <label class="view-source-button" for="mod-app_settings-view-source"><span>View Source</span></label>
 
-                        <div class="pdoc-code codehilite"><pre><span></span><span id="L-1"><a href="#L-1"><span class="linenos"> 1</span></a><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="L-2"><a href="#L-2"><span class="linenos"> 2</span></a><span class="sd">Accessors for the ``SEBASTIAN`` settings dict.</span>
-</span><span id="L-3"><a href="#L-3"><span class="linenos"> 3</span></a>
-</span><span id="L-4"><a href="#L-4"><span class="linenos"> 4</span></a><span class="sd">Every setting has a hard-coded default, so the ``SEBASTIAN`` dict in a</span>
-</span><span id="L-5"><a href="#L-5"><span class="linenos"> 5</span></a><span class="sd">consumer&#39;s ``settings.py`` only needs to declare the keys it wants to</span>
-</span><span id="L-6"><a href="#L-6"><span class="linenos"> 6</span></a><span class="sd">override, e.g.::</span>
-</span><span id="L-7"><a href="#L-7"><span class="linenos"> 7</span></a>
-</span><span id="L-8"><a href="#L-8"><span class="linenos"> 8</span></a><span class="sd">    SEBASTIAN = {</span>
-</span><span id="L-9"><a href="#L-9"><span class="linenos"> 9</span></a><span class="sd">        &#39;TEMPLATE_PACK&#39;: &#39;plain&#39;,</span>
-</span><span id="L-10"><a href="#L-10"><span class="linenos">10</span></a><span class="sd">        &#39;HIDE_UNAUTHORIZED_ACTIONS&#39;: False,</span>
-</span><span id="L-11"><a href="#L-11"><span class="linenos">11</span></a><span class="sd">    }</span>
-</span><span id="L-12"><a href="#L-12"><span class="linenos">12</span></a><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="L-13"><a href="#L-13"><span class="linenos">13</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">django.conf</span><span class="w"> </span><span class="kn">import</span> <span class="n">settings</span>
-</span><span id="L-14"><a href="#L-14"><span class="linenos">14</span></a>
-</span><span id="L-15"><a href="#L-15"><span class="linenos">15</span></a>
-</span><span id="L-16"><a href="#L-16"><span class="linenos">16</span></a><span class="k">def</span><span class="w"> </span><span class="nf">_sebastian</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">default</span><span class="p">):</span>
-</span><span id="L-17"><a href="#L-17"><span class="linenos">17</span></a>    <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">settings</span><span class="p">,</span> <span class="s1">&#39;SEBASTIAN&#39;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">default</span><span class="p">)</span>
-</span><span id="L-18"><a href="#L-18"><span class="linenos">18</span></a>
-</span><span id="L-19"><a href="#L-19"><span class="linenos">19</span></a>
-</span><span id="L-20"><a href="#L-20"><span class="linenos">20</span></a><span class="k">def</span><span class="w"> </span><span class="nf">hide_unauthorized_actions</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span id="L-21"><a href="#L-21"><span class="linenos">21</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;``HIDE_UNAUTHORIZED_ACTIONS`` — hide buttons the user can&#39;t use (default) vs.</span>
-</span><span id="L-22"><a href="#L-22"><span class="linenos">22</span></a><span class="sd">    render them disabled. Default: ``True``.&quot;&quot;&quot;</span>
-</span><span id="L-23"><a href="#L-23"><span class="linenos">23</span></a>    <span class="k">return</span> <span class="n">_sebastian</span><span class="p">(</span><span class="s1">&#39;HIDE_UNAUTHORIZED_ACTIONS&#39;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
-</span><span id="L-24"><a href="#L-24"><span class="linenos">24</span></a>
-</span><span id="L-25"><a href="#L-25"><span class="linenos">25</span></a>
-</span><span id="L-26"><a href="#L-26"><span class="linenos">26</span></a><span class="k">def</span><span class="w"> </span><span class="nf">template_pack</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-</span><span id="L-27"><a href="#L-27"><span class="linenos">27</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;``TEMPLATE_PACK`` — active template pack name. Default: ``&#39;htmx&#39;``.&quot;&quot;&quot;</span>
-</span><span id="L-28"><a href="#L-28"><span class="linenos">28</span></a>    <span class="k">return</span> <span class="n">_sebastian</span><span class="p">(</span><span class="s1">&#39;TEMPLATE_PACK&#39;</span><span class="p">,</span> <span class="s1">&#39;htmx&#39;</span><span class="p">)</span>
-</span><span id="L-29"><a href="#L-29"><span class="linenos">29</span></a>
-</span><span id="L-30"><a href="#L-30"><span class="linenos">30</span></a>
-</span><span id="L-31"><a href="#L-31"><span class="linenos">31</span></a><span class="k">def</span><span class="w"> </span><span class="nf">skin</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-</span><span id="L-32"><a href="#L-32"><span class="linenos">32</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;``SKIN`` — active CSS/icon skin. Default: ``&#39;bootstrap5-bi&#39;``.&quot;&quot;&quot;</span>
-</span><span id="L-33"><a href="#L-33"><span class="linenos">33</span></a>    <span class="k">return</span> <span class="n">_sebastian</span><span class="p">(</span><span class="s1">&#39;SKIN&#39;</span><span class="p">,</span> <span class="s1">&#39;bootstrap5-bi&#39;</span><span class="p">)</span>
-</span><span id="L-34"><a href="#L-34"><span class="linenos">34</span></a>
-</span><span id="L-35"><a href="#L-35"><span class="linenos">35</span></a>
-</span><span id="L-36"><a href="#L-36"><span class="linenos">36</span></a><span class="k">def</span><span class="w"> </span><span class="nf">available_packs</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
-</span><span id="L-37"><a href="#L-37"><span class="linenos">37</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;``AVAILABLE_PACKS`` — template packs offered on the home page pack switcher.</span>
-</span><span id="L-38"><a href="#L-38"><span class="linenos">38</span></a><span class="sd">    Default: ``[&#39;htmx&#39;, &#39;plain&#39;]``.&quot;&quot;&quot;</span>
-</span><span id="L-39"><a href="#L-39"><span class="linenos">39</span></a>    <span class="k">return</span> <span class="n">_sebastian</span><span class="p">(</span><span class="s1">&#39;AVAILABLE_PACKS&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;htmx&#39;</span><span class="p">,</span> <span class="s1">&#39;plain&#39;</span><span class="p">])</span>
-</span><span id="L-40"><a href="#L-40"><span class="linenos">40</span></a>
-</span><span id="L-41"><a href="#L-41"><span class="linenos">41</span></a>
-</span><span id="L-42"><a href="#L-42"><span class="linenos">42</span></a><span class="n">_DEFAULT_HTMX_PACKS</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;htmx&#39;</span><span class="p">]</span>
-</span><span id="L-43"><a href="#L-43"><span class="linenos">43</span></a>
-</span><span id="L-44"><a href="#L-44"><span class="linenos">44</span></a>
-</span><span id="L-45"><a href="#L-45"><span class="linenos">45</span></a><span class="k">def</span><span class="w"> </span><span class="nf">pack_uses_htmx</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span id="L-46"><a href="#L-46"><span class="linenos">46</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Whether the active `template_pack()` is HTMX-aware, per ``HTMX_PACKS``</span>
-</span><span id="L-47"><a href="#L-47"><span class="linenos">47</span></a><span class="sd">    (default ``[&#39;htmx&#39;]``). Custom packs opt in by listing themselves there.&quot;&quot;&quot;</span>
-</span><span id="L-48"><a href="#L-48"><span class="linenos">48</span></a>    <span class="k">return</span> <span class="n">template_pack</span><span class="p">()</span> <span class="ow">in</span> <span class="n">_sebastian</span><span class="p">(</span><span class="s1">&#39;HTMX_PACKS&#39;</span><span class="p">,</span> <span class="n">_DEFAULT_HTMX_PACKS</span><span class="p">)</span>
-</span><span id="L-49"><a href="#L-49"><span class="linenos">49</span></a>
-</span><span id="L-50"><a href="#L-50"><span class="linenos">50</span></a>
-</span><span id="L-51"><a href="#L-51"><span class="linenos">51</span></a><span class="k">def</span><span class="w"> </span><span class="nf">confirm_actions</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span id="L-52"><a href="#L-52"><span class="linenos">52</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;``CONFIRM_ACTIONS`` — global default requiring confirmation before</span>
-</span><span id="L-53"><a href="#L-53"><span class="linenos">53</span></a><span class="sd">    non-destructive actions. Default: ``False``.</span>
-</span><span id="L-54"><a href="#L-54"><span class="linenos">54</span></a>
-</span><span id="L-55"><a href="#L-55"><span class="linenos">55</span></a><span class="sd">    Note: not currently consulted anywhere in the library — actions opt into</span>
-</span><span id="L-56"><a href="#L-56"><span class="linenos">56</span></a><span class="sd">    confirmation individually via ``gui_config[&#39;confirmation&#39;]``. Kept for</span>
-</span><span id="L-57"><a href="#L-57"><span class="linenos">57</span></a><span class="sd">    forward compatibility; do not rely on this changing action behaviour yet.</span>
-</span><span id="L-58"><a href="#L-58"><span class="linenos">58</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="L-59"><a href="#L-59"><span class="linenos">59</span></a>    <span class="k">return</span> <span class="n">_sebastian</span><span class="p">(</span><span class="s1">&#39;CONFIRM_ACTIONS&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
-</span><span id="L-60"><a href="#L-60"><span class="linenos">60</span></a>
-</span><span id="L-61"><a href="#L-61"><span class="linenos">61</span></a>
-</span><span id="L-62"><a href="#L-62"><span class="linenos">62</span></a><span class="k">def</span><span class="w"> </span><span class="nf">confirm_deletions</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span id="L-63"><a href="#L-63"><span class="linenos">63</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;``CONFIRM_DELETIONS`` — require confirmation before deleting a record.</span>
-</span><span id="L-64"><a href="#L-64"><span class="linenos">64</span></a><span class="sd">    Default: ``True``.&quot;&quot;&quot;</span>
-</span><span id="L-65"><a href="#L-65"><span class="linenos">65</span></a>    <span class="k">return</span> <span class="n">_sebastian</span><span class="p">(</span><span class="s1">&#39;CONFIRM_DELETIONS&#39;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
-</span><span id="L-66"><a href="#L-66"><span class="linenos">66</span></a>
-</span><span id="L-67"><a href="#L-67"><span class="linenos">67</span></a>
-</span><span id="L-68"><a href="#L-68"><span class="linenos">68</span></a><span class="k">def</span><span class="w"> </span><span class="nf">brand</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-</span><span id="L-69"><a href="#L-69"><span class="linenos">69</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;``BRAND`` — product name shown in the navbar. Default: ``&#39;Sebastian&#39;``.&quot;&quot;&quot;</span>
-</span><span id="L-70"><a href="#L-70"><span class="linenos">70</span></a>    <span class="k">return</span> <span class="n">_sebastian</span><span class="p">(</span><span class="s1">&#39;BRAND&#39;</span><span class="p">,</span> <span class="s1">&#39;Sebastian&#39;</span><span class="p">)</span>
-</span><span id="L-71"><a href="#L-71"><span class="linenos">71</span></a>
-</span><span id="L-72"><a href="#L-72"><span class="linenos">72</span></a>
-</span><span id="L-73"><a href="#L-73"><span class="linenos">73</span></a><span class="k">def</span><span class="w"> </span><span class="nf">login_url</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-</span><span id="L-74"><a href="#L-74"><span class="linenos">74</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;``LOGIN_URL`` — where to send unauthenticated users. Default: ``&#39;&#39;``</span>
-</span><span id="L-75"><a href="#L-75"><span class="linenos">75</span></a><span class="sd">    (no redirect).&quot;&quot;&quot;</span>
-</span><span id="L-76"><a href="#L-76"><span class="linenos">76</span></a>    <span class="k">return</span> <span class="n">_sebastian</span><span class="p">(</span><span class="s1">&#39;LOGIN_URL&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
-</span><span id="L-77"><a href="#L-77"><span class="linenos">77</span></a>
-</span><span id="L-78"><a href="#L-78"><span class="linenos">78</span></a>
-</span><span id="L-79"><a href="#L-79"><span class="linenos">79</span></a><span class="k">def</span><span class="w"> </span><span class="nf">bool_display</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-</span><span id="L-80"><a href="#L-80"><span class="linenos">80</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;How to render boolean fields in GUI mode.</span>
-</span><span id="L-81"><a href="#L-81"><span class="linenos">81</span></a>
-</span><span id="L-82"><a href="#L-82"><span class="linenos">82</span></a><span class="sd">    Values: &#39;yesno&#39; (Yes/No), &#39;checkmark&#39; (✓/✗), &#39;icon&#39; (Bootstrap bi icons),</span>
-</span><span id="L-83"><a href="#L-83"><span class="linenos">83</span></a><span class="sd">    &#39;truefalse&#39; (raw True/False, no transform).</span>
-</span><span id="L-84"><a href="#L-84"><span class="linenos">84</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="L-85"><a href="#L-85"><span class="linenos">85</span></a>    <span class="k">return</span> <span class="n">_sebastian</span><span class="p">(</span><span class="s1">&#39;BOOL_DISPLAY&#39;</span><span class="p">,</span> <span class="s1">&#39;yesno&#39;</span><span class="p">)</span>
-</span><span id="L-86"><a href="#L-86"><span class="linenos">86</span></a>
-</span><span id="L-87"><a href="#L-87"><span class="linenos">87</span></a>
-</span><span id="L-88"><a href="#L-88"><span class="linenos">88</span></a><span class="k">def</span><span class="w"> </span><span class="nf">date_format</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-</span><span id="L-89"><a href="#L-89"><span class="linenos">89</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;strftime format for DateField values in GUI mode. Default: dd/mm/yyyy.&quot;&quot;&quot;</span>
-</span><span id="L-90"><a href="#L-90"><span class="linenos">90</span></a>    <span class="k">return</span> <span class="n">_sebastian</span><span class="p">(</span><span class="s1">&#39;DATE_FORMAT&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">%d</span><span class="s1">/%m/%Y&#39;</span><span class="p">)</span>
-</span><span id="L-91"><a href="#L-91"><span class="linenos">91</span></a>
-</span><span id="L-92"><a href="#L-92"><span class="linenos">92</span></a>
-</span><span id="L-93"><a href="#L-93"><span class="linenos">93</span></a><span class="k">def</span><span class="w"> </span><span class="nf">datetime_format</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-</span><span id="L-94"><a href="#L-94"><span class="linenos">94</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;strftime format for DateTimeField values in GUI mode. Default: dd/mm/yyyy HH:MM.&quot;&quot;&quot;</span>
-</span><span id="L-95"><a href="#L-95"><span class="linenos">95</span></a>    <span class="k">return</span> <span class="n">_sebastian</span><span class="p">(</span><span class="s1">&#39;DATETIME_FORMAT&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">%d</span><span class="s1">/%m/%Y %H:%M&#39;</span><span class="p">)</span>
+                        <div class="pdoc-code codehilite"><pre><span></span><span id="L-1"><a href="#L-1"><span class="linenos">  1</span></a><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-2"><a href="#L-2"><span class="linenos">  2</span></a><span class="sd">Accessors for the ``SEBASTIAN`` settings dict.</span>
+</span><span id="L-3"><a href="#L-3"><span class="linenos">  3</span></a>
+</span><span id="L-4"><a href="#L-4"><span class="linenos">  4</span></a><span class="sd">Every setting has a hard-coded default, so the ``SEBASTIAN`` dict in a</span>
+</span><span id="L-5"><a href="#L-5"><span class="linenos">  5</span></a><span class="sd">consumer&#39;s ``settings.py`` only needs to declare the keys it wants to</span>
+</span><span id="L-6"><a href="#L-6"><span class="linenos">  6</span></a><span class="sd">override, e.g.::</span>
+</span><span id="L-7"><a href="#L-7"><span class="linenos">  7</span></a>
+</span><span id="L-8"><a href="#L-8"><span class="linenos">  8</span></a><span class="sd">    SEBASTIAN = {</span>
+</span><span id="L-9"><a href="#L-9"><span class="linenos">  9</span></a><span class="sd">        &#39;TEMPLATE_PACK&#39;: &#39;plain&#39;,</span>
+</span><span id="L-10"><a href="#L-10"><span class="linenos"> 10</span></a><span class="sd">        &#39;HIDE_UNAUTHORIZED_ACTIONS&#39;: False,</span>
+</span><span id="L-11"><a href="#L-11"><span class="linenos"> 11</span></a><span class="sd">    }</span>
+</span><span id="L-12"><a href="#L-12"><span class="linenos"> 12</span></a><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-13"><a href="#L-13"><span class="linenos"> 13</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">django.conf</span><span class="w"> </span><span class="kn">import</span> <span class="n">settings</span>
+</span><span id="L-14"><a href="#L-14"><span class="linenos"> 14</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">.i18n</span><span class="w"> </span><span class="kn">import</span> <span class="n">sgettext_lazy</span> <span class="k">as</span> <span class="n">_sl</span>
+</span><span id="L-15"><a href="#L-15"><span class="linenos"> 15</span></a>
+</span><span id="L-16"><a href="#L-16"><span class="linenos"> 16</span></a>
+</span><span id="L-17"><a href="#L-17"><span class="linenos"> 17</span></a><span class="k">def</span><span class="w"> </span><span class="nf">_sebastian</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">default</span><span class="p">):</span>
+</span><span id="L-18"><a href="#L-18"><span class="linenos"> 18</span></a>    <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">settings</span><span class="p">,</span> <span class="s1">&#39;SEBASTIAN&#39;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">default</span><span class="p">)</span>
+</span><span id="L-19"><a href="#L-19"><span class="linenos"> 19</span></a>
+</span><span id="L-20"><a href="#L-20"><span class="linenos"> 20</span></a>
+</span><span id="L-21"><a href="#L-21"><span class="linenos"> 21</span></a><span class="k">def</span><span class="w"> </span><span class="nf">hide_unauthorized_actions</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="L-22"><a href="#L-22"><span class="linenos"> 22</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;``HIDE_UNAUTHORIZED_ACTIONS`` — hide buttons the user can&#39;t use (default) vs.</span>
+</span><span id="L-23"><a href="#L-23"><span class="linenos"> 23</span></a><span class="sd">    render them disabled. Default: ``True``.&quot;&quot;&quot;</span>
+</span><span id="L-24"><a href="#L-24"><span class="linenos"> 24</span></a>    <span class="k">return</span> <span class="n">_sebastian</span><span class="p">(</span><span class="s1">&#39;HIDE_UNAUTHORIZED_ACTIONS&#39;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+</span><span id="L-25"><a href="#L-25"><span class="linenos"> 25</span></a>
+</span><span id="L-26"><a href="#L-26"><span class="linenos"> 26</span></a>
+</span><span id="L-27"><a href="#L-27"><span class="linenos"> 27</span></a><span class="k">def</span><span class="w"> </span><span class="nf">template_pack</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="L-28"><a href="#L-28"><span class="linenos"> 28</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;``TEMPLATE_PACK`` — active template pack name. Default: ``&#39;htmx&#39;``.&quot;&quot;&quot;</span>
+</span><span id="L-29"><a href="#L-29"><span class="linenos"> 29</span></a>    <span class="k">return</span> <span class="n">_sebastian</span><span class="p">(</span><span class="s1">&#39;TEMPLATE_PACK&#39;</span><span class="p">,</span> <span class="s1">&#39;htmx&#39;</span><span class="p">)</span>
+</span><span id="L-30"><a href="#L-30"><span class="linenos"> 30</span></a>
+</span><span id="L-31"><a href="#L-31"><span class="linenos"> 31</span></a>
+</span><span id="L-32"><a href="#L-32"><span class="linenos"> 32</span></a><span class="k">def</span><span class="w"> </span><span class="nf">skin</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="L-33"><a href="#L-33"><span class="linenos"> 33</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;``SKIN`` — active skin key. Default: ``&#39;bootstrap5-bi&#39;``.&quot;&quot;&quot;</span>
+</span><span id="L-34"><a href="#L-34"><span class="linenos"> 34</span></a>    <span class="k">return</span> <span class="n">_sebastian</span><span class="p">(</span><span class="s1">&#39;SKIN&#39;</span><span class="p">,</span> <span class="s1">&#39;bootstrap5-bi&#39;</span><span class="p">)</span>
+</span><span id="L-35"><a href="#L-35"><span class="linenos"> 35</span></a>
+</span><span id="L-36"><a href="#L-36"><span class="linenos"> 36</span></a>
+</span><span id="L-37"><a href="#L-37"><span class="linenos"> 37</span></a><span class="n">_DEFAULT_SKINS</span> <span class="o">=</span> <span class="p">[</span>
+</span><span id="L-38"><a href="#L-38"><span class="linenos"> 38</span></a>    <span class="p">(</span><span class="s1">&#39;bootstrap5-bi&#39;</span><span class="p">,</span> <span class="n">_sl</span><span class="p">(</span><span class="s1">&#39;Light theme&#39;</span><span class="p">),</span>      <span class="s1">&#39;sebastian/skins/light.css&#39;</span><span class="p">),</span>
+</span><span id="L-39"><a href="#L-39"><span class="linenos"> 39</span></a>    <span class="p">(</span><span class="s1">&#39;dark&#39;</span><span class="p">,</span>          <span class="n">_sl</span><span class="p">(</span><span class="s1">&#39;Dark theme&#39;</span><span class="p">),</span>       <span class="s1">&#39;sebastian/skins/dark.css&#39;</span><span class="p">),</span>
+</span><span id="L-40"><a href="#L-40"><span class="linenos"> 40</span></a>    <span class="p">(</span><span class="s1">&#39;accessible&#39;</span><span class="p">,</span>    <span class="n">_sl</span><span class="p">(</span><span class="s1">&#39;Accessible theme&#39;</span><span class="p">),</span> <span class="s1">&#39;sebastian/skins/accessible.css&#39;</span><span class="p">),</span>
+</span><span id="L-41"><a href="#L-41"><span class="linenos"> 41</span></a><span class="p">]</span>
+</span><span id="L-42"><a href="#L-42"><span class="linenos"> 42</span></a>
+</span><span id="L-43"><a href="#L-43"><span class="linenos"> 43</span></a>
+</span><span id="L-44"><a href="#L-44"><span class="linenos"> 44</span></a><span class="k">def</span><span class="w"> </span><span class="nf">skins</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+</span><span id="L-45"><a href="#L-45"><span class="linenos"> 45</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;``SKINS`` — registry of available skins as ``(key, label, css_paths)`` tuples.</span>
+</span><span id="L-46"><a href="#L-46"><span class="linenos"> 46</span></a><span class="sd">    ``css_paths`` can be a single string or a list of strings (static file paths).&quot;&quot;&quot;</span>
+</span><span id="L-47"><a href="#L-47"><span class="linenos"> 47</span></a>    <span class="k">return</span> <span class="n">_sebastian</span><span class="p">(</span><span class="s1">&#39;SKINS&#39;</span><span class="p">,</span> <span class="n">_DEFAULT_SKINS</span><span class="p">)</span>
+</span><span id="L-48"><a href="#L-48"><span class="linenos"> 48</span></a>
+</span><span id="L-49"><a href="#L-49"><span class="linenos"> 49</span></a>
+</span><span id="L-50"><a href="#L-50"><span class="linenos"> 50</span></a><span class="k">def</span><span class="w"> </span><span class="nf">skin_css_files</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+</span><span id="L-51"><a href="#L-51"><span class="linenos"> 51</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the list of static CSS paths for the given skin key.</span>
+</span><span id="L-52"><a href="#L-52"><span class="linenos"> 52</span></a><span class="sd">    Falls back to the first available skin if the key is not found.&quot;&quot;&quot;</span>
+</span><span id="L-53"><a href="#L-53"><span class="linenos"> 53</span></a>    <span class="k">for</span> <span class="n">sk</span><span class="p">,</span> <span class="n">_label</span><span class="p">,</span> <span class="n">paths</span> <span class="ow">in</span> <span class="n">skins</span><span class="p">():</span>
+</span><span id="L-54"><a href="#L-54"><span class="linenos"> 54</span></a>        <span class="k">if</span> <span class="n">sk</span> <span class="o">==</span> <span class="n">key</span><span class="p">:</span>
+</span><span id="L-55"><a href="#L-55"><span class="linenos"> 55</span></a>            <span class="k">return</span> <span class="p">[</span><span class="n">paths</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">paths</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="nb">list</span><span class="p">(</span><span class="n">paths</span><span class="p">)</span>
+</span><span id="L-56"><a href="#L-56"><span class="linenos"> 56</span></a>    <span class="n">_</span><span class="p">,</span> <span class="n">_label</span><span class="p">,</span> <span class="n">paths</span> <span class="o">=</span> <span class="n">skins</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+</span><span id="L-57"><a href="#L-57"><span class="linenos"> 57</span></a>    <span class="k">return</span> <span class="p">[</span><span class="n">paths</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">paths</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="nb">list</span><span class="p">(</span><span class="n">paths</span><span class="p">)</span>
+</span><span id="L-58"><a href="#L-58"><span class="linenos"> 58</span></a>
+</span><span id="L-59"><a href="#L-59"><span class="linenos"> 59</span></a>
+</span><span id="L-60"><a href="#L-60"><span class="linenos"> 60</span></a><span class="k">def</span><span class="w"> </span><span class="nf">skin_choices</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]:</span>
+</span><span id="L-61"><a href="#L-61"><span class="linenos"> 61</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return ``(key, label)`` pairs for all registered skins — ready for a</span>
+</span><span id="L-62"><a href="#L-62"><span class="linenos"> 62</span></a><span class="sd">    form ``choices`` argument.&quot;&quot;&quot;</span>
+</span><span id="L-63"><a href="#L-63"><span class="linenos"> 63</span></a>    <span class="k">return</span> <span class="p">[(</span><span class="n">key</span><span class="p">,</span> <span class="n">label</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">_paths</span> <span class="ow">in</span> <span class="n">skins</span><span class="p">()]</span>
+</span><span id="L-64"><a href="#L-64"><span class="linenos"> 64</span></a>
+</span><span id="L-65"><a href="#L-65"><span class="linenos"> 65</span></a>
+</span><span id="L-66"><a href="#L-66"><span class="linenos"> 66</span></a><span class="k">def</span><span class="w"> </span><span class="nf">available_packs</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+</span><span id="L-67"><a href="#L-67"><span class="linenos"> 67</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;``AVAILABLE_PACKS`` — template packs offered on the home page pack switcher.</span>
+</span><span id="L-68"><a href="#L-68"><span class="linenos"> 68</span></a><span class="sd">    Default: ``[&#39;htmx&#39;, &#39;plain&#39;]``.&quot;&quot;&quot;</span>
+</span><span id="L-69"><a href="#L-69"><span class="linenos"> 69</span></a>    <span class="k">return</span> <span class="n">_sebastian</span><span class="p">(</span><span class="s1">&#39;AVAILABLE_PACKS&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;htmx&#39;</span><span class="p">,</span> <span class="s1">&#39;plain&#39;</span><span class="p">])</span>
+</span><span id="L-70"><a href="#L-70"><span class="linenos"> 70</span></a>
+</span><span id="L-71"><a href="#L-71"><span class="linenos"> 71</span></a>
+</span><span id="L-72"><a href="#L-72"><span class="linenos"> 72</span></a><span class="n">_DEFAULT_HTMX_PACKS</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;htmx&#39;</span><span class="p">]</span>
+</span><span id="L-73"><a href="#L-73"><span class="linenos"> 73</span></a>
+</span><span id="L-74"><a href="#L-74"><span class="linenos"> 74</span></a>
+</span><span id="L-75"><a href="#L-75"><span class="linenos"> 75</span></a><span class="k">def</span><span class="w"> </span><span class="nf">pack_uses_htmx</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="L-76"><a href="#L-76"><span class="linenos"> 76</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Whether the active `template_pack()` is HTMX-aware, per ``HTMX_PACKS``</span>
+</span><span id="L-77"><a href="#L-77"><span class="linenos"> 77</span></a><span class="sd">    (default ``[&#39;htmx&#39;]``). Custom packs opt in by listing themselves there.&quot;&quot;&quot;</span>
+</span><span id="L-78"><a href="#L-78"><span class="linenos"> 78</span></a>    <span class="k">return</span> <span class="n">template_pack</span><span class="p">()</span> <span class="ow">in</span> <span class="n">_sebastian</span><span class="p">(</span><span class="s1">&#39;HTMX_PACKS&#39;</span><span class="p">,</span> <span class="n">_DEFAULT_HTMX_PACKS</span><span class="p">)</span>
+</span><span id="L-79"><a href="#L-79"><span class="linenos"> 79</span></a>
+</span><span id="L-80"><a href="#L-80"><span class="linenos"> 80</span></a>
+</span><span id="L-81"><a href="#L-81"><span class="linenos"> 81</span></a><span class="k">def</span><span class="w"> </span><span class="nf">confirm_actions</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="L-82"><a href="#L-82"><span class="linenos"> 82</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;``CONFIRM_ACTIONS`` — global default requiring confirmation before</span>
+</span><span id="L-83"><a href="#L-83"><span class="linenos"> 83</span></a><span class="sd">    non-destructive actions. Default: ``False``.</span>
+</span><span id="L-84"><a href="#L-84"><span class="linenos"> 84</span></a>
+</span><span id="L-85"><a href="#L-85"><span class="linenos"> 85</span></a><span class="sd">    Note: not currently consulted anywhere in the library — actions opt into</span>
+</span><span id="L-86"><a href="#L-86"><span class="linenos"> 86</span></a><span class="sd">    confirmation individually via ``gui_config[&#39;confirmation&#39;]``. Kept for</span>
+</span><span id="L-87"><a href="#L-87"><span class="linenos"> 87</span></a><span class="sd">    forward compatibility; do not rely on this changing action behaviour yet.</span>
+</span><span id="L-88"><a href="#L-88"><span class="linenos"> 88</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-89"><a href="#L-89"><span class="linenos"> 89</span></a>    <span class="k">return</span> <span class="n">_sebastian</span><span class="p">(</span><span class="s1">&#39;CONFIRM_ACTIONS&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+</span><span id="L-90"><a href="#L-90"><span class="linenos"> 90</span></a>
+</span><span id="L-91"><a href="#L-91"><span class="linenos"> 91</span></a>
+</span><span id="L-92"><a href="#L-92"><span class="linenos"> 92</span></a><span class="k">def</span><span class="w"> </span><span class="nf">confirm_deletions</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="L-93"><a href="#L-93"><span class="linenos"> 93</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;``CONFIRM_DELETIONS`` — require confirmation before deleting a record.</span>
+</span><span id="L-94"><a href="#L-94"><span class="linenos"> 94</span></a><span class="sd">    Default: ``True``.&quot;&quot;&quot;</span>
+</span><span id="L-95"><a href="#L-95"><span class="linenos"> 95</span></a>    <span class="k">return</span> <span class="n">_sebastian</span><span class="p">(</span><span class="s1">&#39;CONFIRM_DELETIONS&#39;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+</span><span id="L-96"><a href="#L-96"><span class="linenos"> 96</span></a>
+</span><span id="L-97"><a href="#L-97"><span class="linenos"> 97</span></a>
+</span><span id="L-98"><a href="#L-98"><span class="linenos"> 98</span></a><span class="k">def</span><span class="w"> </span><span class="nf">brand</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="L-99"><a href="#L-99"><span class="linenos"> 99</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;``BRAND`` — product name shown in the navbar. Default: ``&#39;Sebastian&#39;``.&quot;&quot;&quot;</span>
+</span><span id="L-100"><a href="#L-100"><span class="linenos">100</span></a>    <span class="k">return</span> <span class="n">_sebastian</span><span class="p">(</span><span class="s1">&#39;BRAND&#39;</span><span class="p">,</span> <span class="s1">&#39;Sebastian&#39;</span><span class="p">)</span>
+</span><span id="L-101"><a href="#L-101"><span class="linenos">101</span></a>
+</span><span id="L-102"><a href="#L-102"><span class="linenos">102</span></a>
+</span><span id="L-103"><a href="#L-103"><span class="linenos">103</span></a><span class="k">def</span><span class="w"> </span><span class="nf">login_url</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="L-104"><a href="#L-104"><span class="linenos">104</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;``LOGIN_URL`` — where to send unauthenticated users. Default: ``&#39;&#39;``</span>
+</span><span id="L-105"><a href="#L-105"><span class="linenos">105</span></a><span class="sd">    (no redirect).&quot;&quot;&quot;</span>
+</span><span id="L-106"><a href="#L-106"><span class="linenos">106</span></a>    <span class="k">return</span> <span class="n">_sebastian</span><span class="p">(</span><span class="s1">&#39;LOGIN_URL&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
+</span><span id="L-107"><a href="#L-107"><span class="linenos">107</span></a>
+</span><span id="L-108"><a href="#L-108"><span class="linenos">108</span></a>
+</span><span id="L-109"><a href="#L-109"><span class="linenos">109</span></a><span class="n">_DEFAULT_BUTTON_STYLES</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="L-110"><a href="#L-110"><span class="linenos">110</span></a>    <span class="s1">&#39;new&#39;</span><span class="p">:</span>       <span class="s1">&#39;btn-primary&#39;</span><span class="p">,</span>
+</span><span id="L-111"><a href="#L-111"><span class="linenos">111</span></a>    <span class="s1">&#39;edit&#39;</span><span class="p">:</span>      <span class="s1">&#39;btn-primary&#39;</span><span class="p">,</span>
+</span><span id="L-112"><a href="#L-112"><span class="linenos">112</span></a>    <span class="s1">&#39;delete&#39;</span><span class="p">:</span>    <span class="s1">&#39;btn-danger&#39;</span><span class="p">,</span>
+</span><span id="L-113"><a href="#L-113"><span class="linenos">113</span></a>    <span class="s1">&#39;view&#39;</span><span class="p">:</span>      <span class="s1">&#39;btn-outline-secondary&#39;</span><span class="p">,</span>
+</span><span id="L-114"><a href="#L-114"><span class="linenos">114</span></a>    <span class="s1">&#39;info&#39;</span><span class="p">:</span>      <span class="s1">&#39;btn-info&#39;</span><span class="p">,</span>
+</span><span id="L-115"><a href="#L-115"><span class="linenos">115</span></a>    <span class="s1">&#39;warning&#39;</span><span class="p">:</span>   <span class="s1">&#39;btn-warning&#39;</span><span class="p">,</span>
+</span><span id="L-116"><a href="#L-116"><span class="linenos">116</span></a>    <span class="s1">&#39;success&#39;</span><span class="p">:</span>   <span class="s1">&#39;btn-success&#39;</span><span class="p">,</span>
+</span><span id="L-117"><a href="#L-117"><span class="linenos">117</span></a>    <span class="s1">&#39;secondary&#39;</span><span class="p">:</span> <span class="s1">&#39;btn-secondary&#39;</span><span class="p">,</span>
+</span><span id="L-118"><a href="#L-118"><span class="linenos">118</span></a><span class="p">}</span>
+</span><span id="L-119"><a href="#L-119"><span class="linenos">119</span></a>
+</span><span id="L-120"><a href="#L-120"><span class="linenos">120</span></a>
+</span><span id="L-121"><a href="#L-121"><span class="linenos">121</span></a><span class="k">def</span><span class="w"> </span><span class="nf">button_styles_for_skin</span><span class="p">(</span><span class="n">skin_key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+</span><span id="L-122"><a href="#L-122"><span class="linenos">122</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Resolve semantic button style → Bootstrap CSS class for the given skin.</span>
+</span><span id="L-123"><a href="#L-123"><span class="linenos">123</span></a>
+</span><span id="L-124"><a href="#L-124"><span class="linenos">124</span></a><span class="sd">    The result is built from ``_DEFAULT_BUTTON_STYLES``, then overridden by</span>
+</span><span id="L-125"><a href="#L-125"><span class="linenos">125</span></a><span class="sd">    ``SEBASTIAN[&#39;BUTTON_STYLES&#39;][&#39;*&#39;]`` (all skins), then by the skin-specific</span>
+</span><span id="L-126"><a href="#L-126"><span class="linenos">126</span></a><span class="sd">    key.  Consumer projects add custom semantic styles the same way::</span>
+</span><span id="L-127"><a href="#L-127"><span class="linenos">127</span></a>
+</span><span id="L-128"><a href="#L-128"><span class="linenos">128</span></a><span class="sd">        SEBASTIAN = {</span>
+</span><span id="L-129"><a href="#L-129"><span class="linenos">129</span></a><span class="sd">            &#39;BUTTON_STYLES&#39;: {</span>
+</span><span id="L-130"><a href="#L-130"><span class="linenos">130</span></a><span class="sd">                &#39;*&#39;:    {&#39;edit&#39;: &#39;btn-success&#39;, &#39;anteprima&#39;: &#39;btn-info&#39;},</span>
+</span><span id="L-131"><a href="#L-131"><span class="linenos">131</span></a><span class="sd">                &#39;dark&#39;: {&#39;edit&#39;: &#39;btn-outline-primary&#39;},</span>
+</span><span id="L-132"><a href="#L-132"><span class="linenos">132</span></a><span class="sd">            }</span>
+</span><span id="L-133"><a href="#L-133"><span class="linenos">133</span></a><span class="sd">        }</span>
+</span><span id="L-134"><a href="#L-134"><span class="linenos">134</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-135"><a href="#L-135"><span class="linenos">135</span></a>    <span class="n">overrides</span> <span class="o">=</span> <span class="n">_sebastian</span><span class="p">(</span><span class="s1">&#39;BUTTON_STYLES&#39;</span><span class="p">,</span> <span class="p">{})</span>
+</span><span id="L-136"><a href="#L-136"><span class="linenos">136</span></a>    <span class="k">return</span> <span class="p">{</span>
+</span><span id="L-137"><a href="#L-137"><span class="linenos">137</span></a>        <span class="o">**</span><span class="n">_DEFAULT_BUTTON_STYLES</span><span class="p">,</span>
+</span><span id="L-138"><a href="#L-138"><span class="linenos">138</span></a>        <span class="o">**</span><span class="n">overrides</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;*&#39;</span><span class="p">,</span> <span class="p">{}),</span>
+</span><span id="L-139"><a href="#L-139"><span class="linenos">139</span></a>        <span class="o">**</span><span class="n">overrides</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">skin_key</span><span class="p">,</span> <span class="p">{}),</span>
+</span><span id="L-140"><a href="#L-140"><span class="linenos">140</span></a>    <span class="p">}</span>
+</span><span id="L-141"><a href="#L-141"><span class="linenos">141</span></a>
+</span><span id="L-142"><a href="#L-142"><span class="linenos">142</span></a>
+</span><span id="L-143"><a href="#L-143"><span class="linenos">143</span></a><span class="k">def</span><span class="w"> </span><span class="nf">bool_display</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="L-144"><a href="#L-144"><span class="linenos">144</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;How to render boolean fields in GUI mode.</span>
+</span><span id="L-145"><a href="#L-145"><span class="linenos">145</span></a>
+</span><span id="L-146"><a href="#L-146"><span class="linenos">146</span></a><span class="sd">    Values: &#39;yesno&#39; (Yes/No), &#39;checkmark&#39; (✓/✗), &#39;icon&#39; (Bootstrap bi icons),</span>
+</span><span id="L-147"><a href="#L-147"><span class="linenos">147</span></a><span class="sd">    &#39;truefalse&#39; (raw True/False, no transform).</span>
+</span><span id="L-148"><a href="#L-148"><span class="linenos">148</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-149"><a href="#L-149"><span class="linenos">149</span></a>    <span class="k">return</span> <span class="n">_sebastian</span><span class="p">(</span><span class="s1">&#39;BOOL_DISPLAY&#39;</span><span class="p">,</span> <span class="s1">&#39;yesno&#39;</span><span class="p">)</span>
+</span><span id="L-150"><a href="#L-150"><span class="linenos">150</span></a>
+</span><span id="L-151"><a href="#L-151"><span class="linenos">151</span></a>
+</span><span id="L-152"><a href="#L-152"><span class="linenos">152</span></a><span class="k">def</span><span class="w"> </span><span class="nf">date_format</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="L-153"><a href="#L-153"><span class="linenos">153</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;strftime format for DateField values in GUI mode. Default: dd/mm/yyyy.&quot;&quot;&quot;</span>
+</span><span id="L-154"><a href="#L-154"><span class="linenos">154</span></a>    <span class="k">return</span> <span class="n">_sebastian</span><span class="p">(</span><span class="s1">&#39;DATE_FORMAT&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">%d</span><span class="s1">/%m/%Y&#39;</span><span class="p">)</span>
+</span><span id="L-155"><a href="#L-155"><span class="linenos">155</span></a>
+</span><span id="L-156"><a href="#L-156"><span class="linenos">156</span></a>
+</span><span id="L-157"><a href="#L-157"><span class="linenos">157</span></a><span class="k">def</span><span class="w"> </span><span class="nf">datetime_format</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="L-158"><a href="#L-158"><span class="linenos">158</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;strftime format for DateTimeField values in GUI mode. Default: dd/mm/yyyy HH:MM.&quot;&quot;&quot;</span>
+</span><span id="L-159"><a href="#L-159"><span class="linenos">159</span></a>    <span class="k">return</span> <span class="n">_sebastian</span><span class="p">(</span><span class="s1">&#39;DATETIME_FORMAT&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">%d</span><span class="s1">/%m/%Y %H:%M&#39;</span><span class="p">)</span>
 </span></pre></div>
 
 
@@ -209,10 +285,10 @@ override, e.g.::</p>
 
     </div>
     <a class="headerlink" href="#hide_unauthorized_actions"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="hide_unauthorized_actions-21"><a href="#hide_unauthorized_actions-21"><span class="linenos">21</span></a><span class="k">def</span><span class="w"> </span><span class="nf">hide_unauthorized_actions</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span id="hide_unauthorized_actions-22"><a href="#hide_unauthorized_actions-22"><span class="linenos">22</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;``HIDE_UNAUTHORIZED_ACTIONS`` — hide buttons the user can&#39;t use (default) vs.</span>
-</span><span id="hide_unauthorized_actions-23"><a href="#hide_unauthorized_actions-23"><span class="linenos">23</span></a><span class="sd">    render them disabled. Default: ``True``.&quot;&quot;&quot;</span>
-</span><span id="hide_unauthorized_actions-24"><a href="#hide_unauthorized_actions-24"><span class="linenos">24</span></a>    <span class="k">return</span> <span class="n">_sebastian</span><span class="p">(</span><span class="s1">&#39;HIDE_UNAUTHORIZED_ACTIONS&#39;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="hide_unauthorized_actions-22"><a href="#hide_unauthorized_actions-22"><span class="linenos">22</span></a><span class="k">def</span><span class="w"> </span><span class="nf">hide_unauthorized_actions</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="hide_unauthorized_actions-23"><a href="#hide_unauthorized_actions-23"><span class="linenos">23</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;``HIDE_UNAUTHORIZED_ACTIONS`` — hide buttons the user can&#39;t use (default) vs.</span>
+</span><span id="hide_unauthorized_actions-24"><a href="#hide_unauthorized_actions-24"><span class="linenos">24</span></a><span class="sd">    render them disabled. Default: ``True``.&quot;&quot;&quot;</span>
+</span><span id="hide_unauthorized_actions-25"><a href="#hide_unauthorized_actions-25"><span class="linenos">25</span></a>    <span class="k">return</span> <span class="n">_sebastian</span><span class="p">(</span><span class="s1">&#39;HIDE_UNAUTHORIZED_ACTIONS&#39;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
 </span></pre></div>
 
 
@@ -233,9 +309,9 @@ render them disabled. Default: <code>True</code>.</p>
 
     </div>
     <a class="headerlink" href="#template_pack"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="template_pack-27"><a href="#template_pack-27"><span class="linenos">27</span></a><span class="k">def</span><span class="w"> </span><span class="nf">template_pack</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-</span><span id="template_pack-28"><a href="#template_pack-28"><span class="linenos">28</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;``TEMPLATE_PACK`` — active template pack name. Default: ``&#39;htmx&#39;``.&quot;&quot;&quot;</span>
-</span><span id="template_pack-29"><a href="#template_pack-29"><span class="linenos">29</span></a>    <span class="k">return</span> <span class="n">_sebastian</span><span class="p">(</span><span class="s1">&#39;TEMPLATE_PACK&#39;</span><span class="p">,</span> <span class="s1">&#39;htmx&#39;</span><span class="p">)</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="template_pack-28"><a href="#template_pack-28"><span class="linenos">28</span></a><span class="k">def</span><span class="w"> </span><span class="nf">template_pack</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="template_pack-29"><a href="#template_pack-29"><span class="linenos">29</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;``TEMPLATE_PACK`` — active template pack name. Default: ``&#39;htmx&#39;``.&quot;&quot;&quot;</span>
+</span><span id="template_pack-30"><a href="#template_pack-30"><span class="linenos">30</span></a>    <span class="k">return</span> <span class="n">_sebastian</span><span class="p">(</span><span class="s1">&#39;TEMPLATE_PACK&#39;</span><span class="p">,</span> <span class="s1">&#39;htmx&#39;</span><span class="p">)</span>
 </span></pre></div>
 
 
@@ -255,13 +331,89 @@ render them disabled. Default: <code>True</code>.</p>
 
     </div>
     <a class="headerlink" href="#skin"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="skin-32"><a href="#skin-32"><span class="linenos">32</span></a><span class="k">def</span><span class="w"> </span><span class="nf">skin</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-</span><span id="skin-33"><a href="#skin-33"><span class="linenos">33</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;``SKIN`` — active CSS/icon skin. Default: ``&#39;bootstrap5-bi&#39;``.&quot;&quot;&quot;</span>
-</span><span id="skin-34"><a href="#skin-34"><span class="linenos">34</span></a>    <span class="k">return</span> <span class="n">_sebastian</span><span class="p">(</span><span class="s1">&#39;SKIN&#39;</span><span class="p">,</span> <span class="s1">&#39;bootstrap5-bi&#39;</span><span class="p">)</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="skin-33"><a href="#skin-33"><span class="linenos">33</span></a><span class="k">def</span><span class="w"> </span><span class="nf">skin</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="skin-34"><a href="#skin-34"><span class="linenos">34</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;``SKIN`` — active skin key. Default: ``&#39;bootstrap5-bi&#39;``.&quot;&quot;&quot;</span>
+</span><span id="skin-35"><a href="#skin-35"><span class="linenos">35</span></a>    <span class="k">return</span> <span class="n">_sebastian</span><span class="p">(</span><span class="s1">&#39;SKIN&#39;</span><span class="p">,</span> <span class="s1">&#39;bootstrap5-bi&#39;</span><span class="p">)</span>
 </span></pre></div>
 
 
-            <div class="docstring"><p><code>SKIN</code> — active CSS/icon skin. Default: <code>'bootstrap5-bi'</code>.</p>
+            <div class="docstring"><p><code>SKIN</code> — active skin key. Default: <code>'bootstrap5-bi'</code>.</p>
+</div>
+
+
+                </section>
+                <section id="skins">
+                            <input id="skins-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">skins</span><span class="signature pdoc-code condensed">(<span class="return-annotation">) -> <span class="nb">list</span>:</span></span>
+
+                <label class="view-source-button" for="skins-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#skins"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="skins-45"><a href="#skins-45"><span class="linenos">45</span></a><span class="k">def</span><span class="w"> </span><span class="nf">skins</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+</span><span id="skins-46"><a href="#skins-46"><span class="linenos">46</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;``SKINS`` — registry of available skins as ``(key, label, css_paths)`` tuples.</span>
+</span><span id="skins-47"><a href="#skins-47"><span class="linenos">47</span></a><span class="sd">    ``css_paths`` can be a single string or a list of strings (static file paths).&quot;&quot;&quot;</span>
+</span><span id="skins-48"><a href="#skins-48"><span class="linenos">48</span></a>    <span class="k">return</span> <span class="n">_sebastian</span><span class="p">(</span><span class="s1">&#39;SKINS&#39;</span><span class="p">,</span> <span class="n">_DEFAULT_SKINS</span><span class="p">)</span>
+</span></pre></div>
+
+
+            <div class="docstring"><p><code>SKINS</code> — registry of available skins as <code>(key, label, css_paths)</code> tuples.
+<code>css_paths</code> can be a single string or a list of strings (static file paths).</p>
+</div>
+
+
+                </section>
+                <section id="skin_css_files">
+                            <input id="skin_css_files-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">skin_css_files</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">key</span><span class="p">:</span> <span class="nb">str</span></span><span class="return-annotation">) -> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>:</span></span>
+
+                <label class="view-source-button" for="skin_css_files-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#skin_css_files"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="skin_css_files-51"><a href="#skin_css_files-51"><span class="linenos">51</span></a><span class="k">def</span><span class="w"> </span><span class="nf">skin_css_files</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+</span><span id="skin_css_files-52"><a href="#skin_css_files-52"><span class="linenos">52</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the list of static CSS paths for the given skin key.</span>
+</span><span id="skin_css_files-53"><a href="#skin_css_files-53"><span class="linenos">53</span></a><span class="sd">    Falls back to the first available skin if the key is not found.&quot;&quot;&quot;</span>
+</span><span id="skin_css_files-54"><a href="#skin_css_files-54"><span class="linenos">54</span></a>    <span class="k">for</span> <span class="n">sk</span><span class="p">,</span> <span class="n">_label</span><span class="p">,</span> <span class="n">paths</span> <span class="ow">in</span> <span class="n">skins</span><span class="p">():</span>
+</span><span id="skin_css_files-55"><a href="#skin_css_files-55"><span class="linenos">55</span></a>        <span class="k">if</span> <span class="n">sk</span> <span class="o">==</span> <span class="n">key</span><span class="p">:</span>
+</span><span id="skin_css_files-56"><a href="#skin_css_files-56"><span class="linenos">56</span></a>            <span class="k">return</span> <span class="p">[</span><span class="n">paths</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">paths</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="nb">list</span><span class="p">(</span><span class="n">paths</span><span class="p">)</span>
+</span><span id="skin_css_files-57"><a href="#skin_css_files-57"><span class="linenos">57</span></a>    <span class="n">_</span><span class="p">,</span> <span class="n">_label</span><span class="p">,</span> <span class="n">paths</span> <span class="o">=</span> <span class="n">skins</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+</span><span id="skin_css_files-58"><a href="#skin_css_files-58"><span class="linenos">58</span></a>    <span class="k">return</span> <span class="p">[</span><span class="n">paths</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">paths</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="nb">list</span><span class="p">(</span><span class="n">paths</span><span class="p">)</span>
+</span></pre></div>
+
+
+            <div class="docstring"><p>Return the list of static CSS paths for the given skin key.
+Falls back to the first available skin if the key is not found.</p>
+</div>
+
+
+                </section>
+                <section id="skin_choices">
+                            <input id="skin_choices-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">skin_choices</span><span class="signature pdoc-code condensed">(<span class="return-annotation">) -> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span>:</span></span>
+
+                <label class="view-source-button" for="skin_choices-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#skin_choices"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="skin_choices-61"><a href="#skin_choices-61"><span class="linenos">61</span></a><span class="k">def</span><span class="w"> </span><span class="nf">skin_choices</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]:</span>
+</span><span id="skin_choices-62"><a href="#skin_choices-62"><span class="linenos">62</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return ``(key, label)`` pairs for all registered skins — ready for a</span>
+</span><span id="skin_choices-63"><a href="#skin_choices-63"><span class="linenos">63</span></a><span class="sd">    form ``choices`` argument.&quot;&quot;&quot;</span>
+</span><span id="skin_choices-64"><a href="#skin_choices-64"><span class="linenos">64</span></a>    <span class="k">return</span> <span class="p">[(</span><span class="n">key</span><span class="p">,</span> <span class="n">label</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">_paths</span> <span class="ow">in</span> <span class="n">skins</span><span class="p">()]</span>
+</span></pre></div>
+
+
+            <div class="docstring"><p>Return <code>(key, label)</code> pairs for all registered skins — ready for a
+form <code>choices</code> argument.</p>
 </div>
 
 
@@ -277,10 +429,10 @@ render them disabled. Default: <code>True</code>.</p>
 
     </div>
     <a class="headerlink" href="#available_packs"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="available_packs-37"><a href="#available_packs-37"><span class="linenos">37</span></a><span class="k">def</span><span class="w"> </span><span class="nf">available_packs</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
-</span><span id="available_packs-38"><a href="#available_packs-38"><span class="linenos">38</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;``AVAILABLE_PACKS`` — template packs offered on the home page pack switcher.</span>
-</span><span id="available_packs-39"><a href="#available_packs-39"><span class="linenos">39</span></a><span class="sd">    Default: ``[&#39;htmx&#39;, &#39;plain&#39;]``.&quot;&quot;&quot;</span>
-</span><span id="available_packs-40"><a href="#available_packs-40"><span class="linenos">40</span></a>    <span class="k">return</span> <span class="n">_sebastian</span><span class="p">(</span><span class="s1">&#39;AVAILABLE_PACKS&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;htmx&#39;</span><span class="p">,</span> <span class="s1">&#39;plain&#39;</span><span class="p">])</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="available_packs-67"><a href="#available_packs-67"><span class="linenos">67</span></a><span class="k">def</span><span class="w"> </span><span class="nf">available_packs</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+</span><span id="available_packs-68"><a href="#available_packs-68"><span class="linenos">68</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;``AVAILABLE_PACKS`` — template packs offered on the home page pack switcher.</span>
+</span><span id="available_packs-69"><a href="#available_packs-69"><span class="linenos">69</span></a><span class="sd">    Default: ``[&#39;htmx&#39;, &#39;plain&#39;]``.&quot;&quot;&quot;</span>
+</span><span id="available_packs-70"><a href="#available_packs-70"><span class="linenos">70</span></a>    <span class="k">return</span> <span class="n">_sebastian</span><span class="p">(</span><span class="s1">&#39;AVAILABLE_PACKS&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;htmx&#39;</span><span class="p">,</span> <span class="s1">&#39;plain&#39;</span><span class="p">])</span>
 </span></pre></div>
 
 
@@ -301,10 +453,10 @@ Default: <code>['htmx', 'plain']</code>.</p>
 
     </div>
     <a class="headerlink" href="#pack_uses_htmx"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="pack_uses_htmx-46"><a href="#pack_uses_htmx-46"><span class="linenos">46</span></a><span class="k">def</span><span class="w"> </span><span class="nf">pack_uses_htmx</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span id="pack_uses_htmx-47"><a href="#pack_uses_htmx-47"><span class="linenos">47</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Whether the active `template_pack()` is HTMX-aware, per ``HTMX_PACKS``</span>
-</span><span id="pack_uses_htmx-48"><a href="#pack_uses_htmx-48"><span class="linenos">48</span></a><span class="sd">    (default ``[&#39;htmx&#39;]``). Custom packs opt in by listing themselves there.&quot;&quot;&quot;</span>
-</span><span id="pack_uses_htmx-49"><a href="#pack_uses_htmx-49"><span class="linenos">49</span></a>    <span class="k">return</span> <span class="n">template_pack</span><span class="p">()</span> <span class="ow">in</span> <span class="n">_sebastian</span><span class="p">(</span><span class="s1">&#39;HTMX_PACKS&#39;</span><span class="p">,</span> <span class="n">_DEFAULT_HTMX_PACKS</span><span class="p">)</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="pack_uses_htmx-76"><a href="#pack_uses_htmx-76"><span class="linenos">76</span></a><span class="k">def</span><span class="w"> </span><span class="nf">pack_uses_htmx</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="pack_uses_htmx-77"><a href="#pack_uses_htmx-77"><span class="linenos">77</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Whether the active `template_pack()` is HTMX-aware, per ``HTMX_PACKS``</span>
+</span><span id="pack_uses_htmx-78"><a href="#pack_uses_htmx-78"><span class="linenos">78</span></a><span class="sd">    (default ``[&#39;htmx&#39;]``). Custom packs opt in by listing themselves there.&quot;&quot;&quot;</span>
+</span><span id="pack_uses_htmx-79"><a href="#pack_uses_htmx-79"><span class="linenos">79</span></a>    <span class="k">return</span> <span class="n">template_pack</span><span class="p">()</span> <span class="ow">in</span> <span class="n">_sebastian</span><span class="p">(</span><span class="s1">&#39;HTMX_PACKS&#39;</span><span class="p">,</span> <span class="n">_DEFAULT_HTMX_PACKS</span><span class="p">)</span>
 </span></pre></div>
 
 
@@ -325,15 +477,15 @@ Default: <code>['htmx', 'plain']</code>.</p>
 
     </div>
     <a class="headerlink" href="#confirm_actions"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="confirm_actions-52"><a href="#confirm_actions-52"><span class="linenos">52</span></a><span class="k">def</span><span class="w"> </span><span class="nf">confirm_actions</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span id="confirm_actions-53"><a href="#confirm_actions-53"><span class="linenos">53</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;``CONFIRM_ACTIONS`` — global default requiring confirmation before</span>
-</span><span id="confirm_actions-54"><a href="#confirm_actions-54"><span class="linenos">54</span></a><span class="sd">    non-destructive actions. Default: ``False``.</span>
-</span><span id="confirm_actions-55"><a href="#confirm_actions-55"><span class="linenos">55</span></a>
-</span><span id="confirm_actions-56"><a href="#confirm_actions-56"><span class="linenos">56</span></a><span class="sd">    Note: not currently consulted anywhere in the library — actions opt into</span>
-</span><span id="confirm_actions-57"><a href="#confirm_actions-57"><span class="linenos">57</span></a><span class="sd">    confirmation individually via ``gui_config[&#39;confirmation&#39;]``. Kept for</span>
-</span><span id="confirm_actions-58"><a href="#confirm_actions-58"><span class="linenos">58</span></a><span class="sd">    forward compatibility; do not rely on this changing action behaviour yet.</span>
-</span><span id="confirm_actions-59"><a href="#confirm_actions-59"><span class="linenos">59</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="confirm_actions-60"><a href="#confirm_actions-60"><span class="linenos">60</span></a>    <span class="k">return</span> <span class="n">_sebastian</span><span class="p">(</span><span class="s1">&#39;CONFIRM_ACTIONS&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="confirm_actions-82"><a href="#confirm_actions-82"><span class="linenos">82</span></a><span class="k">def</span><span class="w"> </span><span class="nf">confirm_actions</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="confirm_actions-83"><a href="#confirm_actions-83"><span class="linenos">83</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;``CONFIRM_ACTIONS`` — global default requiring confirmation before</span>
+</span><span id="confirm_actions-84"><a href="#confirm_actions-84"><span class="linenos">84</span></a><span class="sd">    non-destructive actions. Default: ``False``.</span>
+</span><span id="confirm_actions-85"><a href="#confirm_actions-85"><span class="linenos">85</span></a>
+</span><span id="confirm_actions-86"><a href="#confirm_actions-86"><span class="linenos">86</span></a><span class="sd">    Note: not currently consulted anywhere in the library — actions opt into</span>
+</span><span id="confirm_actions-87"><a href="#confirm_actions-87"><span class="linenos">87</span></a><span class="sd">    confirmation individually via ``gui_config[&#39;confirmation&#39;]``. Kept for</span>
+</span><span id="confirm_actions-88"><a href="#confirm_actions-88"><span class="linenos">88</span></a><span class="sd">    forward compatibility; do not rely on this changing action behaviour yet.</span>
+</span><span id="confirm_actions-89"><a href="#confirm_actions-89"><span class="linenos">89</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="confirm_actions-90"><a href="#confirm_actions-90"><span class="linenos">90</span></a>    <span class="k">return</span> <span class="n">_sebastian</span><span class="p">(</span><span class="s1">&#39;CONFIRM_ACTIONS&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
 </span></pre></div>
 
 
@@ -358,10 +510,10 @@ forward compatibility; do not rely on this changing action behaviour yet.</p>
 
     </div>
     <a class="headerlink" href="#confirm_deletions"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="confirm_deletions-63"><a href="#confirm_deletions-63"><span class="linenos">63</span></a><span class="k">def</span><span class="w"> </span><span class="nf">confirm_deletions</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span id="confirm_deletions-64"><a href="#confirm_deletions-64"><span class="linenos">64</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;``CONFIRM_DELETIONS`` — require confirmation before deleting a record.</span>
-</span><span id="confirm_deletions-65"><a href="#confirm_deletions-65"><span class="linenos">65</span></a><span class="sd">    Default: ``True``.&quot;&quot;&quot;</span>
-</span><span id="confirm_deletions-66"><a href="#confirm_deletions-66"><span class="linenos">66</span></a>    <span class="k">return</span> <span class="n">_sebastian</span><span class="p">(</span><span class="s1">&#39;CONFIRM_DELETIONS&#39;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="confirm_deletions-93"><a href="#confirm_deletions-93"><span class="linenos">93</span></a><span class="k">def</span><span class="w"> </span><span class="nf">confirm_deletions</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="confirm_deletions-94"><a href="#confirm_deletions-94"><span class="linenos">94</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;``CONFIRM_DELETIONS`` — require confirmation before deleting a record.</span>
+</span><span id="confirm_deletions-95"><a href="#confirm_deletions-95"><span class="linenos">95</span></a><span class="sd">    Default: ``True``.&quot;&quot;&quot;</span>
+</span><span id="confirm_deletions-96"><a href="#confirm_deletions-96"><span class="linenos">96</span></a>    <span class="k">return</span> <span class="n">_sebastian</span><span class="p">(</span><span class="s1">&#39;CONFIRM_DELETIONS&#39;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
 </span></pre></div>
 
 
@@ -382,9 +534,9 @@ Default: <code>True</code>.</p>
 
     </div>
     <a class="headerlink" href="#brand"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="brand-69"><a href="#brand-69"><span class="linenos">69</span></a><span class="k">def</span><span class="w"> </span><span class="nf">brand</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-</span><span id="brand-70"><a href="#brand-70"><span class="linenos">70</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;``BRAND`` — product name shown in the navbar. Default: ``&#39;Sebastian&#39;``.&quot;&quot;&quot;</span>
-</span><span id="brand-71"><a href="#brand-71"><span class="linenos">71</span></a>    <span class="k">return</span> <span class="n">_sebastian</span><span class="p">(</span><span class="s1">&#39;BRAND&#39;</span><span class="p">,</span> <span class="s1">&#39;Sebastian&#39;</span><span class="p">)</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="brand-99"><a href="#brand-99"><span class="linenos"> 99</span></a><span class="k">def</span><span class="w"> </span><span class="nf">brand</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="brand-100"><a href="#brand-100"><span class="linenos">100</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;``BRAND`` — product name shown in the navbar. Default: ``&#39;Sebastian&#39;``.&quot;&quot;&quot;</span>
+</span><span id="brand-101"><a href="#brand-101"><span class="linenos">101</span></a>    <span class="k">return</span> <span class="n">_sebastian</span><span class="p">(</span><span class="s1">&#39;BRAND&#39;</span><span class="p">,</span> <span class="s1">&#39;Sebastian&#39;</span><span class="p">)</span>
 </span></pre></div>
 
 
@@ -404,15 +556,66 @@ Default: <code>True</code>.</p>
 
     </div>
     <a class="headerlink" href="#login_url"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="login_url-74"><a href="#login_url-74"><span class="linenos">74</span></a><span class="k">def</span><span class="w"> </span><span class="nf">login_url</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-</span><span id="login_url-75"><a href="#login_url-75"><span class="linenos">75</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;``LOGIN_URL`` — where to send unauthenticated users. Default: ``&#39;&#39;``</span>
-</span><span id="login_url-76"><a href="#login_url-76"><span class="linenos">76</span></a><span class="sd">    (no redirect).&quot;&quot;&quot;</span>
-</span><span id="login_url-77"><a href="#login_url-77"><span class="linenos">77</span></a>    <span class="k">return</span> <span class="n">_sebastian</span><span class="p">(</span><span class="s1">&#39;LOGIN_URL&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="login_url-104"><a href="#login_url-104"><span class="linenos">104</span></a><span class="k">def</span><span class="w"> </span><span class="nf">login_url</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="login_url-105"><a href="#login_url-105"><span class="linenos">105</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;``LOGIN_URL`` — where to send unauthenticated users. Default: ``&#39;&#39;``</span>
+</span><span id="login_url-106"><a href="#login_url-106"><span class="linenos">106</span></a><span class="sd">    (no redirect).&quot;&quot;&quot;</span>
+</span><span id="login_url-107"><a href="#login_url-107"><span class="linenos">107</span></a>    <span class="k">return</span> <span class="n">_sebastian</span><span class="p">(</span><span class="s1">&#39;LOGIN_URL&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
 </span></pre></div>
 
 
             <div class="docstring"><p><code>LOGIN_URL</code> — where to send unauthenticated users. Default: <code>''</code>
 (no redirect).</p>
+</div>
+
+
+                </section>
+                <section id="button_styles_for_skin">
+                            <input id="button_styles_for_skin-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">button_styles_for_skin</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">skin_key</span><span class="p">:</span> <span class="nb">str</span></span><span class="return-annotation">) -> <span class="nb">dict</span>:</span></span>
+
+                <label class="view-source-button" for="button_styles_for_skin-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#button_styles_for_skin"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="button_styles_for_skin-122"><a href="#button_styles_for_skin-122"><span class="linenos">122</span></a><span class="k">def</span><span class="w"> </span><span class="nf">button_styles_for_skin</span><span class="p">(</span><span class="n">skin_key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+</span><span id="button_styles_for_skin-123"><a href="#button_styles_for_skin-123"><span class="linenos">123</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Resolve semantic button style → Bootstrap CSS class for the given skin.</span>
+</span><span id="button_styles_for_skin-124"><a href="#button_styles_for_skin-124"><span class="linenos">124</span></a>
+</span><span id="button_styles_for_skin-125"><a href="#button_styles_for_skin-125"><span class="linenos">125</span></a><span class="sd">    The result is built from ``_DEFAULT_BUTTON_STYLES``, then overridden by</span>
+</span><span id="button_styles_for_skin-126"><a href="#button_styles_for_skin-126"><span class="linenos">126</span></a><span class="sd">    ``SEBASTIAN[&#39;BUTTON_STYLES&#39;][&#39;*&#39;]`` (all skins), then by the skin-specific</span>
+</span><span id="button_styles_for_skin-127"><a href="#button_styles_for_skin-127"><span class="linenos">127</span></a><span class="sd">    key.  Consumer projects add custom semantic styles the same way::</span>
+</span><span id="button_styles_for_skin-128"><a href="#button_styles_for_skin-128"><span class="linenos">128</span></a>
+</span><span id="button_styles_for_skin-129"><a href="#button_styles_for_skin-129"><span class="linenos">129</span></a><span class="sd">        SEBASTIAN = {</span>
+</span><span id="button_styles_for_skin-130"><a href="#button_styles_for_skin-130"><span class="linenos">130</span></a><span class="sd">            &#39;BUTTON_STYLES&#39;: {</span>
+</span><span id="button_styles_for_skin-131"><a href="#button_styles_for_skin-131"><span class="linenos">131</span></a><span class="sd">                &#39;*&#39;:    {&#39;edit&#39;: &#39;btn-success&#39;, &#39;anteprima&#39;: &#39;btn-info&#39;},</span>
+</span><span id="button_styles_for_skin-132"><a href="#button_styles_for_skin-132"><span class="linenos">132</span></a><span class="sd">                &#39;dark&#39;: {&#39;edit&#39;: &#39;btn-outline-primary&#39;},</span>
+</span><span id="button_styles_for_skin-133"><a href="#button_styles_for_skin-133"><span class="linenos">133</span></a><span class="sd">            }</span>
+</span><span id="button_styles_for_skin-134"><a href="#button_styles_for_skin-134"><span class="linenos">134</span></a><span class="sd">        }</span>
+</span><span id="button_styles_for_skin-135"><a href="#button_styles_for_skin-135"><span class="linenos">135</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="button_styles_for_skin-136"><a href="#button_styles_for_skin-136"><span class="linenos">136</span></a>    <span class="n">overrides</span> <span class="o">=</span> <span class="n">_sebastian</span><span class="p">(</span><span class="s1">&#39;BUTTON_STYLES&#39;</span><span class="p">,</span> <span class="p">{})</span>
+</span><span id="button_styles_for_skin-137"><a href="#button_styles_for_skin-137"><span class="linenos">137</span></a>    <span class="k">return</span> <span class="p">{</span>
+</span><span id="button_styles_for_skin-138"><a href="#button_styles_for_skin-138"><span class="linenos">138</span></a>        <span class="o">**</span><span class="n">_DEFAULT_BUTTON_STYLES</span><span class="p">,</span>
+</span><span id="button_styles_for_skin-139"><a href="#button_styles_for_skin-139"><span class="linenos">139</span></a>        <span class="o">**</span><span class="n">overrides</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;*&#39;</span><span class="p">,</span> <span class="p">{}),</span>
+</span><span id="button_styles_for_skin-140"><a href="#button_styles_for_skin-140"><span class="linenos">140</span></a>        <span class="o">**</span><span class="n">overrides</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">skin_key</span><span class="p">,</span> <span class="p">{}),</span>
+</span><span id="button_styles_for_skin-141"><a href="#button_styles_for_skin-141"><span class="linenos">141</span></a>    <span class="p">}</span>
+</span></pre></div>
+
+
+            <div class="docstring"><p>Resolve semantic button style → Bootstrap CSS class for the given skin.</p>
+
+<p>The result is built from <code>_DEFAULT_BUTTON_STYLES</code>, then overridden by
+<code>SEBASTIAN['BUTTON_STYLES']['*']</code> (all skins), then by the skin-specific
+key.  Consumer projects add custom semantic styles the same way::</p>
+
+<pre><code>SEBASTIAN = {
+    'BUTTON_STYLES': {
+        '*':    {'edit': 'btn-success', 'anteprima': 'btn-info'},
+        'dark': {'edit': 'btn-outline-primary'},
+    }
+}
+</code></pre>
 </div>
 
 
@@ -428,13 +631,13 @@ Default: <code>True</code>.</p>
 
     </div>
     <a class="headerlink" href="#bool_display"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="bool_display-80"><a href="#bool_display-80"><span class="linenos">80</span></a><span class="k">def</span><span class="w"> </span><span class="nf">bool_display</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-</span><span id="bool_display-81"><a href="#bool_display-81"><span class="linenos">81</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;How to render boolean fields in GUI mode.</span>
-</span><span id="bool_display-82"><a href="#bool_display-82"><span class="linenos">82</span></a>
-</span><span id="bool_display-83"><a href="#bool_display-83"><span class="linenos">83</span></a><span class="sd">    Values: &#39;yesno&#39; (Yes/No), &#39;checkmark&#39; (✓/✗), &#39;icon&#39; (Bootstrap bi icons),</span>
-</span><span id="bool_display-84"><a href="#bool_display-84"><span class="linenos">84</span></a><span class="sd">    &#39;truefalse&#39; (raw True/False, no transform).</span>
-</span><span id="bool_display-85"><a href="#bool_display-85"><span class="linenos">85</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="bool_display-86"><a href="#bool_display-86"><span class="linenos">86</span></a>    <span class="k">return</span> <span class="n">_sebastian</span><span class="p">(</span><span class="s1">&#39;BOOL_DISPLAY&#39;</span><span class="p">,</span> <span class="s1">&#39;yesno&#39;</span><span class="p">)</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="bool_display-144"><a href="#bool_display-144"><span class="linenos">144</span></a><span class="k">def</span><span class="w"> </span><span class="nf">bool_display</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="bool_display-145"><a href="#bool_display-145"><span class="linenos">145</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;How to render boolean fields in GUI mode.</span>
+</span><span id="bool_display-146"><a href="#bool_display-146"><span class="linenos">146</span></a>
+</span><span id="bool_display-147"><a href="#bool_display-147"><span class="linenos">147</span></a><span class="sd">    Values: &#39;yesno&#39; (Yes/No), &#39;checkmark&#39; (✓/✗), &#39;icon&#39; (Bootstrap bi icons),</span>
+</span><span id="bool_display-148"><a href="#bool_display-148"><span class="linenos">148</span></a><span class="sd">    &#39;truefalse&#39; (raw True/False, no transform).</span>
+</span><span id="bool_display-149"><a href="#bool_display-149"><span class="linenos">149</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="bool_display-150"><a href="#bool_display-150"><span class="linenos">150</span></a>    <span class="k">return</span> <span class="n">_sebastian</span><span class="p">(</span><span class="s1">&#39;BOOL_DISPLAY&#39;</span><span class="p">,</span> <span class="s1">&#39;yesno&#39;</span><span class="p">)</span>
 </span></pre></div>
 
 
@@ -457,9 +660,9 @@ Default: <code>True</code>.</p>
 
     </div>
     <a class="headerlink" href="#date_format"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="date_format-89"><a href="#date_format-89"><span class="linenos">89</span></a><span class="k">def</span><span class="w"> </span><span class="nf">date_format</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-</span><span id="date_format-90"><a href="#date_format-90"><span class="linenos">90</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;strftime format for DateField values in GUI mode. Default: dd/mm/yyyy.&quot;&quot;&quot;</span>
-</span><span id="date_format-91"><a href="#date_format-91"><span class="linenos">91</span></a>    <span class="k">return</span> <span class="n">_sebastian</span><span class="p">(</span><span class="s1">&#39;DATE_FORMAT&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">%d</span><span class="s1">/%m/%Y&#39;</span><span class="p">)</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="date_format-153"><a href="#date_format-153"><span class="linenos">153</span></a><span class="k">def</span><span class="w"> </span><span class="nf">date_format</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="date_format-154"><a href="#date_format-154"><span class="linenos">154</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;strftime format for DateField values in GUI mode. Default: dd/mm/yyyy.&quot;&quot;&quot;</span>
+</span><span id="date_format-155"><a href="#date_format-155"><span class="linenos">155</span></a>    <span class="k">return</span> <span class="n">_sebastian</span><span class="p">(</span><span class="s1">&#39;DATE_FORMAT&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">%d</span><span class="s1">/%m/%Y&#39;</span><span class="p">)</span>
 </span></pre></div>
 
 
@@ -479,9 +682,9 @@ Default: <code>True</code>.</p>
 
     </div>
     <a class="headerlink" href="#datetime_format"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="datetime_format-94"><a href="#datetime_format-94"><span class="linenos">94</span></a><span class="k">def</span><span class="w"> </span><span class="nf">datetime_format</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-</span><span id="datetime_format-95"><a href="#datetime_format-95"><span class="linenos">95</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;strftime format for DateTimeField values in GUI mode. Default: dd/mm/yyyy HH:MM.&quot;&quot;&quot;</span>
-</span><span id="datetime_format-96"><a href="#datetime_format-96"><span class="linenos">96</span></a>    <span class="k">return</span> <span class="n">_sebastian</span><span class="p">(</span><span class="s1">&#39;DATETIME_FORMAT&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">%d</span><span class="s1">/%m/%Y %H:%M&#39;</span><span class="p">)</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="datetime_format-158"><a href="#datetime_format-158"><span class="linenos">158</span></a><span class="k">def</span><span class="w"> </span><span class="nf">datetime_format</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="datetime_format-159"><a href="#datetime_format-159"><span class="linenos">159</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;strftime format for DateTimeField values in GUI mode. Default: dd/mm/yyyy HH:MM.&quot;&quot;&quot;</span>
+</span><span id="datetime_format-160"><a href="#datetime_format-160"><span class="linenos">160</span></a>    <span class="k">return</span> <span class="n">_sebastian</span><span class="p">(</span><span class="s1">&#39;DATETIME_FORMAT&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">%d</span><span class="s1">/%m/%Y %H:%M&#39;</span><span class="p">)</span>
 </span></pre></div>
 
 

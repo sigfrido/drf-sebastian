@@ -203,6 +203,16 @@ Prompted directly by pushback on Phase 13's fix: typing `context "sebastian"` / 
 
 Release-checklist note for future maintainers: at each release, check whether any vendored library has a newer version worth pulling in (security fixes especially) — there is currently no automated tracking of this, and no tested compatibility *range* per library, only the single pinned version in use.
 
+## Phase 16 — Integration hooks and GUI feedback (1.0.0-rc3, done)
+
+- [x] Removed every reference to workflow libraries: `NestedGUIMixin.parent_is_editable(parent)` hook (default True) replaces the duck-typed `wfm_state`/`wfm` checks; `GUIMixin.extra_context()` replaces the renderer's `workflow_transitions` lookup
+- [x] `SebastianMessagesView` + `GUIRouter(messages_view=...)`: `#sebastian-messages` refreshed via htmx on every page/fragment load
+- [x] Semantic button styles (`BUTTON_STYLES`, `btn_class`/`btn_class_cfg`) and `{% actions "group" %}` with `_actions.html` partials
+- [x] Display renderers (`field_config[...]['display']`, `{% render_display %}`), auto-detected from the DRF field style
+- [x] Forms: first editable tab active on open; after a failed save, the tab holding the errors; bold active tab caption
+- [x] Nested forms: `perform_create`/`perform_update` exceptions mapped to form errors instead of an error page
+- [x] Typeahead dropdown above Bootstrap modals
+
 ## Deferred
 
 - Management command `sebastian-templates` for exporting/customizing templates

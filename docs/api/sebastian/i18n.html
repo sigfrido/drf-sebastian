@@ -36,6 +36,9 @@
             <li>
                     <a class="function" href="#sgettext">sgettext</a>
             </li>
+            <li>
+                    <a class="function" href="#sgettext_lazy">sgettext_lazy</a>
+            </li>
     </ul>
 
 
@@ -86,7 +89,7 @@ typed once, here.</p>
 </span><span id="L-13"><a href="#L-13"><span class="linenos">13</span></a><span class="sd">around this same context, so the literal string &quot;sebastian&quot; only needs to be</span>
 </span><span id="L-14"><a href="#L-14"><span class="linenos">14</span></a><span class="sd">typed once, here.</span>
 </span><span id="L-15"><a href="#L-15"><span class="linenos">15</span></a><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="L-16"><a href="#L-16"><span class="linenos">16</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">django.utils.translation</span><span class="w"> </span><span class="kn">import</span> <span class="n">pgettext</span>
+</span><span id="L-16"><a href="#L-16"><span class="linenos">16</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">django.utils.translation</span><span class="w"> </span><span class="kn">import</span> <span class="n">pgettext</span><span class="p">,</span> <span class="n">pgettext_lazy</span>
 </span><span id="L-17"><a href="#L-17"><span class="linenos">17</span></a>
 </span><span id="L-18"><a href="#L-18"><span class="linenos">18</span></a><span class="n">CONTEXT</span> <span class="o">=</span> <span class="s1">&#39;sebastian&#39;</span>
 </span><span id="L-19"><a href="#L-19"><span class="linenos">19</span></a>
@@ -95,6 +98,12 @@ typed once, here.</p>
 </span><span id="L-22"><a href="#L-22"><span class="linenos">22</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;`pgettext(CONTEXT, message)` — Python-side shorthand; mirrors the</span>
 </span><span id="L-23"><a href="#L-23"><span class="linenos">23</span></a><span class="sd">    `{% strans %}` template tag.&quot;&quot;&quot;</span>
 </span><span id="L-24"><a href="#L-24"><span class="linenos">24</span></a>    <span class="k">return</span> <span class="n">pgettext</span><span class="p">(</span><span class="n">CONTEXT</span><span class="p">,</span> <span class="n">message</span><span class="p">)</span>
+</span><span id="L-25"><a href="#L-25"><span class="linenos">25</span></a>
+</span><span id="L-26"><a href="#L-26"><span class="linenos">26</span></a>
+</span><span id="L-27"><a href="#L-27"><span class="linenos">27</span></a><span class="k">def</span><span class="w"> </span><span class="nf">sgettext_lazy</span><span class="p">(</span><span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+</span><span id="L-28"><a href="#L-28"><span class="linenos">28</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;`pgettext_lazy(CONTEXT, message)` — lazy variant for module-level</span>
+</span><span id="L-29"><a href="#L-29"><span class="linenos">29</span></a><span class="sd">    constants that must not call the translation machinery at import time.&quot;&quot;&quot;</span>
+</span><span id="L-30"><a href="#L-30"><span class="linenos">30</span></a>    <span class="k">return</span> <span class="n">pgettext_lazy</span><span class="p">(</span><span class="n">CONTEXT</span><span class="p">,</span> <span class="n">message</span><span class="p">)</span>
 </span></pre></div>
 
 
@@ -131,6 +140,30 @@ typed once, here.</p>
 
             <div class="docstring"><p><code>pgettext(CONTEXT, message)</code> — Python-side shorthand; mirrors the
 <code>{% strans %}</code> template tag.</p>
+</div>
+
+
+                </section>
+                <section id="sgettext_lazy">
+                            <input id="sgettext_lazy-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">sgettext_lazy</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">message</span><span class="p">:</span> <span class="nb">str</span></span><span class="return-annotation">):</span></span>
+
+                <label class="view-source-button" for="sgettext_lazy-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#sgettext_lazy"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="sgettext_lazy-28"><a href="#sgettext_lazy-28"><span class="linenos">28</span></a><span class="k">def</span><span class="w"> </span><span class="nf">sgettext_lazy</span><span class="p">(</span><span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+</span><span id="sgettext_lazy-29"><a href="#sgettext_lazy-29"><span class="linenos">29</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;`pgettext_lazy(CONTEXT, message)` — lazy variant for module-level</span>
+</span><span id="sgettext_lazy-30"><a href="#sgettext_lazy-30"><span class="linenos">30</span></a><span class="sd">    constants that must not call the translation machinery at import time.&quot;&quot;&quot;</span>
+</span><span id="sgettext_lazy-31"><a href="#sgettext_lazy-31"><span class="linenos">31</span></a>    <span class="k">return</span> <span class="n">pgettext_lazy</span><span class="p">(</span><span class="n">CONTEXT</span><span class="p">,</span> <span class="n">message</span><span class="p">)</span>
+</span></pre></div>
+
+
+            <div class="docstring"><p><code>pgettext_lazy(CONTEXT, message)</code> — lazy variant for module-level
+constants that must not call the translation machinery at import time.</p>
 </div>
 
 

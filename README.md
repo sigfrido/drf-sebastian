@@ -154,6 +154,12 @@ class Sebastian:
 
 See [spec §4.7](docs/sebastian-spec.md#47-advanced-widgets) for the full list of `field_config` keys.
 
+Action buttons get their colour from a **semantic style** (`gui_config={'style': 'delete', ...}`), mapped to Bootstrap classes per skin by the `BUTTON_STYLES` setting ([spec §4.11](docs/sebastian-spec.md#411-semantic-button-styles)).
+
+To show Django's session messages (or any other feedback) in the GUI, subclass `sebastian.views.SebastianMessagesView`, override `get_html()` and pass it as `GUIRouter(api_router, messages_view=MyMessagesView.as_view())`: the htmx pack refreshes the `#sebastian-messages` area on every page and fragment load ([spec §3.2](docs/sebastian-spec.md#32-url-routing)).
+
+Sebastian itself knows nothing about workflows or record lifecycles: integrations plug in through hooks such as `GUIMixin.extra_context()` and `NestedGUIMixin.parent_is_editable()` ([spec §9.3](docs/sebastian-spec.md#93-viewset-hooks)).
+
 ## Project status
 
 Still in active development, but stable enough for real-world use — it already powers the GUI of another project of mine in daily use.

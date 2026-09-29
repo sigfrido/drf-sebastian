@@ -172,12 +172,28 @@ urlpatterns = [
 | `/gui/{prefix}/{url_path}/` | * | mirrored `@action` (list-level) |
 | `/gui/menu/` | GET | `SebastianMenuView` — HTML fragment for the navbar |
 | `/api/menu/` | GET | `SebastianMenuView` — same data as JSON |
+| `/gui/messages/` | GET | `SebastianMessagesView` (or `GUIRouter(messages_view=...)`) — `#sebastian-messages` fragment |
 
 Nested ViewSets (`Sebastian.inlines`) get an analogous set of routes mounted under `/gui/{parent-prefix}/<parent_pk>/{mountpoint}/...`, with parent lookup kwargs named `{parent_model_name}_pk` at every depth so arbitrarily nested resources never collide.
 
 ¹ Only added when the ViewSet has `GUIMixin`. These have no API equivalent.
 
 `@action` routes are only mirrored when the action carries `gui_config` metadata.
+
+**Messages**: the htmx pack's base template contains a `#sebastian-messages` element that fetches `/gui/messages/` with `hx-trigger="load"`, so it refreshes on every page load and on every swapped-in fragment (a form's success response, an action's result). The default `SebastianMessagesView` returns an empty container; a project renders its own messages by subclassing it and overriding `get_html(request)`, then passing it to the router:
+
+```python
+from sebastian.views import SebastianMessagesView
+
+class MessagesView(SebastianMessagesView):
+    def get_html(self, request) -> str:
+        from django.contrib.messages import get_messages
+        from django.template.loader import render_to_string
+        msgs = list(get_messages(request))
+        return render_to_string('myapp/_messages.html', {'messages': msgs})  # must keep id="sebastian-messages"
+
+gui_router = GUIRouter(api_router, messages_view=MessagesView.as_view())
+```
 
 Singleton resources (`SingletonGUIMixin`) are **not** auto-mirrored by `GUIRouter` — they are plain Django views, registered explicitly via `GUIRouter.add_page(url_path, view, name)` (see §4.2). Custom non-ViewSet pages use the same mechanism.
 
@@ -288,6 +304,10 @@ class RequestViewSet(GUIMixin, viewsets.ModelViewSet):
 ```
 
 **GUI behaviour**: the inline section on the parent's detail page renders as a table with per-row **Edit**/**Delete** buttons and a top-level **New** button, loaded via `hx-trigger="load"` into `#inline-{mountpoint}`. Every operation (create/update/delete) is a real HTTP call to the nested ViewSet's own `/gui/{parent-prefix}/<pk>/{mountpoint}/...` routes; after save or delete, the server returns the updated inline list HTML directly (not a redirect), so only that section refreshes.
+
+**Editability of nested resources**: create/update/delete on a nested resource are allowed only when `NestedGUIMixin.parent_is_editable(parent)` returns True — an overridable hook, default True (sebastian knows nothing about the parent's lifecycle; e.g. a workflow library overrides it to block edits on suspended records or for non-owners) — **and**, if declared, `Sebastian.edit_permission(request, parent)` on the nested ViewSet (e.g. edits allowed only in some phase of the parent). The result is cached per request.
+
+**Save errors in nested forms**: exceptions raised by `perform_create()` / `perform_update()` are shown in the re-rendered inline form, not as an error page: a DRF `ValidationError` with a dict detail maps to the named fields, a list/string detail or any other exception to `non_field_errors`.
 
 `NestedGUIMixin` auto-detects the parent from the `{parent_model_name}_pk` URL kwarg, filters `get_queryset()` to that parent, and injects the parent FK on create. The parent FK field name on the child model is auto-detected if unambiguous, or set explicitly via `parent_field`. Set `inline_in_api = False` on the nested ViewSet to exclude it from the parent's JSON detail response while still rendering it in the GUI.
 
@@ -443,7 +463,7 @@ class NoteViewSet(GUIMixin, viewsets.ModelViewSet):
         }
 ```
 
-The `'textbr'` display renderer converts `\n` to `<br>` tags (XSS-safe, equivalent to Django's `|linebreaksbr` filter). A callable is also accepted for fully custom rendering:
+Detail templates render every non-link field through `{% render_display data field_name fc %}` (`sebastian_tags`), which dispatches on `fc['display']` and falls back to `display_value` (the `{field}__display` key when present). The `'textbr'` display renderer converts `\n` to `<br>` tags (XSS-safe, equivalent to Django's `|linebreaksbr` filter). A callable is also accepted for fully custom rendering:
 
 ```python
 from django.utils.html import format_html, escape
@@ -758,7 +778,20 @@ class RequestViewSet(GUIMixin, viewsets.ModelViewSet):
     def get_available_actions(self):
         """Returns gui_config metadata for @actions the current user may use."""
         return super().get_available_actions()
+
+    def extra_context(self) -> dict:
+        """Extra values merged into the renderer's template context (default: {})."""
+        return {'workflow_transitions': ...}
+
+
+class AttachmentViewSet(NestedGUIMixin, viewsets.ModelViewSet):
+
+    def parent_is_editable(self, parent) -> bool:
+        """False blocks create/update/delete of this nested resource (default: True)."""
+        return not parent.locked
 ```
+
+Integration libraries (e.g. a workflow engine) plug in through these hooks instead of sebastian knowing about them: `extra_context()` to add their own template variables, `parent_is_editable()` for lifecycle-based locking of nested resources.
 
 ### 9.4 Template Override per ViewSet
 
@@ -799,15 +832,9 @@ django-filter >= 23.0    # FilterSet-based list filtering (filter extra)
 django-htmx >= 1.17      # enhanced HX-Request utilities (htmx extra)
 ```
 
-### Frontend Assets (loaded via CDN in `base.html`)
+### Frontend Assets (vendored)
 
-```html
-<link  href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
-<link  href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-<script src="https://unpkg.com/htmx.org@2.0.4"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/tom-select@2/dist/js/tom-select.complete.min.js"></script>
-```
+Bootstrap 5.3.3, Bootstrap Icons 1.11.3, Tom Select 2.3.1 and htmx 2.0.4 are vendored under `src/sebastian/static/sebastian/vendor/` and served via `{% static %}` — no CDN or internet access at runtime. A project overrides any of them by placing a file at the same relative path in its own `STATICFILES_DIRS`. Versions and file names: see the README, "Frontend dependencies".
 
 ### Documentation Tooling
 

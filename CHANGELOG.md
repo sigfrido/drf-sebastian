@@ -2,13 +2,32 @@
 
 All notable changes to this project are documented here, starting from this release. Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
-## [1.0.0rc3] - unreleased
+## [1.0.0-rc3] - 2026-09-29
+
+### Added
+
+- **Display renderers for detail views** (`Sebastian.field_config[field]['display']`), parallel to the existing `widget` key: built-in `'textbr'` (newlines → `<br>`, XSS-safe) or a callable `(value) -> SafeString`. Rendered by the new `{% render_display data field_name fc %}` tag in both packs. `widget` and `display` are auto-detected from the DRF field style: a model `TextField` gets `widget='textarea'` and `display='textbr'` with no configuration; explicit entries win (spec §4.7)
+- **Semantic button styles**: `gui_config['style']` names a semantic style (`new`, `edit`, `delete`, `view`, `info`, `warning`, `success`, `secondary`) resolved per skin via the new `SEBASTIAN['BUTTON_STYLES']` setting; template filters `btn_class` / `btn_class_cfg`. `color` keeps working as a raw Bootstrap suffix fallback (spec §4.11)
+- **`{% actions "group" %}` template tag** and `gui_config['group']` (default `'actions'`): action buttons are rendered by `_actions.html` partials (both packs) and can be placed in named groups by extending templates
+- **GUI messages view**: `SebastianMessagesView` (override `get_html()` to render e.g. Django session messages), registered by `GUIRouter` at `messages/` (`sebastian-messages`), customizable via `GUIRouter(messages_view=...)`. The htmx pack loads it into `#sebastian-messages` on every page and swapped-in fragment
+- **`NestedGUIMixin.parent_is_editable(parent)` hook**: overridable gate for editing nested resources, evaluated before `Sebastian.edit_permission`; and **`GUIMixin.extra_context()`** to merge view-specific values into the renderer's template context
+- Form tabs: the first group with an editable field is active when the form opens; the active tab caption is bold
+
+### Changed
+
+- **Breaking — no workflow knowledge in the library**: `NestedGUIMixin` no longer duck-types workflow-managed parents (`wfm_state` / `wfm`: suspended state, owner/admin checks). Parent editability is now the `parent_is_editable()` hook (default: editable); workflow-aware behaviour lives in the workflow library (e.g. workflango's `WFNestedGUIMixin`). The renderer no longer puts `workflow_transitions` in the template context (it used to call the view's `get_workflow_transitions()`): a view that needs it provides it through `extra_context()`
+- Top-level create/update/delete in the htmx pack answer with an empty `HttpResponse` + `HX-Redirect` instead of a rendered DRF response
+- Detail header action buttons use `d-flex gap-1` instead of `btn-group`, keeping individual border radius
+- `__version__` aligned with the package version (it was still `0.1.0`)
 
 ### Fixed
 
-- **Typeahead dropdown hidden behind Bootstrap modal**: `initTypeahead` lacked the `onDropdownOpen` hook already present in `initTsSelect`. Typeaheads rendered inside a Bootstrap modal (z-index 1055) had their dropdown obscured by the backdrop. Added the same `position: fixed` + `getBoundingClientRect` + `zIndex: 9999` override
+- **Typeahead dropdown hidden behind a Bootstrap modal**: `initTypeahead` lacked the `onDropdownOpen` hook already present in `initTsSelect`; added the same `position: fixed` + `getBoundingClientRect` + `zIndex: 9999` override
+- **Errors raised by `perform_create` / `perform_update` in nested forms**: a DRF `ValidationError` was re-raised (breaking the inline form) and any other exception showed a generic message; both are now mapped to the form's errors (field errors by name, otherwise `non_field_errors`) and the form is re-rendered
+- **Tab after a failed save**: the re-rendered form (update / partial_update / create) now activates the first group holding a field with errors (or the first editable group for `non_field_errors`) instead of always the first tab, which could hide the error messages
+- Clearer error messages in the renderer for form errors
 
-## [1.0.0rc2] - 2026-09-21
+## [1.0.0-rc2] - 2026-09-21
 
 ### Added
 
@@ -28,7 +47,7 @@ All notable changes to this project are documented here, starting from this rele
 - **Multi-select empty-value option used as placeholder**: when a `<select multiple>` contains an `<option value="">…text…</option>` (e.g. a visual separator), TomSelect reads its text as the input's `placeholder`. Fixed by setting `placeholder: ''` explicitly in the multi-select TomSelect options
 - **Multi-select items overflow without wrapping** in filter forms: added `max-width: 14rem` on `#sb-filter-form .ts-wrapper.multi` so selected tags wrap inside the control instead of stretching the filter row
 
-## [1.0.0rc1] - 2026-08-26
+## [1.0.0-rc1] - 2026-08-26
 
 First release candidate. Feature-complete and used in production by another project; this candidate exists to get more real-world mileage before committing to the API-stability guarantee of a full `1.0.0`.
 
