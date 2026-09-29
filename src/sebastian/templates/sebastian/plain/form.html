@@ -72,7 +72,7 @@
                class="form-control"
                id="id_{{ field_name }}"
                name="{{ field_name }}"
-               value="{% if instance %}{{ instance|get_item:field_name }}{% endif %}"
+               value="{{ instance|form_input_value:field_name }}"
                {% if field.required %}required{% endif %}>
         {% endif %}
 

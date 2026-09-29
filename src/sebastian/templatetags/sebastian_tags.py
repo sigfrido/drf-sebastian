@@ -207,7 +207,7 @@ def form_input_value(data, field_name) -> str:
     filter returns the string truncated to the minute, with no offset.
     """
     val = get_item(data, field_name)
-    if not val:
+    if val is None or val == '':  # not `not val`: 0 / False are real values
         return ''
     s = str(val)
     m = re.match(r'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})', s)

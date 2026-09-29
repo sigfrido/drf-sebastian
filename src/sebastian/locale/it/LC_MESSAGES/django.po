@@ -9,7 +9,7 @@
 # last during Django's app_configs iteration wins, not necessarily this one).
 msgid ""
 msgstr ""
-"Project-Id-Version: drf-sebastian 1.0.0-rc4\n"
+"Project-Id-Version: drf-sebastian 1.0.0-rc6\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-09-29 11:35-0500\n"
 "PO-Revision-Date: 2026-08-26 06:45-0500\n"

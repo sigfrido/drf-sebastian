@@ -122,3 +122,33 @@ def test_input_type_email():
 def test_input_type_char_defaults_to_text():
     from rest_framework import serializers
     assert input_type(serializers.CharField()) == 'text'
+
+
+# ---- form_input_value ------------------------------------------------------
+
+def test_form_input_value_none_and_missing_are_empty():
+    from sebastian.templatetags.sebastian_tags import form_input_value
+    assert form_input_value({'note': None}, 'note') == ''
+    assert form_input_value({}, 'note') == ''
+    assert form_input_value(None, 'note') == ''
+
+
+def test_form_input_value_keeps_zero():
+    """0 is a real value: it must not be rendered as an empty input."""
+    from sebastian.templatetags.sebastian_tags import form_input_value
+    assert form_input_value({'peso': 0}, 'peso') == '0'
+
+
+def test_form_input_value_truncates_datetime_to_minute():
+    from sebastian.templatetags.sebastian_tags import form_input_value
+    assert form_input_value({'d': '2026-09-29T10:15:30+02:00'}, 'd') == '2026-09-29T10:15'
+
+
+def test_textarea_renders_none_as_empty():
+    """A nullable TextField (value None) must not show the literal "None" in the form."""
+    from django.template import Context, Template
+    out = Template(
+        "{% load sebastian_tags %}"
+        "<textarea>{% if instance %}{{ instance|get_item:'note'|default_if_none:'' }}{% endif %}</textarea>"
+    ).render(Context({'instance': {'note': None}}))
+    assert out == '<textarea></textarea>'

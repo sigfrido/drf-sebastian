@@ -112,7 +112,7 @@
                   id="id_{{ field_name }}"
                   name="{{ field_name }}"
                   rows="4"
-                  {% if field.required %}required{% endif %}>{% if instance %}{{ instance|get_item:field_name }}{% endif %}</textarea>
+                  {% if field.required %}required{% endif %}>{% if instance %}{{ instance|get_item:field_name|default_if_none:'' }}{% endif %}</textarea>
         {% else %}
         <input type="{{ field|input_type }}"
                class="form-control"

@@ -2,6 +2,13 @@
 
 All notable changes to this project are documented here, starting from this release. Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.0.0-rc6] - 2026-09-29
+
+### Fixed
+
+- **"None" in the form of nullable fields**: the htmx form rendered a nullable `TextField` whose value is `None` as the literal text "None" inside the `<textarea>` (saved back as a string if the form was submitted); the plain pack did the same for `<input>` values. Both now render an empty value
+- `form_input_value` treated every falsy value as empty, so a numeric `0` showed as an empty input; only `None` and `''` are now empty
+
 ## [1.0.0-rc5] - 2026-09-29
 
 ### Fixed
