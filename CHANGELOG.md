@@ -2,7 +2,13 @@
 
 All notable changes to this project are documented here, starting from this release. Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
-## [1.0.0-rc4] - unreleased
+## [1.0.0-rc5] - unreleased
+
+### Fixed
+
+- **Dropdowns near the bottom of the page were cut off**: single-select and typeahead dropdowns (`position: fixed`, attached to `<body>`) always opened below the control, so near the bottom edge the list ran off the viewport and only the first option was visible. They now open upward when there isn't enough room below and there is more above, and the option list is capped to the available height (it scrolls instead); a `ResizeObserver` re-places the dropdown while open, e.g. when a typeahead loads its results
+
+## [1.0.0-rc4] - 2026-09-29
 
 ### Fixed
 

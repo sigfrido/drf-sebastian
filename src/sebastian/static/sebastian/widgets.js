@@ -11,6 +11,53 @@
   // Track initialized elements to avoid double-init on HTMX partial swaps.
   const _initialized = new WeakSet();
 
+  // ── Dropdown placement ─────────────────────────────────────────────────────
+  // Single-select dropdowns are attached to <body> with position: fixed, so they are
+  // never clipped by scroll containers or covered by Bootstrap modals. Placement is
+  // computed from the control's viewport rectangle: below the control by default,
+  // above it when the space below is not enough and the space above is larger. The
+  // option list is capped to the available height (it scrolls instead of running off
+  // the page). A ResizeObserver re-places the dropdown while it is open, e.g. when a
+  // typeahead loads its results after opening.
+
+  const DROPDOWN_MARGIN = 8;  // px kept free between the dropdown and the viewport edge
+
+  function placeDropdown(ts, dropdown) {
+    var rect = ts.control.getBoundingClientRect();
+    var content = dropdown.querySelector('.ts-dropdown-content');
+    dropdown.style.position = 'fixed';
+    dropdown.style.left     = rect.left  + 'px';
+    dropdown.style.width    = rect.width + 'px';
+    dropdown.style.zIndex   = '9999';
+    if (content) { content.style.maxHeight = ''; }  // back to the CSS default before measuring
+
+    var spaceBelow = window.innerHeight - rect.bottom - DROPDOWN_MARGIN;
+    var spaceAbove = rect.top - DROPDOWN_MARGIN;
+    var height     = dropdown.offsetHeight;
+    var upward     = height > spaceBelow && spaceAbove > spaceBelow;
+    var available  = upward ? spaceAbove : spaceBelow;
+
+    if (content && height > available) {
+      var chrome = height - content.offsetHeight;  // search box, padding, borders
+      content.style.maxHeight = Math.max(available - chrome, 40) + 'px';
+      height = dropdown.offsetHeight;
+    }
+    dropdown.style.top = (upward ? rect.top - height : rect.bottom) + 'px';
+    dropdown.classList.toggle('sb-dropdown-up', upward);
+  }
+
+  function onDropdownOpenPlaced(dropdown) {
+    var ts = this;
+    placeDropdown(ts, dropdown);
+    if (window.ResizeObserver && !dropdown._sbResizeObserver) {
+      dropdown._sbResizeObserver = new ResizeObserver(function () {
+        if (ts.isOpen) { placeDropdown(ts, dropdown); }
+      });
+      var content = dropdown.querySelector('.ts-dropdown-content');
+      if (content) { dropdown._sbResizeObserver.observe(content); }
+    }
+  }
+
   // ── Ordering widget ────────────────────────────────────────────────────────
   // Rendered as <select class="sb-ordering" multiple data-max-items="N"
   //              data-current="field1,-field2">
@@ -78,14 +125,7 @@
         // scores[7] === scores['7'] in JS — hideSelected would delete API results whose integer PK matches the native option's string value.
         hideSelected:  false,
         preload:       minChars === 0,
-        onDropdownOpen: function (dropdown) {
-          var rect = this.control.getBoundingClientRect();
-          dropdown.style.position = 'fixed';
-          dropdown.style.top      = rect.bottom + 'px';
-          dropdown.style.left     = rect.left   + 'px';
-          dropdown.style.width    = rect.width  + 'px';
-          dropdown.style.zIndex   = '9999';
-        },
+        onDropdownOpen: onDropdownOpenPlaced,
         // Render both remote options ({label}) and native-<select> options ({text}).
         render: {
           option: function (data, escape) {
@@ -199,14 +239,7 @@
         : {
             allowEmptyOption: true,
             dropdownParent: 'body',
-            onDropdownOpen: function (dropdown) {
-              var rect = this.control.getBoundingClientRect();
-              dropdown.style.position = 'fixed';
-              dropdown.style.top    = rect.bottom + 'px';
-              dropdown.style.left   = rect.left   + 'px';
-              dropdown.style.width  = rect.width  + 'px';
-              dropdown.style.zIndex = '9999';
-            },
+            onDropdownOpen: onDropdownOpenPlaced,
           };
       new TomSelect(el, opts);
     });
