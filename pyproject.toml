@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "drf-sebastian"
-version = "1.0.0-rc3"
+version = "1.0.0-rc4"
 description = "Server-side HTML GUI generator for Django REST Framework"
 readme = "README.md"
 license = {file = "LICENSE"}
