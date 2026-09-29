@@ -117,3 +117,24 @@ def test_strans_and_sgettext_usages_are_all_in_the_extraction_registry():
         'drop them from the .po file. Add a matching pgettext(\'sebastian\', ...) '
         'line there.'
     )
+
+
+def test_compiled_catalog_is_versioned_and_up_to_date(tmp_path):
+    """The committed django.mo must match django.po: packages installed from git get no
+    compile step, so a missing or stale .mo silently leaves the GUI in English."""
+    import gettext
+    import shutil
+    import subprocess
+    from pathlib import Path
+
+    import pytest
+
+    lc = Path(__file__).resolve().parents[1] / 'src' / 'sebastian' / 'locale' / 'it' / 'LC_MESSAGES'
+    assert (lc / 'django.mo').exists(), 'django.mo missing: run compilemessages and commit it'
+    if shutil.which('msgfmt') is None:
+        pytest.skip('msgfmt (GNU gettext) not available')
+    fresh = tmp_path / 'django.mo'
+    subprocess.run(['msgfmt', '-o', str(fresh), str(lc / 'django.po')], check=True)
+    with open(lc / 'django.mo', 'rb') as committed, open(fresh, 'rb') as compiled:
+        assert gettext.GNUTranslations(committed)._catalog == gettext.GNUTranslations(compiled)._catalog, \
+            'django.mo is stale: run compilemessages and commit it'

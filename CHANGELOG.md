@@ -2,6 +2,13 @@
 
 All notable changes to this project are documented here, starting from this release. Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.0.0-rc4] - unreleased
+
+### Fixed
+
+- **Italian translation missing when installed from git**: `*.mo` was gitignored, so a package installed with `pip install git+https://…@tag` shipped only `django.po` and the whole GUI chrome stayed in English. The compiled `locale/it/LC_MESSAGES/django.mo` is now versioned, and a test fails if it is missing or out of date with the `.po`
+- Missing Italian translations for the built-in skin names (Light/Dark/Accessible theme)
+
 ## [1.0.0-rc3] - 2026-09-29
 
 ### Added

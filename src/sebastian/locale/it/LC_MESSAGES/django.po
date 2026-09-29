@@ -9,9 +9,9 @@
 # last during Django's app_configs iteration wins, not necessarily this one).
 msgid ""
 msgstr ""
-"Project-Id-Version: drf-sebastian 0.1.0\n"
+"Project-Id-Version: drf-sebastian 1.0.0-rc4\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-26 10:46-0500\n"
+"POT-Creation-Date: 2026-09-29 11:35-0500\n"
 "PO-Revision-Date: 2026-08-26 06:45-0500\n"
 "Last-Translator: Luca Sigfrido Percich\n"
 "Language-Team: Italian\n"
@@ -163,6 +163,18 @@ msgstr "Nome utente"
 msgctxt "sebastian"
 msgid "Yes"
 msgstr "Sì"
+
+msgctxt "sebastian"
+msgid "Light theme"
+msgstr "Tema chiaro"
+
+msgctxt "sebastian"
+msgid "Dark theme"
+msgstr "Tema scuro"
+
+msgctxt "sebastian"
+msgid "Accessible theme"
+msgstr "Tema accessibile"
 
 #, python-format
 msgctxt "sebastian"

@@ -690,7 +690,7 @@ prompt = sgettext('Delete $OBJECT?')
    ```
    All three `--ignore` flags are required: `docs/*` because pdoc renders `{% strans %}` as literal text inside `docs/api/*.html`, which crashes makemessages' template parser (`SyntaxError: Translation blocks must not include other block tags: strans`); `testproject/*` because the demo app isn't part of the library's own catalog; `.venv/*` to skip installed dependencies.
 4. New entries land in `django.po` with an empty `msgstr ""` — write the Italian translation by hand (or add a new `<lang>/LC_MESSAGES/django.po` for another language).
-5. Compile: `cd src/sebastian && django-admin compilemessages -l it` (requires GNU `gettext`/`msgfmt` on the system — a build-time tool, not a runtime dependency of the library).
+5. Compile: `cd src/sebastian && django-admin compilemessages -l it` (requires GNU `gettext`/`msgfmt` on the system — a build-time tool, not a runtime dependency of the library) and **commit the resulting `django.mo`**: packages installed from git (`pip install git+https://…@tag`) get no compile step, so without a versioned `.mo` the GUI stays in English. `tests/test_i18n.py::test_compiled_catalog_is_versioned_and_up_to_date` fails if the committed `.mo` is missing or differs from the `.po`.
 6. Run the test suite — `tests/test_i18n.py::test_strans_and_sgettext_usages_are_all_in_the_extraction_registry` specifically fails if step 2 was forgotten, before the omission can silently reach a release.
 
 ---
