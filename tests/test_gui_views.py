@@ -896,3 +896,28 @@ class TestActiveGroupAfterErrors:
         data = {'serializer': self._serializer(read_only=('title', 'budget'))}
         assert r._get_active_group(self._config(), data, 'update_form', {}) == 'management'
         assert r._get_active_group(self._config(), data, 'retrieve', {}) is None
+
+
+@pytest.mark.django_db
+class TestPageTitle:
+    """Page title from view.get_page_title(): in the full page <head> and in htmx content
+    fragments (htmx updates document.title from it), never in inline fragments."""
+
+    def test_list_title(self, auth_client, supplier):
+        r = auth_client.get('/gui/suppliers/', **GUI)
+        assert b'<title>Suppliers - List</title>' in r.content
+
+    def test_detail_title_in_htmx_fragment(self, auth_client, supplier):
+        r = auth_client.get(f'/gui/suppliers/{supplier.pk}/', **HTMX)
+        assert f'<title>Suppliers - {supplier}</title>'.encode() in r.content
+
+    def test_form_titles(self, auth_client, supplier):
+        r = auth_client.get(f'/gui/suppliers/{supplier.pk}/edit/', **HTMX)
+        assert f'<title>Suppliers - {supplier} [Edit]</title>'.encode() in r.content
+        r = auth_client.get('/gui/suppliers/new/', **HTMX)
+        assert b'<title>Suppliers - New [Edit]</title>' in r.content
+
+    def test_no_title_in_inline_fragment(self, auth_client, purchase_request):
+        r = auth_client.get(f'/gui/requests/{purchase_request.pk}/attachments/', **HTMX)
+        assert r.status_code == 200
+        assert b'<title>' not in r.content

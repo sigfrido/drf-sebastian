@@ -1,9 +1,6 @@
 {% extends pack_base %}
 {% load sebastian_tags %}
 
-{% block title %}
-  {% if data.action == 'create' %}{% strans "New" %}{% else %}{% strans "Edit" %}{% endif %}
-{% endblock %}
 
 {% block content %}
 {% with action=data.action instance=data.instance serializer=data.serializer %}

@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}Sebastian{% endblock %}</title>
+  <title>{% block title %}{{ page_title|default:"Sebastian" }}{% endblock %}</title>
   {% load static %}
   <link rel="stylesheet" href="{% static 'sebastian/vendor/bootstrap/bootstrap.min.css' %}">
   <link rel="stylesheet" href="{% static 'sebastian/vendor/bootstrap-icons/bootstrap-icons.min.css' %}">

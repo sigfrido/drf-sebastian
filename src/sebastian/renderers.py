@@ -136,6 +136,7 @@ class SebastianHTMLRenderer(BaseRenderer):
         _raw_lookup = getattr(view, 'lookup_field', 'pk') if view else 'pk'
         lookup_field = 'id' if _raw_lookup == 'pk' else _raw_lookup
         context = {
+            'page_title':         self._get_page_title(view, data, action),
             'data':               data,
             'items':              items,
             'display_fields':     self._get_display_fields(sebastian_config, items),
@@ -257,6 +258,19 @@ class SebastianHTMLRenderer(BaseRenderer):
             except TemplateDoesNotExist:
                 pass
         return f'sebastian/{pack}/{suffix}'
+
+    def _get_page_title(self, view, data, action) -> str:
+        """Page title from view.get_page_title(action, obj), '' if the view has none."""
+        get_title = getattr(view, 'get_page_title', None)
+        if not callable(get_title):
+            return ''
+        obj = getattr(view, '_sebastian_obj', None)
+        if obj is None and isinstance(data, dict) and data.get('serializer') is not None:
+            obj = getattr(data['serializer'], 'instance', None)
+        try:
+            return get_title(action, obj)
+        except Exception:
+            return ''
 
     def _get_visible_groups(self, sebastian_config, data, action) -> list:
         """Return groups that should be rendered, filtering out fully-hidden ones.

@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}{% block brand_title %}Sebastian{% endblock %}{% endblock %}</title>
+  <title>{% block title %}{% if page_title %}{{ page_title }}{% else %}{% block brand_title %}Sebastian{% endblock %}{% endif %}{% endblock %}</title>
   {% load static %}
   <link rel="stylesheet" href="{% static 'sebastian/vendor/bootstrap/bootstrap.min.css' %}">
   <link rel="stylesheet" href="{% static 'sebastian/vendor/bootstrap-icons/bootstrap-icons.min.css' %}">
@@ -35,6 +35,7 @@
   <div class="row">
     <main class="col" id="sebastian-content">
 {% endif %}
+{% if is_htmx and page_title and not is_inline and htmx_target == '#sebastian-content' %}<title>{{ page_title }}</title>{% endif %}
 {% block messages %}{% if messages_url %}<div id="sebastian-messages" hx-get="{{ messages_url }}" hx-trigger="load" hx-swap="outerHTML" class="mb-2"></div>{% else %}<div id="sebastian-messages" class="mb-2"></div>{% endif %}{% endblock %}
 {% block content %}{% endblock %}
 

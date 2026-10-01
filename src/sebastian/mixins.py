@@ -74,6 +74,23 @@ class _SebastianBaseMixin:
             label = getattr(self.Sebastian, 'label')
         return label or super().get_view_name()
 
+    def get_page_title(self, action=None, obj=None):
+        """Title of the page (browser tab), built from the view label.
+
+        Defaults: list → "Label - List"; detail → "Label - <obj>"; form →
+        "Label - <obj> [Edit]" ("Label - New [Edit]" when creating); any other
+        action → "Label - <obj>" or just "Label". Override for custom pages.
+        """
+        label = self.get_view_name()
+        edit = sgettext('Edit')
+        if action == 'list':
+            return f'{label} - {sgettext("List")}'
+        if action in ('create_form', 'create'):
+            return f'{label} - {sgettext("New")} [{edit}]'
+        if action in ('update_form', 'update', 'partial_update'):
+            return f'{label} - {obj} [{edit}]' if obj is not None else f'{label} [{edit}]'
+        return f'{label} - {obj}' if obj is not None else label
+
     def get_renderers(self):
         # For API routes (no sebastian_gui flag), never render HTML — always JSON.
         # The flag is set on the Django request by GUIRouter._wrap() before dispatch,
@@ -1017,6 +1034,13 @@ class SingletonGUIMixin(_SebastianBaseMixin):
     """
 
     edit_mode: bool = False
+
+    def get_page_title(self, action=None, obj=None):
+        """A singleton has no list and its object name adds nothing: "Label" / "Label [Edit]"."""
+        label = self.get_view_name()
+        if action in ('update_form', 'update', 'partial_update'):
+            return f'{label} [{sgettext("Edit")}]'
+        return label
 
     def dispatch(self, request, *args, **kwargs):
         # Set the flag directly — this view is not wrapped by GUIRouter._wrap()

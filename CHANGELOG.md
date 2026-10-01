@@ -2,6 +2,16 @@
 
 All notable changes to this project are documented here, starting from this release. Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.0.0-rc7] - unreleased
+
+### Added
+
+- **Page titles**: `get_page_title(action, obj)` on the viewset (`_SebastianBaseMixin`, overridable) builds the browser title — list "Label - List", detail "Label - <obj>", form "Label - <obj> [Edit]" ("Label - New [Edit]" when creating); `SingletonGUIMixin`: "Label" / "Label [Edit]". The renderer passes it as `page_title`; the base templates use it in `<title>` (falling back to `brand_title`)
+
+### Fixed
+
+- **Title stuck on the first page loaded**: htmx content fragments carried no `<title>`, so navigating list → detail → form kept e.g. "Requests — List". Fragments swapped into `#sebastian-content` now include `<title>{{ page_title }}</title>` (htmx updates `document.title` from it); inline fragments don't. The generic per-template titles ("Detail", "Edit", "New") are gone
+
 ## [1.0.0-rc6] - 2026-09-29
 
 ### Fixed

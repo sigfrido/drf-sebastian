@@ -783,6 +783,11 @@ class RequestViewSet(GUIMixin, viewsets.ModelViewSet):
         """Extra values merged into the renderer's template context (default: {})."""
         return {'workflow_transitions': ...}
 
+    def get_page_title(self, action=None, obj=None):
+        """Browser title (`page_title` in templates; also sent in htmx content fragments).
+        Default: "Label - List" / "Label - <obj>" / "Label - <obj> [Edit]"."""
+        return super().get_page_title(action, obj)
+
 
 class AttachmentViewSet(NestedGUIMixin, viewsets.ModelViewSet):
 
