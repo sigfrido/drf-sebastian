@@ -63,7 +63,7 @@
             {% if cfg.icon or cfg.label %}
             {{ fv }}
             <a href="{{ request.path }}{{ link_action.name }}/"
-               class="btn btn-{{ cfg.color|default:'outline-secondary' }} btn-sm ms-1"
+               class="btn {{ cfg|btn_class_cfg:skin_name }} btn-sm ms-1"
                title="{{ cfg.hint|default:cfg.label|default:link_action.name }}">
               {% if cfg.icon %}{% icon cfg.icon %}{% endif %}{{ cfg.label }}
             </a>
@@ -96,7 +96,7 @@
         {% if cfg.icon or cfg.label %}
         {{ fv }}
         <a href="{{ request.path }}{{ link_action.name }}/"
-           class="btn btn-{{ cfg.color|default:'outline-secondary' }} btn-sm ms-1"
+           class="btn {{ cfg|btn_class_cfg:skin_name }} btn-sm ms-1"
            title="{{ cfg.hint|default:cfg.label|default:link_action.name }}">
           {% if cfg.icon %}{% icon cfg.icon %}{% endif %}{{ cfg.label }}
         </a>

@@ -108,7 +108,8 @@ def isodt(value, fmt='d/m/Y H:i'):
 
 @register.filter
 def display_value(data, field_name):
-    """Return the display value for field_name: uses {field}__display if present, else raw value."""
+    """Return the display value for field_name: uses {field}__display if present, else raw value.
+    A None value is shown as an empty string (never the literal "None")."""
     try:
         display = data[f'{field_name}__display']
         if display != '' and display is not None:
@@ -116,11 +117,12 @@ def display_value(data, field_name):
     except (KeyError, TypeError):
         pass
     try:
-        return data[field_name]
+        value = data[field_name]
     except (KeyError, TypeError):
         if isinstance(data, str):
             return ''
-        return getattr(data, field_name, '')
+        value = getattr(data, field_name, '')
+    return '' if value is None else value
 
 
 @register.simple_tag

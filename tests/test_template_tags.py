@@ -52,6 +52,12 @@ def test_display_value_skips_none_display():
     assert display_value(data, 'name') == 'Acme'
 
 
+def test_display_value_none_returns_empty():
+    # nullable date/decimal fields: never the literal "None" in the detail view
+    assert display_value({'budget': None}, 'budget') == ''
+    assert display_value({'budget': 0}, 'budget') == 0
+
+
 def test_display_value_missing_key_returns_empty():
     assert display_value({'a': 1}, 'missing') == ''
 
@@ -166,3 +172,28 @@ class TestButtonStyles:
     def test_unknown_style_falls_back_to_bootstrap_modifier(self):
         from sebastian.templatetags.sebastian_tags import btn_class
         assert btn_class('primary') == 'btn-primary'
+
+
+class TestActionOrder:
+    """gui_config['order']: ordered actions first (ascending), then the others by name."""
+
+    def test_order(self, rf):
+        from sebastian.mixins import _SebastianBaseMixin
+
+        def _action(**cfg):
+            def method(self, request):
+                pass
+            method.mapping = {'get': 'x'}
+            method.gui_config = {'label': 'x', **cfg}
+            return method
+
+        class View(_SebastianBaseMixin):
+            alfa = _action()
+            beta = _action(order=20)
+            gamma = _action(order=10)
+            delta = _action()
+
+        view = View()
+        view.request = rf.get('/')
+        names = [a['name'] for a in view.get_available_actions()]
+        assert names == ['gamma', 'beta', 'alfa', 'delta']

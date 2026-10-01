@@ -242,6 +242,10 @@ class _SebastianBaseMixin:
                 'method': primary_method,
                 'disabled': not permitted,
             })
+        # gui_config['order'] (optional): actions with an order come first, ascending; the
+        # others follow in name order (dir() is sorted and sort() is stable).
+        available.sort(key=lambda a: (a['gui_config'].get('order') is None,
+                                      a['gui_config'].get('order') or 0))
         return available
 
     # ------------------------------------------------------------------ #

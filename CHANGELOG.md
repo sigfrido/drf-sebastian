@@ -10,10 +10,13 @@ All notable changes to this project are documented here, starting from this rele
 
 ### Added
 
+- **Action order**: optional `gui_config['order']` (number). Actions with an order are listed first, ascending; the others follow in method-name order as before
 - **Page titles**: `get_page_title(action, obj)` on the viewset (`_SebastianBaseMixin`, overridable) builds the browser title — list "Label - List", detail "Label - <obj>", form "Label - <obj> [Edit]" ("Label - New [Edit]" when creating); `SingletonGUIMixin`: "Label" / "Label [Edit]". The renderer passes it as `page_title`; the base templates use it in `<title>` (falling back to `brand_title`)
 
 ### Fixed
 
+- **"None" in the detail view**: `display_value` returned the raw `None` of empty nullable fields (dates, decimals…), shown as the literal text "None"; it now returns an empty string
+- The download buttons of `link_field` actions (detail and list, both packs) were outlined (`cfg.color` defaulting to `outline-secondary`); they now resolve through `btn_class_cfg` like the other action buttons
 - **Title stuck on the first page loaded**: htmx content fragments carried no `<title>`, so navigating list → detail → form kept e.g. "Requests — List". Fragments swapped into `#sebastian-content` now include `<title>{{ page_title }}</title>` (htmx updates `document.title` from it); inline fragments don't. The generic per-template titles ("Detail", "Edit", "New") are gone
 
 ## [1.0.0-rc6] - 2026-09-29
