@@ -76,7 +76,7 @@
     <button type="submit" class="btn btn-{{ data.confirm_style|default:'primary' }}">
       {% if data.confirm_icon %}{% icon data.confirm_icon %} {% endif %}{% strans "Confirm" %}
     </button>
-    <a href="{{ data.cancel_url }}" class="btn btn-outline-secondary">{% strans "Cancel" %}</a>
+    <a href="{{ data.cancel_url }}" class="btn btn-secondary">{% strans "Cancel" %}</a>
   </div>
 </form>
 {% endblock %}

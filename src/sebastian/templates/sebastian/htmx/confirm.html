@@ -84,7 +84,7 @@
       </div>
 
       <div class="modal-footer">
-        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{% strans "Cancel" %}</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% strans "Cancel" %}</button>
         <button type="submit" form="sb-confirm-form"
                 class="btn btn-{{ data.confirm_style|default:'primary' }}">
           {% if data.confirm_icon %}{% icon data.confirm_icon %} {% endif %}{% strans "Confirm" %}

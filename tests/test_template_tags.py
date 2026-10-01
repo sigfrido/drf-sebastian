@@ -152,3 +152,17 @@ def test_textarea_renders_none_as_empty():
         "<textarea>{% if instance %}{{ instance|get_item:'note'|default_if_none:'' }}{% endif %}</textarea>"
     ).render(Context({'instance': {'note': None}}))
     assert out == '<textarea></textarea>'
+
+
+class TestButtonStyles:
+    """Built-in semantic styles resolve to solid (filled) Bootstrap buttons."""
+
+    def test_builtin_styles_are_solid(self):
+        from sebastian.templatetags.sebastian_tags import btn_class
+        for style in ('new', 'edit', 'delete', 'view', 'info', 'warning', 'success', 'secondary'):
+            assert 'outline' not in btn_class(style)
+        assert btn_class('view') == 'btn-secondary'
+
+    def test_unknown_style_falls_back_to_bootstrap_modifier(self):
+        from sebastian.templatetags.sebastian_tags import btn_class
+        assert btn_class('primary') == 'btn-primary'

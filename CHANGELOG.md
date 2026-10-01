@@ -4,6 +4,10 @@ All notable changes to this project are documented here, starting from this rele
 
 ## [1.0.0-rc7] - unreleased
 
+### Changed
+
+- **Solid buttons**: the built-in `view` style is now `btn-secondary` (was `btn-outline-secondary`), and the Cancel, Filter, pagination and file-delete buttons of the htmx and plain templates are filled (`btn-secondary`, `btn-danger`) instead of outlined. Bootstrap's solid buttons darken on hover. Restore the old look per skin with `SEBASTIAN['BUTTON_STYLES']`
+
 ### Added
 
 - **Page titles**: `get_page_title(action, obj)` on the viewset (`_SebastianBaseMixin`, overridable) builds the browser title — list "Label - List", detail "Label - <obj>", form "Label - <obj> [Edit]" ("Label - New [Edit]" when creating); `SingletonGUIMixin`: "Label" / "Label [Edit]". The renderer passes it as `page_title`; the base templates use it in `<title>` (falling back to `brand_title`)

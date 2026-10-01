@@ -163,9 +163,9 @@
             hx-get="{{ cancel_url }}"
             hx-target="{{ htmx_target }}"
             {% if not is_inline %}hx-push-url="{{ cancel_url }}"{% endif %}
-            class="btn btn-outline-secondary">{% strans "Cancel" %}</button>
+            class="btn btn-secondary">{% strans "Cancel" %}</button>
     {% else %}
-    <a href="{{ request.path }}../" class="btn btn-outline-secondary">{% strans "Cancel" %}</a>
+    <a href="{{ request.path }}../" class="btn btn-secondary">{% strans "Cancel" %}</a>
     {% endif %}
   </div>
 

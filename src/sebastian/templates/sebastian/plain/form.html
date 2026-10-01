@@ -104,9 +104,9 @@
   <div class="d-flex gap-2">
     <button type="submit" class="btn btn-primary">{% strans "Save" %}</button>
     {% if cancel_url %}
-    <a href="{{ cancel_url }}" class="btn btn-outline-secondary">{% strans "Cancel" %}</a>
+    <a href="{{ cancel_url }}" class="btn btn-secondary">{% strans "Cancel" %}</a>
     {% else %}
-    <a href="{{ request.path }}../" class="btn btn-outline-secondary">{% strans "Cancel" %}</a>
+    <a href="{{ request.path }}../" class="btn btn-secondary">{% strans "Cancel" %}</a>
     {% endif %}
   </div>
 

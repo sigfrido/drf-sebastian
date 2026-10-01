@@ -110,7 +110,7 @@ _DEFAULT_BUTTON_STYLES = {
     'new':       'btn-primary',
     'edit':      'btn-primary',
     'delete':    'btn-danger',
-    'view':      'btn-outline-secondary',
+    'view':      'btn-secondary',
     'info':      'btn-info',
     'warning':   'btn-warning',
     'success':   'btn-success',

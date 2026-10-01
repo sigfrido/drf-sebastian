@@ -44,7 +44,7 @@
   {% endfor %}
   {% endblock filter_fields %}
   <div class="col-auto align-self-end">
-    <button type="submit" class="btn btn-outline-secondary btn-sm">{% strans "Filter" %}</button>
+    <button type="submit" class="btn btn-secondary btn-sm">{% strans "Filter" %}</button>
     <a href="{{ request.path }}" class="btn btn-link btn-sm">{% strans "Clear" %}</a>
   </div>
 </form>
@@ -193,12 +193,12 @@
   <small class="text-muted">{% blocktrans context "sebastian" count counter=pagination.count %}{{ counter }} record{% plural %}{{ counter }} records{% endblocktrans %}</small>
   <div>
     {% if pagination.previous %}
-    <a href="{{ pagination.previous }}" class="btn btn-outline-secondary btn-sm">
+    <a href="{{ pagination.previous }}" class="btn btn-secondary btn-sm">
       {% icon "chevron-left" %}
     </a>
     {% endif %}
     {% if pagination.next %}
-    <a href="{{ pagination.next }}" class="btn btn-outline-secondary btn-sm">
+    <a href="{{ pagination.next }}" class="btn btn-secondary btn-sm">
       {% icon "chevron-right" %}
     </a>
     {% endif %}
