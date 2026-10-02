@@ -62,13 +62,13 @@
           {% if fv %}
             {% if cfg.icon or cfg.label %}
             {{ fv }}
-            <a href="{{ request.path }}{{ link_action.name }}/"
+            <a href="{{ request.path }}{{ link_action.name }}/"{% if cfg.open_url %} target="_blank" rel="noopener"{% endif %}
                class="btn {{ cfg|btn_class_cfg:skin_name }} btn-sm ms-1"
                title="{{ cfg.hint|default:cfg.label|default:link_action.name }}">
               {% if cfg.icon %}{% icon cfg.icon %}{% endif %}{{ cfg.label }}
             </a>
             {% else %}
-            <a href="{{ request.path }}{{ link_action.name }}/"
+            <a href="{{ request.path }}{{ link_action.name }}/"{% if cfg.open_url %} target="_blank" rel="noopener"{% endif %}
                title="{{ cfg.hint|default:link_action.name }}">{{ fv|filename }}</a>
             {% endif %}
           {% else %}—{% endif %}
@@ -95,13 +95,13 @@
       {% if fv %}
         {% if cfg.icon or cfg.label %}
         {{ fv }}
-        <a href="{{ request.path }}{{ link_action.name }}/"
+        <a href="{{ request.path }}{{ link_action.name }}/"{% if cfg.open_url %} target="_blank" rel="noopener"{% endif %}
            class="btn {{ cfg|btn_class_cfg:skin_name }} btn-sm ms-1"
            title="{{ cfg.hint|default:cfg.label|default:link_action.name }}">
           {% if cfg.icon %}{% icon cfg.icon %}{% endif %}{{ cfg.label }}
         </a>
         {% else %}
-        <a href="{{ request.path }}{{ link_action.name }}/"
+        <a href="{{ request.path }}{{ link_action.name }}/"{% if cfg.open_url %} target="_blank" rel="noopener"{% endif %}
            title="{{ cfg.hint|default:link_action.name }}">{{ fv|filename }}</a>
         {% endif %}
       {% else %}—{% endif %}

@@ -288,6 +288,15 @@ class TestAttachmentInlineGUI:
         assert r.status_code == 200
         assert 'attachment' not in r.get('Content-Disposition', '')
 
+    def test_link_field_opens_in_new_tab_only_with_open_url(self, auth_client, purchase_request,
+                                                             attachment, monkeypatch):
+        from demo.views import AttachmentViewSet
+        url = f'/gui/requests/{purchase_request.pk}/attachments/{attachment.pk}/'
+        link = f'href="{url}download/" target="_blank" rel="noopener"'.encode()
+        assert link not in auth_client.get(url, **HTMX).content
+        monkeypatch.setitem(AttachmentViewSet.download.gui_config, 'open_url', True)
+        assert link in auth_client.get(url, **HTMX).content
+
     def test_inline_update_returns_updated_list(self, auth_client, purchase_request, attachment):
         r = auth_client.patch(
             f'/gui/requests/{purchase_request.pk}/attachments/{attachment.pk}/',
