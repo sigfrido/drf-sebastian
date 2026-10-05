@@ -42,6 +42,22 @@ body {
   color: var(--bs-body-color);
 }
 
+/* TomSelect: the vendor CSS hard-codes dark grey text (#343a40) on .ts-control and
+   .ts-dropdown. Single selects escape it because their dropdown also carries .form-select
+   (above); multi-select dropdowns and typed text did not, and were unreadable on the dark
+   background. Options use the same color as the highlighted one. */
+.ts-control, .ts-control input, .ts-dropdown {
+  color: var(--bs-body-color);
+}
+
+.ts-dropdown {
+  border-color: #495057;
+}
+
+.ts-dropdown .optgroup-header {
+  color: var(--bs-secondary-color);
+}
+
 .modal-content {
   background-color: #2b3035;
   border-color: #495057;

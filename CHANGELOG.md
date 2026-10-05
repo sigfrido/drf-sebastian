@@ -16,6 +16,7 @@ All notable changes to this project are documented here, starting from this rele
 
 ### Fixed
 
+- **Dark skin, multi-select dropdowns**: the options of multi-select TomSelect dropdowns (and the text typed in the control) used TomSelect's hard-coded dark grey and were barely readable on the dark background; single selects were fine only because their dropdown also carries `.form-select`. The dark skin now sets the body text color on `.ts-control` and `.ts-dropdown`, the same as the highlighted option
 - **"None" in the detail view**: `display_value` returned the raw `None` of empty nullable fields (dates, decimals…), shown as the literal text "None"; it now returns an empty string
 - The download buttons of `link_field` actions (detail and list, both packs) were outlined (`cfg.color` defaulting to `outline-secondary`); they now resolve through `btn_class_cfg` like the other action buttons
 - **Title stuck on the first page loaded**: htmx content fragments carried no `<title>`, so navigating list → detail → form kept e.g. "Requests — List". Fragments swapped into `#sebastian-content` now include `<title>{{ page_title }}</title>` (htmx updates `document.title` from it); inline fragments don't. The generic per-template titles ("Detail", "Edit", "New") are gone
