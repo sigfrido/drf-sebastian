@@ -175,7 +175,7 @@ Sebastian's default GUI chrome vendors its own copies of these libraries under `
 | [Bootstrap](https://getbootstrap.com/) | 5.3.3 | `bootstrap/bootstrap.min.css`, `bootstrap/bootstrap.bundle.min.js` | both packs (CSS); `htmx` pack only (JS bundle) |
 | [Bootstrap Icons](https://icons.getbootstrap.com/) | 1.11.3 | `bootstrap-icons/bootstrap-icons.min.css` (+ `fonts/bootstrap-icons.woff`, `.woff2`) | both packs |
 | [Tom Select](https://tom-select.js.org/) | 2.3.1 | `tom-select/tom-select.bootstrap5.min.css`, `tom-select/tom-select.complete.min.js` | `htmx` pack only |
-| [htmx](https://htmx.org/) | 2.0.4 | `htmx/htmx.min.js` | `htmx` pack only |
+| [htmx](https://htmx.org/) | 4.0.0 | `htmx/htmx.min.js` | `htmx` pack only |
 
 These are pinned to a single tested version each; no compatibility range across versions has been established yet (see roadmap). When bumping one, re-run the full test suite and a manual smoke test of both packs before releasing.
 

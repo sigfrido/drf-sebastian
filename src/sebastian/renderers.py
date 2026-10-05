@@ -17,6 +17,22 @@ def _find_in_mro(view, attr):
     return None
 
 
+
+def is_htmx_partial(request) -> bool:
+    """True for an htmx request that swaps a fragment into the page.
+
+    htmx 4 restores history (back/forward) by fetching the page again
+    (HX-History-Restore-Request, HX-Request-Type: full) and swapping in the element marked
+    hx-history-elt (#sebastian-content): those requests carry HX-Request too, but need the
+    full page, from which htmx extracts that element.
+    """
+    meta = getattr(request, 'META', None) or {}
+    return bool(
+        meta.get('HTTP_HX_REQUEST')
+        and not meta.get('HTTP_HX_HISTORY_RESTORE_REQUEST')
+        and meta.get('HTTP_HX_REQUEST_TYPE', 'partial') != 'full'
+    )
+
 class SebastianHTMLRenderer(BaseRenderer):
     """DRF renderer that turns any GUI-mode response into HTML.
 
@@ -79,7 +95,7 @@ class SebastianHTMLRenderer(BaseRenderer):
             template_name = (
                 getattr(view, 'form_template', None) or f'sebastian/{pack}/form.html'
             )
-        is_htmx = bool(request and request.META.get('HTTP_HX_REQUEST'))
+        is_htmx = bool(request) and is_htmx_partial(request)
 
         # Unpack DRF paginated response so templates always get a plain list
         if is_dict and 'results' in data:
@@ -278,8 +294,9 @@ class SebastianHTMLRenderer(BaseRenderer):
         A FieldGroup is hidden when GUISerializerMixin removed all its fields
         because visible_permission returned False.  Detection strategy:
         - retrieve: check whether any field appears in the serialized data dict.
-        - update_form / create_form: check whether any field is still present in
-          serializer.fields (hidden fields are removed by get_fields()).
+        - forms (update_form / create_form, and the form re-rendered with validation
+          errors after update / partial_update / create): check whether any field is still
+          present in serializer.fields (hidden fields are removed by get_fields()).
         Non-FieldGroup entries are always included.
         """
         from sebastian.config import FieldGroup
@@ -291,7 +308,7 @@ class SebastianHTMLRenderer(BaseRenderer):
                 if not isinstance(g, FieldGroup) or any(f in data for f in g.fields)
             ]
 
-        if action in ('update_form', 'create_form') and isinstance(data, dict):
+        if action in ('update_form', 'create_form') + self._FORM_ACTIONS and isinstance(data, dict):
             serializer = data.get('serializer')
             if serializer is not None:
                 serializer_fields = getattr(serializer, 'fields', {})

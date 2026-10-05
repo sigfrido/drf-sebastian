@@ -43,6 +43,35 @@ class TestSupplierGUIList:
         assert b'<!doctype' not in r.content.lower()
         assert b'Acme Inc' in r.content
 
+    def test_htmx4_history_restore_gets_full_page(self, auth_client, supplier):
+        # htmx 4 refetches the page on back/forward and swaps it into <body>
+        for headers in ({'HTTP_HX_HISTORY_RESTORE_REQUEST': 'true'},
+                        {'HTTP_HX_REQUEST_TYPE': 'full'}):
+            r = auth_client.get('/gui/suppliers/', **HTMX, **headers)
+            assert r.status_code == 200
+            assert b'<!doctype' in r.content.lower()
+        r = auth_client.get('/gui/suppliers/', **HTMX, HTTP_HX_REQUEST_TYPE='partial')
+        assert b'<!doctype' not in r.content.lower()
+
+    def test_expired_session_handler_knows_the_login_url(self, auth_client, settings):
+        # htmx requests redirected to the login page load it in full (handler in _base.html)
+        settings.LOGIN_URL = '/accounts/login/'
+        r = auth_client.get('/gui/suppliers/', **GUI)
+        assert b"var SB_LOGIN_URL = '" in r.content
+        assert b'raw.redirected' in r.content
+
+    def test_history_restores_only_the_content_area(self, auth_client):
+        # back/forward swaps only #sebastian-content: re-swapping <body> would re-run its scripts
+        r = auth_client.get('/gui/suppliers/', **GUI)
+        assert b'<main class="col" id="sebastian-content" hx-history-elt>' in r.content
+
+    def test_csrf_token_on_body_not_in_inherited_hx_headers(self, auth_client):
+        # htmx 4 does not inherit hx-headers: the token is added by an htmx:config:request listener
+        r = auth_client.get('/gui/suppliers/', **GUI)
+        assert b'<body data-sb-csrf-token="' in r.content
+        assert b'<body hx-headers' not in r.content
+        assert b"htmx:config:request" in r.content
+
     def test_full_page_includes_bootstrap(self, auth_client):
         r = auth_client.get('/gui/suppliers/', **GUI)
         assert b'bootstrap' in r.content.lower()
@@ -944,3 +973,66 @@ class TestDropdownWidth:
                              'dropdown_width': '30rem'})
         r = auth_client.get('/gui/requests/new/', **HTMX)
         assert b'data-dropdown-width="30rem"' in r.content
+
+
+@pytest.mark.django_db
+class TestFormErrorVisibleGroups:
+    """The form re-rendered with validation errors shows the same tabs as the edit form."""
+
+    def test_hidden_group_stays_hidden_after_validation_error(self, auth_client, purchase_request):
+        url = f'/gui/requests/{purchase_request.pk}/'
+        r = auth_client.get(f'{url}edit/', **HTMX)
+        assert b'Submission Notes' not in r.content  # visible only once submitted
+        r = auth_client.patch(url, {'title': 'Server purchase', 'budget': 'not-a-number'}, **HTMX)
+        assert r.status_code == 400
+        assert r['X-Sebastian-Form-Error'] == 'true'
+        assert b'Submission Notes' not in r.content
+
+
+@pytest.mark.django_db
+class TestEditNotAllowed:
+    """can_update() also guards the edit form and the save, not only the Edit button."""
+
+    def test_edit_form_and_save_forbidden(self, regular_client, supplier):
+        # regular users cannot update suppliers (SupplierViewSet.can_update)
+        url = f'/gui/suppliers/{supplier.pk}/'
+        assert regular_client.get(f'{url}edit/', **HTMX).status_code == 403
+        r = regular_client.patch(url, {'company_name': 'Hacked'}, **HTMX)
+        assert r.status_code == 403
+        supplier.refresh_from_db()
+        assert supplier.company_name == 'Acme Inc'
+
+    def test_finalized_request_not_editable(self, auth_client, purchase_request):
+        from demo.models import Request
+        purchase_request.status = Request.Status.APPROVED
+        purchase_request.save()
+        r = auth_client.get(f'/gui/requests/{purchase_request.pk}/edit/', **HTMX)
+        assert r.status_code == 403
+
+    def test_editable_record_still_editable(self, auth_client, supplier):
+        assert auth_client.get(f'/gui/suppliers/{supplier.pk}/edit/', **HTMX).status_code == 200
+
+
+@pytest.mark.django_db
+class TestFullPageErrorRedirect:
+    """A GUI page opened directly that is forbidden or missing: home page + error message."""
+
+    def test_forbidden_full_page_redirects_home(self, regular_client, supplier):
+        r = regular_client.get(f'/gui/suppliers/{supplier.pk}/edit/', **GUI)
+        assert r.status_code == 302
+        assert r['Location'] == '/gui/'
+
+    def test_missing_full_page_redirects_home(self, auth_client):
+        r = auth_client.get('/gui/suppliers/999999/', **GUI)
+        assert r.status_code == 302
+        assert r['Location'] == '/gui/'
+
+    def test_home_loads_the_messages_area(self, auth_client):
+        # the error message of the redirect is shown by the home page's messages area
+        r = auth_client.get('/gui/', **GUI)
+        assert b'id="sebastian-messages" hx-get="/gui/messages/"' in r.content
+
+    def test_htmx_errors_are_not_redirected(self, regular_client, supplier):
+        # htmx requests keep the error response (shown in the messages area)
+        r = regular_client.get(f'/gui/suppliers/{supplier.pk}/edit/', **HTMX)
+        assert r.status_code == 403

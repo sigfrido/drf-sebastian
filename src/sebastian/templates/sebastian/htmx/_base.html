@@ -13,7 +13,9 @@
   {% for css_file in skin_css_files %}<link rel="stylesheet" href="{% static css_file %}">
   {% endfor %}{% block extra_css %}{% endblock %}
 </head>
-<body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+{# CSRF token for htmx requests: added by the htmx:config:request listener below (htmx 4 #}
+{# no longer inherits hx-headers from <body>).                                        #}
+<body data-sb-csrf-token="{{ csrf_token }}">
 
 
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
@@ -33,7 +35,9 @@
 
 <div class="container-fluid mt-3">
   <div class="row">
-    <main class="col" id="sebastian-content">
+    {# hx-history-elt: on back/forward htmx 4 refetches the page and swaps only this element #}
+    {# (the full <body> would re-run its <script>s: Bootstrap twice breaks the dropdowns). #}
+    <main class="col" id="sebastian-content" hx-history-elt>
 {% endif %}
 {% if is_htmx and page_title and not is_inline and htmx_target == '#sebastian-content' %}<title>{{ page_title }}</title>{% endif %}
 {% block messages %}{% if messages_url %}<div id="sebastian-messages" hx-get="{{ messages_url }}" hx-trigger="load" hx-swap="outerHTML" class="mb-2"></div>{% else %}<div id="sebastian-messages" class="mb-2"></div>{% endif %}{% endblock %}
@@ -69,6 +73,11 @@
 
 {% load static %}
 <script src="{% static 'sebastian/vendor/htmx/htmx.min.js' %}"></script>
+<script>
+  // htmx 4 aborts requests after 60 s by default: PDF generation and calls to external
+  // services can take longer.
+  htmx.config.defaultTimeout = 0;
+</script>
 <script src="{% static 'sebastian/vendor/bootstrap/bootstrap.bundle.min.js' %}"></script>
 <script src="{% static 'sebastian/vendor/tom-select/tom-select.complete.min.js' %}"></script>
 <script src="{% static 'sebastian/widgets.js' %}"></script>
@@ -76,13 +85,41 @@
 {% strans "File will be removed" as sb_file_removed_label %}
 {% strans "Confirm?" as sb_confirm_default_prompt %}
 <script>
-  document.body.addEventListener('htmx:beforeSwap', function (evt) {
-    if (evt.detail.xhr.status >= 400) {
-      evt.detail.shouldSwap = true;
-      if (!evt.detail.xhr.getResponseHeader('X-Sebastian-Form-Error')) {
-        var msg = document.getElementById('sebastian-messages');
-        if (msg) { evt.detail.target = msg; }
-      }
+  function sbCsrfToken() {
+    return document.body.dataset.sbCsrfToken || '';
+  }
+
+  // Every htmx request carries the CSRF token (not only the ones under <body>'s
+  // hx-headers, which htmx 4 no longer inherits).
+  document.body.addEventListener('htmx:config:request', function (evt) {
+    evt.detail.ctx.request.headers['X-CSRFToken'] = sbCsrfToken();
+  });
+
+  // Expired session: an htmx request redirected to the login page would swap the login
+  // form into its target (menu, content, workflow panel...). Load the login page in full
+  // instead, coming back to the current page after login.
+  {% sb_login_url as sb_login %}var SB_LOGIN_URL = '{{ sb_login|escapejs }}';
+  document.body.addEventListener('htmx:after:request', function (evt) {
+    var raw = evt.detail.ctx.response && evt.detail.ctx.response.raw;
+    if (!SB_LOGIN_URL || !raw || !raw.redirected) { return; }
+    var login = new URL(SB_LOGIN_URL, location.href);
+    if (new URL(raw.url).pathname !== login.pathname) { return; }
+    evt.preventDefault();  // no swap
+    login.searchParams.set('next', location.pathname + location.search);
+    location.href = login.href;
+  });
+
+  // htmx 4 swaps error responses too. Form errors (400 + X-Sebastian-Form-Error) replace
+  // the form in its own target; any other error goes to the messages area.
+  document.body.addEventListener('htmx:after:request', function (evt) {
+    var ctx = evt.detail.ctx;
+    document.querySelectorAll('[data-sb-pending]').forEach(function (inp) {
+      inp.removeAttribute('data-sb-pending');
+    });
+    if (ctx.response && ctx.response.status >= 400
+        && !ctx.response.headers.get('X-Sebastian-Form-Error')) {
+      var msg = document.getElementById('sebastian-messages');
+      if (msg) { ctx.target = msg; ctx.swap = 'innerHTML'; }
     }
   });
 
@@ -102,33 +139,35 @@
     }
   }
 
-  document.body.addEventListener('htmx:configRequest', function (evt) {
-    var elt = evt.detail.elt;
-    var form = elt.tagName === 'FORM' ? elt : (elt.closest && elt.closest('form'));
-    if (!form) { return; }
-    var params = evt.detail.parameters;
+  // File fields: an empty file input is not sent (the stored file is kept); a field
+  // marked for removal (data-sb-pending) is sent empty. The body is a FormData in htmx 4.
+  document.body.addEventListener('htmx:config:request', function (evt) {
+    var request = evt.detail.ctx.request;
+    var form = request.form;
+    if (!form || !(request.body instanceof FormData)) { return; }
 
     form.querySelectorAll('input[type=file].sb-file-input:not([disabled])').forEach(function (inp) {
-      if (!inp.files || !inp.files.length) { delete params[inp.name]; }
+      if (!inp.files || !inp.files.length) { request.body.delete(inp.name); }
     });
 
     form.querySelectorAll('[data-sb-pending]').forEach(function (inp) {
-      if (inp.name) { params[inp.name] = ''; }
+      if (inp.name) { request.body.set(inp.name, ''); }
     });
   });
 
-  document.addEventListener('htmx:pushedIntoHistory', function () {
+  document.addEventListener('htmx:after:history:push', function () {
     document.body.dispatchEvent(new Event('menuRefresh'));
   });
 
-  document.body.addEventListener('htmx:afterRequest', function (evt) {
-    document.querySelectorAll('[data-sb-pending]').forEach(function (inp) {
-      inp.removeAttribute('data-sb-pending');
-    });
-  });
-
-  document.body.addEventListener('htmx:afterSwap', function (evt) {
-    if (evt.detail.target.id === 'sebastian-modal') {
+  document.body.addEventListener('htmx:after:swap', function (evt) {
+    // back/forward (history restore): the navbar is not swapped, refresh the menu as after
+    // a normal navigation.
+    if (evt.detail.ctx.request && evt.detail.ctx.request.headers['HX-History-Restore-Request']) {
+      document.body.dispatchEvent(new Event('menuRefresh'));
+    }
+    var target = evt.detail.ctx.target;
+    if (typeof target === 'string') { target = document.querySelector(target); }
+    if (target && target.id === 'sebastian-modal') {
       var el = document.getElementById('sb-confirm-modal');
       if (el) { bootstrap.Modal.getOrCreateInstance(el).show(); }
     }
@@ -155,13 +194,8 @@
       okBtn.replaceWith(newOk);
       newOk.addEventListener('click', function () {
         bootstrap.Modal.getOrCreateInstance(modal).hide();
-        var csrfToken = '';
-        try {
-          var hxh = JSON.parse(document.body.getAttribute('hx-headers') || '{}');
-          csrfToken = hxh['X-CSRFToken'] || '';
-        } catch (e) {}
         htmx.ajax('POST', url, {
-          headers: {'X-CSRFToken': csrfToken},
+          headers: {'X-CSRFToken': sbCsrfToken()},
           target:  '#sebastian-content',
           swap:    'innerHTML'
         });

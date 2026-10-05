@@ -408,6 +408,12 @@ class GUIRouter:
                 menu_url = reverse('sebastian-menu')
             except NoReverseMatch:
                 menu_url = ''
+            # Messages area loaded from the server, as on the other pages (e.g. the error
+            # message of a page redirected here because not allowed).
+            try:
+                messages_url = reverse('sebastian-messages')
+            except NoReverseMatch:
+                messages_url = ''
             gui_registry = [
                 (prefix, viewset)
                 for prefix, viewset, _ in registry
@@ -437,6 +443,7 @@ class GUIRouter:
                 'skin_name':         skin_name,
                 'skin_css_files':    skin_files,
                 'menu_url':          menu_url,
+                'messages_url':      messages_url,
                 'file_field_template': f'sebastian/{pack}/_file_field.html',
             })
 

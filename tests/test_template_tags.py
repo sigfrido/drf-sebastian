@@ -197,3 +197,21 @@ class TestActionOrder:
         view.request = rf.get('/')
         names = [a['name'] for a in view.get_available_actions()]
         assert names == ['gamma', 'beta', 'alfa', 'delta']
+
+
+
+class TestLoginUrlTag:
+    """sb_login_url: SEBASTIAN['LOGIN_URL'], else Django's LOGIN_URL (expired-session handling)."""
+
+    def test_sebastian_setting_wins(self, settings):
+        from sebastian.templatetags.sebastian_tags import sb_login_url
+        settings.SEBASTIAN = {**getattr(settings, 'SEBASTIAN', {}), 'LOGIN_URL': '/gui/login/'}
+        settings.LOGIN_URL = '/accounts/login/'
+        assert sb_login_url() == '/gui/login/'
+
+    def test_falls_back_to_django_login_url(self, settings):
+        from sebastian.templatetags.sebastian_tags import sb_login_url
+        settings.SEBASTIAN = {k: v for k, v in getattr(settings, 'SEBASTIAN', {}).items()
+                              if k != 'LOGIN_URL'}
+        settings.LOGIN_URL = '/accounts/login/'
+        assert sb_login_url() == '/accounts/login/'

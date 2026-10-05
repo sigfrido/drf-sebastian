@@ -4,6 +4,17 @@ All notable changes to this project are documented here, starting from this rele
 
 ## [1.0.0-rc7] - unreleased
 
+### Changed — htmx 4 (breaking for projects with their own htmx code)
+
+- **htmx 4.0.0** vendored in place of 2.0.4 (`fetch()`-based, explicit attribute inheritance, new event names). The library's templates and `widgets.js` are migrated; what changes for consuming projects:
+  - **CSRF**: `<body>` no longer carries `hx-headers` (htmx 4 does not inherit it); an `htmx:config:request` listener adds `X-CSRFToken` to every request, from `<body data-sb-csrf-token>`. Custom JS that read the token from `hx-headers` must use that attribute
+  - **Events**: listeners in project templates must use the htmx 4 names (`htmx:afterSwap` → `htmx:after:swap`, `htmx:beforeSwap` → `htmx:before:swap`, `htmx:configRequest` → `htmx:config:request`, `htmx:afterRequest` → `htmx:after:request`, `htmx:pushedIntoHistory` → `htmx:after:history:push`, …); request and response data are in `evt.detail.ctx` (`ctx.request.body` is a `FormData`, `ctx.response.status/headers`; no more `xhr`)
+  - **Attribute inheritance**: `hx-*` attributes on a container no longer apply to the elements inside it unless written as `hx-<attr>:inherited`
+  - **Errors**: htmx 4 swaps 4xx/5xx responses; form errors (`X-Sebastian-Form-Error`) go to the form's target as before, any other error to `#sebastian-messages`
+  - **History**: no more localStorage snapshots; back/forward refetch the page and swap only `#sebastian-content` (marked `hx-history-elt`: swapping the whole `<body>` would re-run its scripts, and Bootstrap loaded twice breaks the dropdowns); the menu is refreshed afterwards. The renderer serves the full page for these requests (`HX-History-Restore-Request` / `HX-Request-Type: full`): new helper `sebastian.renderers.is_htmx_partial(request)` for projects that choose between fragment and full page themselves
+  - **Timeout**: `htmx.config.defaultTimeout = 0` (htmx 4 defaults to 60 s, too short for PDF generation or slow external services)
+  - Migration guide: https://four.htmx.org/migration-guide-htmx-4/
+
 ### Changed
 
 - **Solid buttons**: the built-in `view` style is now `btn-secondary` (was `btn-outline-secondary`), and the Cancel, Filter, pagination and file-delete buttons of the htmx and plain templates are filled (`btn-secondary`, `btn-danger`) instead of outlined. Bootstrap's solid buttons darken on hover. Restore the old look per skin with `SEBASTIAN['BUTTON_STYLES']`
@@ -17,6 +28,10 @@ All notable changes to this project are documented here, starting from this rele
 
 ### Fixed
 
+- **Expired session in htmx requests**: an htmx request redirected to the login page swapped the login form into its target (menu bar, content area, workflow panel). The htmx pack now detects a response that arrived through a redirect to the login page, skips the swap and loads the login page in full, with `next` set to the current page. New tag `{% sb_login_url %}` (`SEBASTIAN['LOGIN_URL']`, else Django's `LOGIN_URL`)
+- **Edit form of a record that cannot be edited**: `can_update()` only hid the Edit button; opening `…/edit/` directly showed the form (all fields read-only, with Save) and the save request was accepted. `update_form` and `update`/`partial_update` (top-level and inline) now check `can_update()` and answer 403
+- **Error pages opened directly**: a GUI page loaded directly (URL typed in, reload, document opened in a new tab) that answers 403 or 404 showed only the error alert on a blank page. It now redirects to the GUI home page with the error as a Django message (`fail_silently`: no effect without the messages framework). The home page now loads the messages area from the server like the other pages (it did not, so messages set before landing there were not shown) htmx requests keep the error response, shown in the messages area
+- **Hidden tabs shown after a validation error**: the form re-rendered with errors (action `update`/`partial_update`/`create`) listed every field group, including those whose fields are hidden by `visible_permission`; it now shows the same groups as the edit form
 - **Dark skin, multi-select dropdowns**: the options of multi-select TomSelect dropdowns (and the text typed in the control) used TomSelect's hard-coded dark grey and were barely readable on the dark background; single selects were fine only because their dropdown also carries `.form-select`. The dark skin now sets the body text color on `.ts-control` and `.ts-dropdown`, the same as the highlighted option
 - **"None" in the detail view**: `display_value` returned the raw `None` of empty nullable fields (dates, decimals…), shown as the literal text "None"; it now returns an empty string
 - The download buttons of `link_field` actions (detail and list, both packs) were outlined (`cfg.color` defaulting to `outline-secondary`); they now resolve through `btn_class_cfg` like the other action buttons

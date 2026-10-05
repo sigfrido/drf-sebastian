@@ -215,6 +215,8 @@ The practical effect: the exact same ViewSet/Serializer pair serves `/api/...` a
 
 `GUIRouter._wrap()` also handles the `SEBASTIAN['LOGIN_URL']` redirect for unauthenticated GUI requests, if that setting is non-empty.
 
+**Expired sessions in the htmx pack**: an htmx request redirected to the login page (by `_wrap()`, the home view or a project view with Django's `LoginRequiredMixin`) would swap the login form into its target. `_base.html` detects a response that arrived through a redirect to the login page (`{% sb_login_url %}`: `SEBASTIAN['LOGIN_URL']`, else Django's `LOGIN_URL`), skips the swap and loads the login page in full, with `next` set to the current page.
+
 ### 3.4 The `Sebastian` Inner Class
 
 Every ViewSet that uses `GUIMixin` (or `NestedGUIMixin`) may declare a `Sebastian` inner class to configure its GUI behaviour. The class is named `Sebastian` (not `GUIConfig`) because its metadata applies to both the API layer (serializer field-group permission enforcement) and the GUI layer (template rendering, action buttons, menu).
@@ -251,7 +253,7 @@ ACTION_TEMPLATE_SUFFIXES = {
 }
 ```
 
-HTMX requests (`HX-Request` header) receive only the `{% block content %}` fragment; full-page navigation receives the complete pack shell (`base.html`). Template context always includes `data`, `view`, `request`, `pack_name`, `skin_name`, plus action-specific keys (pagination, field labels, filter form, inline configs, menu URL).
+HTMX requests (`HX-Request` header) receive only the `{% block content %}` fragment; full-page navigation receives the complete pack shell (`base.html`), and so do htmx 4 history restores (`HX-History-Restore-Request`, `HX-Request-Type: full`), which swap the response into `<body>` — see `sebastian.renderers.is_htmx_partial()`. Template context always includes `data`, `view`, `request`, `pack_name`, `skin_name`, plus action-specific keys (pagination, field labels, filter form, inline configs, menu URL).
 
 ---
 
@@ -561,7 +563,9 @@ If `style` is absent, `color` is used as a raw Bootstrap suffix (retrocompat). I
 
 ### 4.10 Permission → UI
 
-**Record-level**: standard DRF `permission_classes` and `get_permissions()`.
+**Record-level**: standard DRF `permission_classes` and `get_permissions()`. `can_update()` (below) is enforced, not only cosmetic: the edit form (`update_form`) and the save (`update`/`partial_update`, top-level and inline) of an instance answer 403 when it returns `False`, so a record that cannot be edited is not editable by opening its `…/edit/` URL or by sending the save request directly.
+
+**Forbidden or missing pages opened directly**: a GUI page loaded directly (URL typed in, reload, a document opened in a new tab via `open_url`) that answers 403 or 404 redirects to the GUI home page (`sebastian-home`) with the error as a Django message (`messages.error(..., fail_silently=True)`: no effect without the messages framework; the home page loads the messages area like the other pages). htmx requests keep the error response, which the htmx pack shows in `#sebastian-messages`.
 
 **Field-level**: `FieldGroup.edit_permission` / `visible_permission` callables evaluated in `GUISerializerMixin` (applies to API and GUI alike).
 
@@ -569,7 +573,7 @@ If `style` is absent, `color` is used as a raw Bootstrap suffix (retrocompat). I
 
 The `SEBASTIAN['HIDE_UNAUTHORIZED_ACTIONS']` setting (default `True`) controls whether unauthorised actions (and menu items) are hidden entirely or rendered disabled.
 
-**Gotcha — method-sensitive object permissions and button visibility**: `GUIMixin.can_update()`/`can_delete()` decide whether to show the Edit/Delete button by calling `has_object_permission()` from `self.get_permissions()` against the *current* request — which, while rendering a page, is always a `GET`. A `BasePermission` that allows safe methods but blocks writes (e.g. "read-only once finalized") will therefore always report "allowed" through this path, even though the equivalent `PATCH`/`DELETE` would be rejected. If a permission's write/read behaviour actually differs, override `can_update()`/`can_delete()` directly to inspect the object instead of relying on the default DRF-permission-based check — see `testproject/demo/views.py:RequestViewSet` for a worked example (record-level lock once a Request is `approved`/`rejected`).
+**Gotcha — method-sensitive object permissions and button visibility**: `GUIMixin.can_update()`/`can_delete()` decide whether to show the Edit/Delete button (and `can_update()` whether the edit form and save are allowed) by calling `has_object_permission()` from `self.get_permissions()` against the *current* request — which, while rendering a page, is always a `GET`. A `BasePermission` that allows safe methods but blocks writes (e.g. "read-only once finalized") will therefore always report "allowed" through this path, even though the equivalent `PATCH`/`DELETE` would be rejected. If a permission's write/read behaviour actually differs, override `can_update()`/`can_delete()` directly to inspect the object instead of relying on the default DRF-permission-based check — see `testproject/demo/views.py:RequestViewSet` for a worked example (record-level lock once a Request is `approved`/`rejected`).
 
 `testproject/demo/` also demonstrates composing role-based (`is_superuser`) and Django-`Group`-based checks side by side — see `testproject/demo/permissions.py` — including a case where "admin" and a named group (`MANAGERS`) grant *different*, only partially-overlapping sets of permissions (approving a request requires the group specifically; deleting one accepts either).
 
@@ -579,7 +583,9 @@ The `SEBASTIAN['HIDE_UNAUTHORIZED_ACTIONS']` setting (default `True`) controls w
 
 ### Partial vs Full-Page Rendering
 
-Sebastian detects HTMX requests via the `HX-Request` header. Full-page navigation renders the active pack's `base.html` (shell with navbar, content area, modal placeholder). HTMX requests return only the `{% block content %}` fragment.
+Sebastian detects HTMX requests via the `HX-Request` header (`sebastian.renderers.is_htmx_partial()`). Full-page navigation renders the active pack's `base.html` (shell with navbar, content area, modal placeholder). HTMX requests return only the `{% block content %}` fragment, except history restores: on back/forward htmx 4 refetches the page (`HX-History-Restore-Request`, `HX-Request-Type: full`), which gets the full page, and swaps in only `#sebastian-content` (marked `hx-history-elt`: swapping the whole `<body>` would re-run its `<script>`s, and Bootstrap loaded twice breaks the dropdowns). The menu is refreshed afterwards, as after a normal navigation.
+
+The htmx pack targets **htmx 4**: the CSRF token is added to every request by an `htmx:config:request` listener (from `<body data-sb-csrf-token>`; htmx 4 does not inherit `hx-headers`), error responses are swapped (form errors with `X-Sebastian-Form-Error` in the form's target, any other 4xx/5xx in `#sebastian-messages`), `htmx.config.defaultTimeout` is `0` (no timeout), and an expired session loads the login page in full (§3.3). Project templates that listen to htmx events must use the htmx 4 names (`htmx:after:swap`, `htmx:config:request`, …; request/response data in `evt.detail.ctx`).
 
 ### Nested Resource Sections
 
@@ -723,7 +729,9 @@ SEBASTIAN = {
 
     # Branding / auth
     'BRAND':     'Sebastian',           # navbar product name
-    'LOGIN_URL': '',                    # redirect target for unauthenticated /gui/ requests
+    'LOGIN_URL': '',                    # redirect target for unauthenticated /gui/ requests;
+                                        # also the login page the htmx pack loads when a session
+                                        # has expired (falls back to Django's LOGIN_URL)
 
     # Display formatting
     'BOOL_DISPLAY':      'yesno',       # 'yesno' | 'checkmark' | 'icon' | 'truefalse'
@@ -840,7 +848,7 @@ django-htmx >= 1.17      # enhanced HX-Request utilities (htmx extra)
 
 ### Frontend Assets (vendored)
 
-Bootstrap 5.3.3, Bootstrap Icons 1.11.3, Tom Select 2.3.1 and htmx 2.0.4 are vendored under `src/sebastian/static/sebastian/vendor/` and served via `{% static %}` — no CDN or internet access at runtime. A project overrides any of them by placing a file at the same relative path in its own `STATICFILES_DIRS`. Versions and file names: see the README, "Frontend dependencies".
+Bootstrap 5.3.3, Bootstrap Icons 1.11.3, Tom Select 2.3.1 and htmx 4.0.0 are vendored under `src/sebastian/static/sebastian/vendor/` and served via `{% static %}` — no CDN or internet access at runtime. A project overrides any of them by placing a file at the same relative path in its own `STATICFILES_DIRS`. Versions and file names: see the README, "Frontend dependencies".
 
 ### Documentation Tooling
 

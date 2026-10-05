@@ -11,7 +11,7 @@ from .i18n import sgettext
 
 from .app_settings import hide_unauthorized_actions, pack_uses_htmx, confirm_deletions
 from .config import _check_permission
-from .renderers import SebastianHTMLRenderer
+from .renderers import SebastianHTMLRenderer, is_htmx_partial
 
 
 def _form_errors_from_exc(exc):
@@ -129,7 +129,37 @@ class _SebastianBaseMixin:
         ):
             from django.http import HttpResponseRedirect
             return HttpResponseRedirect(response['HX-Redirect'])
+        # A GUI page opened directly (URL typed in, reload, link from outside) that is not
+        # allowed or does not exist: back to the home page with an error message, instead
+        # of a page holding only the error (the error template is a fragment for htmx swaps).
+        if (
+            isinstance(response, DRFResponse)
+            and getattr(request, 'sebastian_gui', False)
+            and request.method == 'GET'
+            and response.status_code in (403, 404)
+            and not is_htmx_partial(request)
+        ):
+            from django.contrib import messages
+            from django.http import HttpResponseRedirect
+            from django.urls import NoReverseMatch, reverse
+            try:
+                home = reverse('sebastian-home')
+            except NoReverseMatch:
+                home = '/'
+            if request.path != home:
+                data = response.data if isinstance(response.data, dict) else {}
+                detail = str(data.get('detail') or sgettext('Error') + f' {response.status_code}')
+                messages.error(request._request, detail, fail_silently=True)
+                return HttpResponseRedirect(home)
         return response
+
+    def _check_can_update(self, instance):
+        """Edit form and save of an existing instance: same rule as the detail page's Edit
+        button (can_update), so a record that cannot be edited is not editable by opening
+        its /edit/ URL or by sending the save request directly."""
+        self._sebastian_obj = instance
+        if not self.can_update():
+            raise PermissionDenied()
 
     # ------------------------------------------------------------------ #
     # Sebastian metadata helpers                                          #
@@ -596,6 +626,7 @@ class GUIMixin(_SebastianBaseMixin):
             return super().update(request, *args, **kwargs)
         partial = kwargs.pop('partial', False)
         instance = self.get_object()
+        self._check_can_update(instance)
         data = request.data
         if partial and not pack_uses_htmx():
             # Plain form: browser sends '' for unselected file inputs; strip them so
@@ -684,6 +715,7 @@ class GUIMixin(_SebastianBaseMixin):
     def update_form(self, request, *args, **kwargs):
         """Return an HTML form pre-filled with an existing instance's data."""
         instance = self.get_object()
+        self._check_can_update(instance)
         serializer = self.get_serializer(instance)
         detail_url = request.path.rstrip('/').rsplit('/', 1)[0] + '/'
         # Non-HTMX packs POST to /edit/ (mapped → partial_update); HTMX packs
@@ -815,6 +847,7 @@ class NestedGUIMixin(GUIMixin):
             return UpdateModelMixin.update(self, request, *args, **kwargs)
         partial = kwargs.pop('partial', False)
         instance = self.get_object()
+        self._check_can_update(instance)
         is_plain     = not pack_uses_htmx()
         data = request.data
         if partial and is_plain:
@@ -885,6 +918,7 @@ class NestedGUIMixin(GUIMixin):
 
     def update_form(self, request, *args, **kwargs):
         instance   = self.get_object()
+        self._check_can_update(instance)
         serializer = self.get_serializer(instance)
         container  = self._inline_container_id()
         list_path  = self._inline_list_path()

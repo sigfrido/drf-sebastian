@@ -213,6 +213,18 @@ Release-checklist note for future maintainers: at each release, check whether an
 - [x] Nested forms: `perform_create`/`perform_update` exceptions mapped to form errors instead of an error page
 - [x] Typeahead dropdown above Bootstrap modals
 
+## Phase 17 — htmx 4 and 1.0.0 hardening (1.0.0-rc7, done)
+
+Supersedes the htmx 2 mechanics recorded in earlier phases (CSRF via `hx-headers` on `<body>`, `htmx:configRequest`/`beforeSwap`/`afterSwap` hooks, localStorage history).
+
+- [x] htmx 4.0.0 vendored; CSRF via an `htmx:config:request` listener (`<body data-sb-csrf-token>`); error swap handling on `evt.detail.ctx`; htmx 4 event names; `FormData` request body; `defaultTimeout = 0`
+- [x] History: full page for restore requests (`is_htmx_partial()`), only `#sebastian-content` swapped (`hx-history-elt`), menu refreshed
+- [x] Expired session: htmx requests redirected to the login page load it in full (`{% sb_login_url %}`)
+- [x] `can_update()` enforced on the edit form and save, not only on the Edit button
+- [x] Forbidden/missing GUI pages opened directly → home page + error message; home page loads the messages area
+- [x] Form re-rendered with validation errors shows the same groups as the edit form
+- [x] Dropdown width (auto / `field_config['dropdown_width']`), action `order`, `open_url` on `link_field` actions, solid buttons, dark-skin TomSelect colors, "None" never shown in detail views
+
 ## Deferred
 
 - Management command `sebastian-templates` for exporting/customizing templates

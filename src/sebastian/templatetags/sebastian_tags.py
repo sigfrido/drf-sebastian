@@ -126,6 +126,17 @@ def display_value(data, field_name):
 
 
 @register.simple_tag
+def sb_login_url():
+    """Login page URL: SEBASTIAN['LOGIN_URL'], else Django's LOGIN_URL ('' if neither).
+    Used by the htmx pack to load the login page in full when a session has expired."""
+    from django.conf import settings
+    from django.shortcuts import resolve_url
+    from ..app_settings import login_url
+    url = login_url() or getattr(settings, 'LOGIN_URL', '')
+    return resolve_url(url) if url else ''
+
+
+@register.simple_tag
 def render_display(data, field_name, fc=None):
     """Render a field value in detail view using the display renderer from field_config.
 

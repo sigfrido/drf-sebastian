@@ -2,7 +2,7 @@
  * Sebastian widgets — Tom Select initialization for ordering, typeahead, and cascading fields.
  *
  * Expects Tom Select CSS + JS already loaded (added by htmx/base.html).
- * Re-initializes on htmx:afterSwap so partial HTMX updates keep working.
+ * Re-initializes on htmx:after:swap (htmx 4) so partial HTMX updates keep working.
  */
 
 (function () {
@@ -259,14 +259,16 @@
   // ── Filter form cleanup ────────────────────────────────────────────────────
   // Strip empty params and NullBooleanSelect 'unknown' sentinel from HTMX requests.
 
-  document.addEventListener('htmx:configRequest', function (evt) {
-    var elt = evt.detail.elt;
+  document.addEventListener('htmx:config:request', function (evt) {
+    var ctx = evt.detail.ctx;
+    var elt = ctx.sourceElement;
     if (!elt || !elt.matches || !elt.matches('#sb-filter-form')) return;
-    var params = evt.detail.parameters;
-    Object.keys(params).forEach(function (key) {
-      if (params[key] === '' || params[key] === 'unknown') {
-        delete params[key];
-      }
+    var body = ctx.request.body;  // FormData (htmx 4), turned into the query string for GET
+    if (!(body instanceof FormData)) return;
+    Array.from(new Set(body.keys())).forEach(function (key) {
+      var kept = body.getAll(key).filter(function (v) { return v !== '' && v !== 'unknown'; });
+      body.delete(key);
+      kept.forEach(function (v) { body.append(key, v); });
     });
   });
 
@@ -307,16 +309,19 @@
   // replaces the DOM. Without explicit destroy(), stale JS state (event listeners,
   // el.tomselect references) leaks into the next render cycle and produces
   // double-widget symptoms (native select + TomSelect rendered together).
-  document.addEventListener('htmx:beforeSwap', function (evt) {
-    var target = evt.detail && evt.detail.target;
-    if (!target) return;
-    target.querySelectorAll('select').forEach(function (el) {
-      if (el.tomselect) {
-        try { el.tomselect.destroy(); } catch (_) {}
-      }
+  // htmx 4: the swap targets (main and out-of-band) are in evt.detail.tasks.
+  document.addEventListener('htmx:before:swap', function (evt) {
+    (evt.detail.tasks || []).forEach(function (task) {
+      var target = task.target;
+      if (!target || !target.querySelectorAll) return;
+      target.querySelectorAll('select').forEach(function (el) {
+        if (el.tomselect) {
+          try { el.tomselect.destroy(); } catch (_) {}
+        }
+      });
     });
   });
 
   document.addEventListener('DOMContentLoaded',  initAll);
-  document.addEventListener('htmx:afterSwap',    initAll);
+  document.addEventListener('htmx:after:swap',   initAll);
 }());
