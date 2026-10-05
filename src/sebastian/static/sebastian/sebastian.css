@@ -63,6 +63,14 @@
   max-width: 14rem;
 }
 
+/* Multi-select dropdowns (positioned inside the control): as wide as their options, never
+   narrower than the control. Single-select dropdowns are sized in widgets.js. */
+.ts-wrapper.multi .ts-dropdown {
+  width: max-content;
+  min-width: 100%;
+  max-width: min(40rem, 90vw);
+}
+
 .nav-tabs .nav-link.active {
   font-weight: bold;
 }

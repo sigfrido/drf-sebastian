@@ -930,3 +930,17 @@ class TestPageTitle:
         r = auth_client.get(f'/gui/requests/{purchase_request.pk}/attachments/', **HTMX)
         assert r.status_code == 200
         assert b'<title>' not in r.content
+
+
+class TestDropdownWidth:
+    """field_config['dropdown_width'] → data-dropdown-width on the select (sized in widgets.js)."""
+
+    def test_attribute_only_when_configured(self, auth_client, supplier, monkeypatch):
+        from demo.views import RequestViewSet
+        r = auth_client.get('/gui/requests/new/', **HTMX)
+        assert b'data-dropdown-width' not in r.content
+        monkeypatch.setitem(RequestViewSet.Sebastian.field_config, 'supplier',
+                            {'typeahead_url': '/api/suppliers/suppliers_typeahead/',
+                             'dropdown_width': '30rem'})
+        r = auth_client.get('/gui/requests/new/', **HTMX)
+        assert b'data-dropdown-width="30rem"' in r.content

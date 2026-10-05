@@ -10,6 +10,7 @@ All notable changes to this project are documented here, starting from this rele
 
 ### Added
 
+- **Dropdown width**: TomSelect dropdowns are as wide as their options (never narrower than the control, never wider than the viewport; single-select dropdowns are shifted left when they would overflow on the right) instead of being clipped to the control's width. `field_config['dropdown_width']` (CSS width, e.g. `'30rem'`) sets it per field (`data-dropdown-width` on the select, also usable in filter widgets' `attrs`)
 - **`open_url` on `link_field` actions**: the file link (or icon button) next to the field in the detail view opens in a new tab (`target="_blank"`) when the action's `gui_config['open_url']` is set, so a `preview_action()` response no longer replaces the GUI page
 - **Action order**: optional `gui_config['order']` (number). Actions with an order are listed first, ascending; the others follow in method-name order as before
 - **Page titles**: `get_page_title(action, obj)` on the viewset (`_SebastianBaseMixin`, overridable) builds the browser title — list "Label - List", detail "Label - <obj>", form "Label - <obj> [Edit]" ("Label - New [Edit]" when creating); `SingletonGUIMixin`: "Label" / "Label [Edit]". The renderer passes it as `page_title`; the base templates use it in `<title>` (falling back to `brand_title`)

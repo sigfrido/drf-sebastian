@@ -83,6 +83,7 @@
         <select class="form-select sb-typeahead" id="id_{{ field_name }}" name="{{ field_name }}"
                 data-typeahead-url="{{ fc.typeahead_url }}"
                 data-typeahead-chars="{{ fc.typeahead_chars|default:2 }}"
+                {% if fc.dropdown_width %}data-dropdown-width="{{ fc.dropdown_width }}"{% endif %}
                 {% if cascading_fields %}data-cascade-field="{{ field_name }}"{% endif %}
                 {% if field.required %}required{% endif %}>
           {% if instance|get_item:field_name %}
@@ -94,6 +95,7 @@
         {% else %}
         <select class="form-select ts-select"
                 id="id_{{ field_name }}" name="{{ field_name }}"
+                {% if fc.dropdown_width %}data-dropdown-width="{{ fc.dropdown_width }}"{% endif %}
                 {% if field.required %}required{% endif %}>
           <option value="">---------</option>
           {% for val, lbl in field.choices.items %}

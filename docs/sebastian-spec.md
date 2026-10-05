@@ -448,6 +448,7 @@ Selecting `country` clears and reloads `region` and `city`; all fields in a casc
 | `typeahead_url` | Edit form | URL string | — |
 | `typeahead_chars` | Edit form | int | 2 (or from `@typeahead`) |
 | `width` | Form field width | `'xs'`/`'sm'`/`'md'`/`'lg'`/`'full'` | auto |
+| `dropdown_width` | Edit form (select / typeahead) | CSS width, e.g. `'30rem'` | as wide as the options (≥ control, ≤ viewport) |
 | `bool_true` / `bool_false` / `bool_null` | Form (BooleanField) | label strings | `'Yes'`/`'No'`/`'-'` |
 
 `widget` and `display` are auto-detected for `TextField` columns (Django model fields whose DRF serializer counterpart carries `style={'base_template': 'textarea.html'}`): `widget` defaults to `'textarea'` and `display` defaults to `'textbr'`. Declare them explicitly only when you need to override the auto-detected value, or when the serializer field is a plain `CharField` that should still render as a textarea.

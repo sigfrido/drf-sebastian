@@ -19,6 +19,9 @@
   // option list is capped to the available height (it scrolls instead of running off
   // the page). A ResizeObserver re-places the dropdown while it is open, e.g. when a
   // typeahead loads its results after opening.
+  // Width: as wide as its options (never narrower than the control, never wider than the
+  // viewport, shifted left if it would overflow on the right), or the CSS width given by
+  // the select's data-dropdown-width attribute (field_config['dropdown_width']).
 
   const DROPDOWN_MARGIN = 8;  // px kept free between the dropdown and the viewport edge
 
@@ -26,9 +29,12 @@
     var rect = ts.control.getBoundingClientRect();
     var content = dropdown.querySelector('.ts-dropdown-content');
     dropdown.style.position = 'fixed';
-    dropdown.style.left     = rect.left  + 'px';
-    dropdown.style.width    = rect.width + 'px';
     dropdown.style.zIndex   = '9999';
+    dropdown.style.width    = ts.input.dataset.dropdownWidth || 'max-content';
+    dropdown.style.minWidth = rect.width + 'px';
+    dropdown.style.maxWidth = (window.innerWidth - 2 * DROPDOWN_MARGIN) + 'px';
+    var left = Math.min(rect.left, window.innerWidth - DROPDOWN_MARGIN - dropdown.offsetWidth);
+    dropdown.style.left     = Math.max(left, DROPDOWN_MARGIN) + 'px';
     if (content) { content.style.maxHeight = ''; }  // back to the CSS default before measuring
 
     var spaceBelow = window.innerHeight - rect.bottom - DROPDOWN_MARGIN;
@@ -241,7 +247,12 @@
             dropdownParent: 'body',
             onDropdownOpen: onDropdownOpenPlaced,
           };
-      new TomSelect(el, opts);
+      var ts = new TomSelect(el, opts);
+      // Multi-select dropdowns stay inside the control (CSS sizes them to their options):
+      // an explicit data-dropdown-width wins.
+      if (el.multiple && el.dataset.dropdownWidth) {
+        ts.dropdown.style.width = el.dataset.dropdownWidth;
+      }
     });
   }
 
