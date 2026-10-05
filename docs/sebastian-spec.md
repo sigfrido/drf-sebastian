@@ -125,6 +125,7 @@ src/sebastian/
 ├── mixins.py         GUIMixin, NestedGUIMixin, SingletonGUIMixin
 ├── routers.py        SebastianRouter, GUIRouter
 ├── renderers.py       SebastianHTMLRenderer — resolves + renders the right template
+├── pagination.py      SebastianPagination — list pagination driven by Sebastian.pagination
 ├── serializers.py     GUISerializerMixin, gui_field, NullableFileField
 ├── config.py           FieldGroup, MenuItem, MenuGroup, MenuDivider
 ├── decorators.py       @action (gui_config), @typeahead
@@ -230,6 +231,7 @@ class RequestViewSet(GUIMixin, viewsets.ModelViewSet):
         inlines = [AttachmentViewSet] # nested resources
         menu    = MenuGroup(...)      # navbar entry (optional, see §4.3)
         ordering      = (...)         # ordering widget options (see §4.7)
+        pagination    = {'on': True}  # paginated list (see §4.4)
         field_config  = {...}         # per-field widget config: typeahead, cascading (see §4.7)
         templates     = {'list': 'myapp/custom_list.html'}   # per-action template override
 ```
@@ -373,6 +375,20 @@ class RequestViewSet(GUIMixin, viewsets.ModelViewSet):
 
 Generates a filter form from the `FilterSet`, a sortable-columns widget from `Sebastian.ordering` (§4.7), and pagination controls. A **New** button is shown if the user has create permission.
 
+**Pagination** — off by default; enabled per ViewSet through `Sebastian.pagination`:
+
+```python
+class Sebastian:
+    pagination = {
+        'on': True,                # default False: list not paginated
+        'page_size': 10,           # default SEBASTIAN['PAGE_SIZE'] (25)
+        'show_first_last': True,   # first/last page links; default SEBASTIAN['PAGE_FIRST_LAST'] (True)
+        'show_page_num': True,     # "Page n of m"; default SEBASTIAN['PAGE_SHOW_NUM'] (True)
+    }
+```
+
+`GUIMixin.pagination_class` is `sebastian.pagination.SebastianPagination` (a DRF `PageNumberPagination`), which paginates only when `on`. When on, it applies to the GUI **and** the API: `/api/...` answers `{count, next, previous, page, num_pages, results}` instead of a plain list. The list templates show the record count and `« ‹ Page n of m › »`; the links are full-page `href`s keeping the query string (filters, ordering). A page out of range (or not a number) shows, in the GUI, the first page of the same list with the error as a Django message; the API answers DRF's 404. With `Sebastian.ordering` and no ordering selected, the list is ordered by primary key, so pages are stable (§4.7). Pagination inside an inline (`NestedGUIMixin`) is not supported: the page links would navigate away from the parent page.
+
 ### 4.5 Detail Views
 
 Auto-generated from serializer fields and `@action` methods:
@@ -412,7 +428,9 @@ class Sebastian:
     max_ordering_fields = 2   # cap on simultaneous sort keys
 ```
 
-`GUIMixin.filter_queryset()` reads `?ordering=f1,f2` from the querystring; undeclared fields are ignored (falls back to the model's default `Meta.ordering`).
+`GUIMixin.filter_queryset()` reads `?ordering=f1,f2` from the querystring; undeclared fields are ignored. In GUI mode, with no ordering selected the list is ordered by primary key (not by the model's `Meta.ordering`: the widget owns all sorting, and paginated lists need a stable order). Values may span relations (`'ricerca__data_richiesta'`).
+
+In the htmx pack the widget is the partial `sebastian/htmx/_ordering.html`, rendered by `list.html` inside `{% block ordering %}` at the start of the filter row. A list template that wants it elsewhere among the filters empties the block and includes the partial where it belongs (`{% if ordering_config %}{% include "sebastian/htmx/_ordering.html" %}{% endif %}`).
 
 **Typeahead** — an async-search `<select>` for `ForeignKey` fields, backed by a `@typeahead`-decorated list action:
 
@@ -737,6 +755,11 @@ SEBASTIAN = {
     'BOOL_DISPLAY':      'yesno',       # 'yesno' | 'checkmark' | 'icon' | 'truefalse'
     'DATE_FORMAT':       '%d/%m/%Y',
     'DATETIME_FORMAT':   '%d/%m/%Y %H:%M',
+
+    # Pagination defaults (per ViewSet: Sebastian.pagination, §4.4)
+    'PAGE_SIZE':       25,              # records per page
+    'PAGE_FIRST_LAST': True,            # first/last page links
+    'PAGE_SHOW_NUM':   True,            # "Page n of m"
 }
 ```
 
@@ -875,6 +898,7 @@ drf-sebastian/
 │   ├── decorators.py            @action wrapper, @typeahead
 │   ├── dispatch.py              call()
 │   ├── mixins.py                GUIMixin, NestedGUIMixin, SingletonGUIMixin
+│   ├── pagination.py            SebastianPagination
 │   ├── permissions.py           perm_is_admin, perm_is_staff, perm_is_action, perm_or, perm_and
 │   ├── renderers.py             SebastianHTMLRenderer
 │   ├── routers.py               SebastianRouter, GUIRouter

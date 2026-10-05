@@ -100,7 +100,7 @@ class SebastianHTMLRenderer(BaseRenderer):
         # Unpack DRF paginated response so templates always get a plain list
         if is_dict and 'results' in data:
             items      = data['results']
-            pagination = {k: data[k] for k in ('count', 'next', 'previous') if k in data}
+            pagination = self._get_pagination(data, view, request)
         else:
             items      = data
             pagination = None
@@ -418,6 +418,26 @@ class SebastianHTMLRenderer(BaseRenderer):
             except Exception:
                 pass
         return None
+
+    def _get_pagination(self, data, view, request) -> dict:
+        """Pagination controls: counts and links from the paginated response, plus first/last
+        links and the display flags of Sebastian.pagination (sebastian.pagination)."""
+        from rest_framework.utils.urls import replace_query_param
+        from .pagination import pagination_config
+        pagination = {k: data[k] for k in ('count', 'next', 'previous', 'page', 'num_pages')
+                      if k in data}
+        cfg = pagination_config(view)
+        page, num_pages = data.get('page'), data.get('num_pages')
+        show_first_last = cfg.get('show_first_last', app_settings.page_first_last())
+        pagination['show_page_num'] = bool(page and num_pages and
+                                           cfg.get('show_page_num', app_settings.page_show_num()))
+        if show_first_last and page and num_pages and request is not None:
+            url = request.build_absolute_uri()
+            if page > 1:
+                pagination['first'] = replace_query_param(url, 'page', 1)
+            if page < num_pages:
+                pagination['last'] = replace_query_param(url, 'page', num_pages)
+        return pagination
 
     def _get_ordering_config(self, view, request):
         if not view or not request:

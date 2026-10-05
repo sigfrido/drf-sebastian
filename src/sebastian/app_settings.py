@@ -157,3 +157,19 @@ def date_format() -> str:
 def datetime_format() -> str:
     """strftime format for DateTimeField values in GUI mode. Default: dd/mm/yyyy HH:MM."""
     return _sebastian('DATETIME_FORMAT', '%d/%m/%Y %H:%M')
+
+
+def page_size() -> int:
+    """``PAGE_SIZE`` — records per page of a paginated list (``Sebastian.pagination``,
+    ``page_size`` not set). Default: 25."""
+    return _sebastian('PAGE_SIZE', 25)
+
+
+def page_first_last() -> bool:
+    """``PAGE_FIRST_LAST`` — show the first/last page links. Default: True."""
+    return _sebastian('PAGE_FIRST_LAST', True)
+
+
+def page_show_num() -> bool:
+    """``PAGE_SHOW_NUM`` — show "Page n of m". Default: True."""
+    return _sebastian('PAGE_SHOW_NUM', True)

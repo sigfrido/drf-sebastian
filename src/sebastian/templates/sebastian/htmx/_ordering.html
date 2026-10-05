@@ -1,0 +1,15 @@
+{% load sebastian_tags %}
+{# Multi-column ordering widget (Sebastian.ordering): TomSelect, see initOrdering() in widgets.js. #}
+<div class="col-auto d-flex align-items-center gap-1">
+  <label class="col-form-label col-form-label-sm text-nowrap">{% strans "Sort by" %}</label>
+  <select class="form-select form-select-sm sb-ordering"
+          data-max-items="{{ ordering_config.max_n }}"
+          data-current="{{ ordering_config.ordering_param }}"
+          placeholder="{% strans 'Sort by…' %}">
+    {% for value, label in ordering_config.fields %}
+    <option value="{{ value }}">{{ label }}</option>
+    {% endfor %}
+  </select>
+  <input type="hidden" name="ordering" id="sb-ordering-value"
+         value="{{ ordering_config.ordering_param }}">
+</div>

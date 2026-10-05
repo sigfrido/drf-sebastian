@@ -11,6 +11,7 @@ from .i18n import sgettext
 
 from .app_settings import hide_unauthorized_actions, pack_uses_htmx, confirm_deletions
 from .config import _check_permission
+from .pagination import SebastianPagination
 from .renderers import SebastianHTMLRenderer, is_htmx_partial
 
 
@@ -539,6 +540,9 @@ class GUIMixin(_SebastianBaseMixin):
         update_form(request, pk)     — pre-filled form for an existing instance
     """
 
+    # Paginated only when Sebastian.pagination['on'] (see sebastian.pagination).
+    pagination_class = SebastianPagination
+
     # ------------------------------------------------------------------ #
     # Ordering                                                            #
     # ------------------------------------------------------------------ #
@@ -568,8 +572,9 @@ class GUIMixin(_SebastianBaseMixin):
         elif getattr(self.request, 'sebastian_gui', False):
             # In GUI mode the ordering widget owns all sorting.  When nothing is
             # selected (valid is empty) override the model's Meta.ordering so the
-            # list matches the widget's empty state rather than a hidden default.
-            queryset = queryset.order_by()
+            # list matches the widget's empty state rather than a hidden default;
+            # by primary key, so that paginated lists stay stable.
+            queryset = queryset.order_by('pk')
         return queryset
 
     # ------------------------------------------------------------------ #

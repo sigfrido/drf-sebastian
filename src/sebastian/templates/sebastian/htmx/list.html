@@ -20,21 +20,9 @@
 <form class="row g-2 mb-3"
       id="sb-filter-form"
       {% block filter_form_attrs %}action="{{ request.path }}" method="get" hx-get="{{ request.path }}" hx-target="#sebastian-content" hx-push-url="true"{% endblock %}>
-  {% if ordering_config %}
-  <div class="col-auto d-flex align-items-center gap-1">
-    <label class="col-form-label col-form-label-sm text-nowrap">{% strans "Sort by" %}</label>
-    <select class="form-select form-select-sm sb-ordering"
-            data-max-items="{{ ordering_config.max_n }}"
-            data-current="{{ ordering_config.ordering_param }}"
-            placeholder="{% strans 'Sort by…' %}">
-      {% for value, label in ordering_config.fields %}
-      <option value="{{ value }}">{{ label }}</option>
-      {% endfor %}
-    </select>
-    <input type="hidden" name="ordering" id="sb-ordering-value"
-           value="{{ ordering_config.ordering_param }}">
-  </div>
-  {% endif %}
+  {# Ordering widget: a list template that places it elsewhere among the filters empties #}
+  {# this block and includes sebastian/htmx/_ordering.html where it wants it.             #}
+  {% block ordering %}{% if ordering_config %}{% include "sebastian/htmx/_ordering.html" %}{% endif %}{% endblock %}
   {% block filter_fields %}
   {% for field in filter_form %}
   <div class="col-auto d-flex align-items-center gap-1">
@@ -191,18 +179,7 @@
 {% if pagination %}
 <div class="d-flex justify-content-between align-items-center mt-2">
   <small class="text-muted">{% blocktrans context "sebastian" count counter=pagination.count %}{{ counter }} record{% plural %}{{ counter }} records{% endblocktrans %}</small>
-  <div>
-    {% if pagination.previous %}
-    <a href="{{ pagination.previous }}" class="btn btn-secondary btn-sm">
-      {% icon "chevron-left" %}
-    </a>
-    {% endif %}
-    {% if pagination.next %}
-    <a href="{{ pagination.next }}" class="btn btn-secondary btn-sm">
-      {% icon "chevron-right" %}
-    </a>
-    {% endif %}
-  </div>
+  {% include "sebastian/_pagination_controls.html" %}
 </div>
 {% endif %}
 

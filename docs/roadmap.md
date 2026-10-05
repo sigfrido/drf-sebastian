@@ -223,6 +223,7 @@ Supersedes the htmx 2 mechanics recorded in earlier phases (CSRF via `hx-headers
 - [x] `can_update()` enforced on the edit form and save, not only on the Edit button
 - [x] Forbidden/missing GUI pages opened directly → home page + error message; home page loads the messages area
 - [x] Form re-rendered with validation errors shows the same groups as the edit form
+- [x] Pagination: `Sebastian.pagination` + `SebastianPagination` (GUI and API), first/previous/next/last controls and "Page n of m"; ordering widget in its own partial/block; stable pk order when no ordering is selected
 - [x] Dropdown width (auto / `field_config['dropdown_width']`), action `order`, `open_url` on `link_field` actions, solid buttons, dark-skin TomSelect colors, "None" never shown in detail views
 
 ## Deferred

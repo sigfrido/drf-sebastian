@@ -182,3 +182,24 @@ msgid "%(counter)s record"
 msgid_plural "%(counter)s records"
 msgstr[0] "%(counter)s elemento"
 msgstr[1] "%(counter)s elementi"
+
+msgctxt "sebastian"
+msgid "First page"
+msgstr "Prima pagina"
+
+msgctxt "sebastian"
+msgid "Previous page"
+msgstr "Pagina precedente"
+
+msgctxt "sebastian"
+msgid "Next page"
+msgstr "Pagina successiva"
+
+msgctxt "sebastian"
+msgid "Last page"
+msgstr "Ultima pagina"
+
+#, python-format
+msgctxt "sebastian"
+msgid "Page %(page)s of %(pages)s"
+msgstr "Pagina %(page)s di %(pages)s"

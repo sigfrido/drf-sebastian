@@ -78,6 +78,10 @@ def _strings():  # pragma: no cover - never called, see module docstring
         pgettext('sebastian', 'Sort by'),
         pgettext('sebastian', 'Sort by…'),
         pgettext('sebastian', 'Then by'),
+        pgettext('sebastian', 'First page'),
+        pgettext('sebastian', 'Previous page'),
+        pgettext('sebastian', 'Next page'),
+        pgettext('sebastian', 'Last page'),
         pgettext('sebastian', 'Username'),
         pgettext('sebastian', 'Yes'),
         # Default skin labels (app_settings._DEFAULT_SKINS, via sgettext_lazy):

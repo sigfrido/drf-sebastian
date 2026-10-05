@@ -1036,3 +1036,75 @@ class TestFullPageErrorRedirect:
         # htmx requests keep the error response (shown in the messages area)
         r = regular_client.get(f'/gui/suppliers/{supplier.pk}/edit/', **HTMX)
         assert r.status_code == 403
+
+
+@pytest.mark.django_db
+class TestPagination:
+    """Sebastian.pagination: off by default; when on, GUI controls and paginated API."""
+
+    @pytest.fixture
+    def suppliers(self, db):
+        from demo.models import Supplier
+        return [Supplier.objects.create(company_name=f'Supplier {i:02d}') for i in range(7)]
+
+    @pytest.fixture
+    def paginated(self, monkeypatch):
+        from demo.views import SupplierViewSet
+
+        def _on(**cfg):
+            monkeypatch.setattr(SupplierViewSet.Sebastian, 'pagination',
+                                {'on': True, 'page_size': 3, **cfg}, raising=False)
+        return _on
+
+    @staticmethod
+    def _rows(content):
+        return content.count(b'Supplier 0')
+
+    def test_off_by_default(self, auth_client, suppliers):
+        r = auth_client.get('/gui/suppliers/', **HTMX)
+        assert self._rows(r.content) == 7
+        assert b'sb-pagination' not in r.content
+        assert isinstance(auth_client.get('/api/suppliers/').json(), list)
+
+    def test_first_middle_last_page(self, auth_client, suppliers, paginated):
+        paginated()
+        r = auth_client.get('/gui/suppliers/?ordering=company_name', **HTMX)
+        assert self._rows(r.content) == 3
+        assert b'Page 1 of 3' in r.content
+        assert b'title="Next page"' in r.content and b'title="Last page"' in r.content
+        assert b'title="First page"' not in r.content and b'title="Previous page"' not in r.content
+        assert b'page=3' in r.content and b'ordering=company_name' in r.content  # query kept
+        r = auth_client.get('/gui/suppliers/?page=3', **HTMX)
+        assert self._rows(r.content) == 1
+        assert b'Page 3 of 3' in r.content
+        assert b'title="First page"' in r.content and b'title="Last page"' not in r.content
+
+    def test_page_out_of_range(self, auth_client, suppliers, paginated):
+        # GUI: first page of the same list (error as a message); API: DRF's 404
+        paginated()
+        for page in ('99', 'abc'):
+            r = auth_client.get(f'/gui/suppliers/?page={page}', **GUI)
+            assert r.status_code == 200
+            assert b'Page 1 of 3' in r.content
+        assert auth_client.get('/api/suppliers/?page=99').status_code == 404
+
+    def test_api_paginated(self, auth_client, suppliers, paginated):
+        paginated()
+        data = auth_client.get('/api/suppliers/').json()
+        assert set(data) == {'count', 'next', 'previous', 'page', 'num_pages', 'results'}
+        assert (data['count'], data['page'], data['num_pages'], len(data['results'])) == (7, 1, 3, 3)
+
+    def test_controls_can_be_hidden(self, auth_client, suppliers, paginated):
+        paginated(show_first_last=False, show_page_num=False)
+        r = auth_client.get('/gui/suppliers/?page=2', **HTMX)
+        assert b'Page 2 of 3' not in r.content
+        assert b'title="First page"' not in r.content and b'title="Last page"' not in r.content
+        assert b'title="Previous page"' in r.content and b'title="Next page"' in r.content
+
+    def test_page_size_from_settings(self, auth_client, suppliers, monkeypatch, settings):
+        from demo.views import SupplierViewSet
+        monkeypatch.setattr(SupplierViewSet.Sebastian, 'pagination', {'on': True}, raising=False)
+        settings.SEBASTIAN = {**getattr(settings, 'SEBASTIAN', {}), 'PAGE_SIZE': 5}
+        r = auth_client.get('/gui/suppliers/', **HTMX)
+        assert self._rows(r.content) == 5
+        assert b'Page 1 of 2' in r.content

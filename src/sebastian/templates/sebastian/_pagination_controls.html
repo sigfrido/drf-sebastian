@@ -1,0 +1,22 @@
+{% load i18n sebastian_tags %}
+{# Pagination controls shared by the packs: « ‹ Page n of m › » (see sebastian.pagination). #}
+{# first/last links only with show_first_last and when not already on that page.           #}
+{% if pagination.previous or pagination.next %}
+<div class="d-flex align-items-center gap-1 sb-pagination">
+  {% if pagination.first or pagination.last %}
+  {% strans "First page" as sb_first %}
+  {% if pagination.first %}<a href="{{ pagination.first }}" class="btn btn-secondary btn-sm" title="{{ sb_first }}" aria-label="{{ sb_first }}">{% icon "chevron-double-left" %}</a>{% else %}<span class="btn btn-secondary btn-sm disabled" aria-hidden="true">{% icon "chevron-double-left" %}</span>{% endif %}
+  {% endif %}
+  {% strans "Previous page" as sb_prev %}
+  {% if pagination.previous %}<a href="{{ pagination.previous }}" class="btn btn-secondary btn-sm" title="{{ sb_prev }}" aria-label="{{ sb_prev }}">{% icon "chevron-left" %}</a>{% else %}<span class="btn btn-secondary btn-sm disabled" aria-hidden="true">{% icon "chevron-left" %}</span>{% endif %}
+  {% if pagination.show_page_num %}
+  <small class="text-muted text-nowrap px-1">{% blocktrans context "sebastian" with page=pagination.page pages=pagination.num_pages %}Page {{ page }} of {{ pages }}{% endblocktrans %}</small>
+  {% endif %}
+  {% strans "Next page" as sb_next %}
+  {% if pagination.next %}<a href="{{ pagination.next }}" class="btn btn-secondary btn-sm" title="{{ sb_next }}" aria-label="{{ sb_next }}">{% icon "chevron-right" %}</a>{% else %}<span class="btn btn-secondary btn-sm disabled" aria-hidden="true">{% icon "chevron-right" %}</span>{% endif %}
+  {% if pagination.first or pagination.last %}
+  {% strans "Last page" as sb_last %}
+  {% if pagination.last %}<a href="{{ pagination.last }}" class="btn btn-secondary btn-sm" title="{{ sb_last }}" aria-label="{{ sb_last }}">{% icon "chevron-double-right" %}</a>{% else %}<span class="btn btn-secondary btn-sm disabled" aria-hidden="true">{% icon "chevron-double-right" %}</span>{% endif %}
+  {% endif %}
+</div>
+{% endif %}
