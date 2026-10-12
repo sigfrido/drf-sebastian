@@ -17,7 +17,7 @@
   {% if ordering_config %}
   {% for i in ordering_config.slots %}
   {% with slot_idx=forloop.counter slot_val=i %}
-  <div class="col-auto d-flex align-items-center gap-1">
+  <div class="col-auto d-flex align-items-start gap-1">
     {% if forloop.first %}
     <label class="col-form-label col-form-label-sm text-nowrap">{% strans "Sort by" %}</label>
     {% else %}
@@ -35,13 +35,13 @@
   {% endif %}
   {% block filter_fields %}
   {% for field in filter_form %}
-  <div class="col-auto d-flex align-items-center gap-1">
+  <div class="col-auto d-flex align-items-start gap-1">
     <label class="col-form-label col-form-label-sm text-nowrap" for="{{ field.id_for_label }}">{{ field.label }}</label>
     {{ field|bootstrapfield }}
   </div>
   {% endfor %}
   {% endblock filter_fields %}
-  <div class="col-auto align-self-end">
+  <div class="col-auto align-self-start">
     <button type="submit" class="btn btn-secondary btn-sm">{% strans "Filter" %}</button>
     <a href="{{ request.path }}" class="btn btn-link btn-sm">{% strans "Clear" %}</a>
     {% if default_filter.has_default %}<a href="{{ default_filter.url }}" class="btn btn-link btn-sm">{% strans "Default" %}</a>{% endif %}

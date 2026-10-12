@@ -63,6 +63,21 @@
   max-width: 14rem;
 }
 
+/* ...and no empty second line: TomSelect's search input keeps a 7rem min-width, so next to
+   the selected tags it wraps to a line of its own. With items and no focus it takes no
+   space; it comes back when the control is clicked to add more. */
+#sb-filter-form .ts-wrapper.multi.has-items:not(.focus) .ts-control > input {
+  flex: 0 0 0;
+  min-width: 0;
+  width: 0;
+  margin: 0 !important;
+}
+
+/* Some free space after the last tag, to click and open the dropdown */
+#sb-filter-form .ts-wrapper.multi.has-items:not(.focus) .ts-control {
+  padding-right: 1rem !important;
+}
+
 /* Multi-select dropdowns (positioned inside the control): as wide as their options, never
    narrower than the control. Single-select dropdowns are sized in widgets.js. */
 .ts-wrapper.multi .ts-dropdown {

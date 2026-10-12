@@ -25,7 +25,7 @@
   {% block ordering %}{% if ordering_config %}{% include "sebastian/htmx/_ordering.html" %}{% endif %}{% endblock %}
   {% block filter_fields %}
   {% for field in filter_form %}
-  <div class="col-auto d-flex align-items-center gap-1">
+  <div class="col-auto d-flex align-items-start gap-1">
     <label class="col-form-label col-form-label-sm text-nowrap" for="{{ field.id_for_label }}">{{ field.label }}</label>
     {{ field|bootstrapfield }}
   </div>
@@ -33,7 +33,7 @@
   {% endblock filter_fields %}
   {% block filter_buttons %}
   {# Filter + menu: Clear, Default, Save as default, Restore default (sebastian.default_filter) #}
-  <div class="col-auto align-self-end">
+  <div class="col-auto align-self-start">
     <div class="btn-group btn-group-sm">
       <button type="submit" class="btn btn-secondary">{% strans "Filter" %}</button>
       <button type="button" class="btn btn-secondary dropdown-toggle dropdown-toggle-split"

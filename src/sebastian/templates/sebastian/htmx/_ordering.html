@@ -1,6 +1,6 @@
 {% load sebastian_tags %}
 {# Multi-column ordering widget (Sebastian.ordering): TomSelect, see initOrdering() in widgets.js. #}
-<div class="col-auto d-flex align-items-center gap-1">
+<div class="col-auto d-flex align-items-start gap-1">
   <label class="col-form-label col-form-label-sm text-nowrap">{% strans "Sort by" %}</label>
   <select class="form-select form-select-sm sb-ordering"
           data-max-items="{{ ordering_config.max_n }}"
