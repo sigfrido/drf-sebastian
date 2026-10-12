@@ -84,6 +84,9 @@ def _strings():  # pragma: no cover - never called, see module docstring
         pgettext('sebastian', 'Last page'),
         pgettext('sebastian', 'Username'),
         pgettext('sebastian', 'Yes'),
+        # Home plugins (home.py, home.html, home_plugin.html):
+        pgettext('sebastian', 'This panel could not be loaded.'),
+        pgettext('sebastian', 'Nothing available for your profile.'),
         # Default skin labels (app_settings._DEFAULT_SKINS, via sgettext_lazy):
         pgettext('sebastian', 'Light theme'),
         pgettext('sebastian', 'Dark theme'),

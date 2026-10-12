@@ -1,0 +1,14 @@
+{% load sebastian_tags %}
+<div class="card shadow-sm mb-3 sb-home-plugin" data-plugin="{{ plugin.name }}">
+  {% if plugin.title %}
+  <div class="card-header d-flex align-items-center gap-2 fw-semibold">
+    {% if plugin.icon %}{% icon plugin.icon %}{% endif %}
+    <span>{{ plugin.title }}</span>
+  </div>
+  {% endif %}
+  <div class="card-body">
+    {% if error %}
+    <p class="text-danger mb-0">{% icon "exclamation-triangle" %} {% strans "This panel could not be loaded." %}</p>
+    {% else %}{{ body }}{% endif %}
+  </div>
+</div>

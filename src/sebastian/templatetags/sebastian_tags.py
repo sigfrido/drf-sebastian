@@ -462,3 +462,11 @@ def actions(context, group='actions'):
         request=request,
     ))
 
+
+
+@register.simple_tag(takes_context=True)
+def home_plugins(context, slot):
+    """Render the home plugins of ``slot`` (see `sebastian.home`), already rendered
+    by the home view in ``home_slots``. Usage: ``{% home_plugins "left" %}``."""
+    rendered = (context.get('home_slots') or {}).get(slot, [])
+    return mark_safe(''.join(rendered))

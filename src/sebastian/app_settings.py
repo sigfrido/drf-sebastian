@@ -173,3 +173,16 @@ def page_first_last() -> bool:
 def page_show_num() -> bool:
     """``PAGE_SHOW_NUM`` — show "Page n of m". Default: True."""
     return _sebastian('PAGE_SHOW_NUM', True)
+
+
+def home_autodiscover() -> bool:
+    """``HOME_AUTODISCOVER`` — import the ``plugins`` module/package of every installed
+    app on the first home page request (see `sebastian.home`). Default: ``True``."""
+    return _sebastian('HOME_AUTODISCOVER', True)
+
+
+def home_slots() -> list:
+    """``HOME_SLOTS`` — slots of the home page layout, as drawn by
+    ``sebastian/<pack>/home.html``; a plugin with another slot goes to the first one.
+    Default: ``['left', 'right']`` (two columns)."""
+    return _sebastian('HOME_SLOTS', ['left', 'right'])

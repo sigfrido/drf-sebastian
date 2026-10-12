@@ -8,6 +8,15 @@
   <h4>{% strans "Available modules" %}</h4>
 </div>
 
+{% if home_has_plugins %}
+<div class="row g-3">
+  <div class="col-12 col-md-6">{% home_plugins "left" %}</div>
+  <div class="col-12 col-md-6">{% home_plugins "right" %}</div>
+</div>
+{% if not home_visible_plugins %}
+<p class="text-muted">{% strans "Nothing available for your profile." %}</p>
+{% endif %}
+{% else %}
 <div class="row row-cols-1 row-cols-md-3 g-3">
   {% for entry in entries %}
   <div class="col">
@@ -26,4 +35,5 @@
   </div>
   {% endfor %}
 </div>
+{% endif %}
 {% endblock %}

@@ -436,8 +436,18 @@ class GUIRouter:
                     label = prefix.replace('-', ' ').title()
                     icon  = 'table'
                 entries.append({'prefix': prefix, 'label': label, 'icon': icon, 'url': f'{prefix}/'})
+            # Plugins (sebastian.home): the home layout draws the slots; without plugins
+            # registered it shows the entries above
+            from .home import HomeContext, get_home_plugins, render_home_plugins
+            home_ctx = HomeContext(request=request, pack=pack, skin_name=skin_name,
+                                   menu_source=self._menu_groups)
+            has_plugins = bool(get_home_plugins())
+            home_slots = render_home_plugins(home_ctx) if has_plugins else {}
             return django_render(request, f'sebastian/{pack}/home.html', {
                 'entries':           entries,
+                'home_has_plugins':  has_plugins,
+                'home_slots':        home_slots,
+                'home_visible_plugins': any(home_slots.values()),
                 'pack_name':         pack,
                 'pack_base':         f'sebastian/{pack}/base.html',
                 'skin_name':         skin_name,

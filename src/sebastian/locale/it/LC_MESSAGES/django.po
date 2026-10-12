@@ -203,3 +203,11 @@ msgstr "Ultima pagina"
 msgctxt "sebastian"
 msgid "Page %(page)s of %(pages)s"
 msgstr "Pagina %(page)s di %(pages)s"
+
+msgctxt "sebastian"
+msgid "This panel could not be loaded."
+msgstr "Impossibile caricare questo riquadro."
+
+msgctxt "sebastian"
+msgid "Nothing available for your profile."
+msgstr "Nessuna funzione disponibile per il tuo profilo."

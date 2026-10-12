@@ -362,6 +362,38 @@ class Sebastian:
 
 `SebastianMenuView`, auto-registered at `/api/menu/` (JSON) and `/gui/menu/` (HTML fragment), aggregates every registered ViewSet's `Sebastian.menu` into one navbar. `base.html` loads it via `hx-get="/gui/menu/" hx-trigger="load, menuRefresh from:body"`, and re-fetches it on every HTMX navigation so the active-item highlighting (longest-prefix match against `HX-Current-URL`) stays correct without a full page reload.
 
+### 4.3.1 Home Page Plugins
+
+The home page (`/gui/`) lists one tile per GUI ViewSet (opt-in with `Sebastian.add_to_home`) until the project registers **plugins**: panels with their own template and context, grouped in the slots of the home layout. Apps define them in a `plugins` module (`<app>/plugins.py`) or package (`<app>/plugins/*.py`, every module imported); the first home request imports them (`SEBASTIAN['HOME_AUTODISCOVER']`).
+
+```python
+# myapp/plugins.py
+from sebastian.home import HomePlugin, MenuLinksPlugin, register_home_plugin
+
+@register_home_plugin
+class RequestsPlugin(MenuLinksPlugin):
+    name          = 'myapp.requests'          # unique; default '<module>.<class>'
+    title         = 'Requests'
+    icon          = 'clipboard-check'
+    slot          = 'left'                    # slot of the layout
+    order         = 10                        # ascending in the slot, then registration order
+    permission    = perm_is_staff             # like MenuItem.permission (obj=None)
+    menu_label    = 'Requests'                # MenuGroup whose items become buttons
+    items         = ('List', 'Settings', '-', 'New')   # labels in order, '-' = spacing
+    primary_items = ('New',)                  # drawn with the 'primary' style
+    template      = 'myapp/plugins/requests.html'      # '{pack}' is replaced by the pack
+
+    def get_context(self, request, home):     # home: HomeContext(request, pack, skin_name, menu_groups)
+        return {**super().get_context(request, home), 'drafts': Request.objects.filter(...).count()}
+```
+
+- `HomePlugin`: base class; `is_visible(request)` (default: `permission`), `get_context(request, home)`, `get_template(home)`. The template receives the plugin context plus `plugin`, `home`, `skin_name`; the pack's `home_plugin.html` wraps it in a card with title and icon.
+- `MenuLinksPlugin`: the items of a `MenuGroup` (§4.3) as a column of small buttons, with the menu's URLs, icons and permissions (`HIDE_UNAUTHORIZED_ACTIONS` included); default template `sebastian/{pack}/home_links.html`, which a plugin template can `{% include %}` before its own content.
+- `register_home_plugin` (decorator, optionally `(slot=..., order=...)`); a duplicate name raises `ImproperlyConfigured`.
+- **Layout**: the packs' `home.html` draws two columns with `{% home_plugins "left" %}` / `{% home_plugins "right" %}` (one column on narrow screens). A project changes it by overriding `sebastian/<pack>/home.html` and setting `SEBASTIAN['HOME_SLOTS']` to the slots it draws; a plugin with another slot goes to the first one (warning in the `sebastian.home` log).
+- A plugin that raises is shown as an error panel and logged (`sebastian.home`, ERROR); the home page still renders. Context: `home_has_plugins` (any plugin registered), `home_visible_plugins` (any shown to the user), `home_slots`.
+- Controls in a plugin (a search box, …) are ordinary links or GET forms, to other pages or to the home page itself (read `request.GET` in `get_context`).
+
 ### 4.4 List Views
 
 Auto-generated from the ViewSet's serializer, filterset, and ordering configuration:
@@ -760,6 +792,10 @@ SEBASTIAN = {
     'PAGE_SIZE':       25,              # records per page
     'PAGE_FIRST_LAST': True,            # first/last page links
     'PAGE_SHOW_NUM':   True,            # "Page n of m"
+
+    # Home page plugins (§4.3.1)
+    'HOME_AUTODISCOVER': True,          # import <app>/plugins on the first home request
+    'HOME_SLOTS':        ['left', 'right'],  # slots drawn by home.html; others → first
 }
 ```
 
@@ -897,6 +933,7 @@ drf-sebastian/
 │   ├── config.py                FieldGroup, MenuItem, MenuGroup, MenuDivider
 │   ├── decorators.py            @action wrapper, @typeahead
 │   ├── dispatch.py              call()
+│   ├── home.py                  HomePlugin, MenuLinksPlugin, register_home_plugin
 │   ├── mixins.py                GUIMixin, NestedGUIMixin, SingletonGUIMixin
 │   ├── pagination.py            SebastianPagination
 │   ├── permissions.py           perm_is_admin, perm_is_staff, perm_is_action, perm_or, perm_and
@@ -920,6 +957,7 @@ drf-sebastian/
 │       ├── serializers.py
 │       ├── views.py             ViewSets/views with Sebastian inner class
 │       ├── filters.py
+│       ├── plugins.py           home page plugins (autodiscovered)
 │       ├── admin.py
 │       └── management/commands/seed_demo_data.py
 └── tests/

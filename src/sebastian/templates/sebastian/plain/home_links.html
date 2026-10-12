@@ -1,0 +1,11 @@
+{% load sebastian_tags %}
+<div class="d-grid gap-1 sb-home-links">
+  {% for link in links %}
+  {% if link.divider %}<div class="mt-2"></div>
+  {% elif link.disabled %}
+  <span class="btn btn-sm text-start {{ link.style|btn_class:skin_name }} disabled">{% if link.icon %}{% icon link.icon "me-1" %}{% endif %}{{ link.label }}</span>
+  {% else %}
+  <a href="{{ link.url }}" class="btn btn-sm text-start {{ link.style|btn_class:skin_name }}">{% if link.icon %}{% icon link.icon "me-1" %}{% endif %}{{ link.label }}</a>
+  {% endif %}
+  {% endfor %}
+</div>
