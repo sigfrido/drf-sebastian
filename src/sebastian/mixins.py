@@ -10,6 +10,7 @@ from rest_framework.response import Response as DRFResponse
 from .i18n import sgettext
 
 from .app_settings import hide_unauthorized_actions, pack_uses_htmx, confirm_deletions
+from . import default_filter
 from .config import _check_permission
 from .pagination import SebastianPagination
 from .renderers import SebastianHTMLRenderer, is_htmx_partial
@@ -576,6 +577,44 @@ class GUIMixin(_SebastianBaseMixin):
             # by primary key, so that paginated lists stay stable.
             queryset = queryset.order_by('pk')
         return queryset
+
+    # ------------------------------------------------------------------ #
+    # Default filter (sebastian.default_filter)                           #
+    # ------------------------------------------------------------------ #
+
+    def list(self, request, *args, **kwargs):
+        # ?_filter=default: redirect to the list filtered by the user's (or the declared)
+        # default filter; htmx follows the redirect and pushes the final URL
+        if (getattr(request, 'sebastian_gui', False)
+                and request.query_params.get(default_filter.FILTER_PARAM) == default_filter.DEFAULT):
+            from django.http import HttpResponseRedirect
+            querystring = default_filter.effective_default(self, request)
+            return HttpResponseRedirect(f'{request.path}?{querystring}' if querystring else request.path)
+        return super().list(request, *args, **kwargs)
+
+    def save_default_filter(self, request, *args, **kwargs):
+        """POST <list>/default-filter/: ``op=save`` saves the posted filters (and ordering)
+        as the user's default filter of the list, ``op=reset`` forgets it; then back to the
+        list with its default filter."""
+        from django.contrib import messages
+        from django.http import HttpResponseRedirect
+        store = default_filter._user_store(request)
+        if store is None:
+            from rest_framework.exceptions import NotFound
+            raise NotFound()
+        op = request.data.get('op')
+        if op == 'save':
+            store.set(request, default_filter.store_key(self), default_filter.querystring_of(request.data))
+            messages.success(request._request, sgettext('Default filter saved.'), fail_silently=True)
+        elif op == 'reset':
+            store.delete(request, default_filter.store_key(self))
+            messages.success(request._request, sgettext('Default filter restored.'), fail_silently=True)
+        else:
+            from rest_framework.exceptions import ValidationError
+            raise ValidationError({'op': 'save | reset'})
+        list_path = request.path[:-len('default-filter/')]
+        return HttpResponseRedirect(
+            f'{list_path}?{default_filter.FILTER_PARAM}={default_filter.DEFAULT}')
 
     # ------------------------------------------------------------------ #
     # Create / update — redirect to detail on success                     #

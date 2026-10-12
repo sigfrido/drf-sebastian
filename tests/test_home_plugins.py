@@ -122,14 +122,14 @@ class TestMenuLinksPlugin:
     def test_links_of_the_menu(self, registry, auth_client):
         self._suppliers()
         html = auth_client.get('/gui/', **GUI).content.decode()
-        assert 'href="/gui/suppliers/"' in html
+        assert 'href="/gui/suppliers/?_filter=default"' in html
         assert 'href="/gui/suppliers/new/"' in html
 
     def test_links_follow_menu_permissions(self, registry, auth_client_regular):
         # New requires manager or admin (as in the menu)
         self._suppliers()
         html = auth_client_regular.get('/gui/', **GUI).content.decode()
-        assert 'href="/gui/suppliers/"' in html
+        assert 'href="/gui/suppliers/?_filter=default"' in html
         assert 'href="/gui/suppliers/new/"' not in html
 
     def test_items_order_spacing_and_primary(self, registry, auth_client):

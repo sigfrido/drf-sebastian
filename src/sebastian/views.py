@@ -50,9 +50,11 @@ def _evaluate_menu(request, groups: list, current_url: str = '') -> list:
                 url = reverse(item['url_name'])
             except (NoReverseMatch, KeyError):
                 url = '#'
+            href = f"{url}?{item['query']}" if item.get('query') and url != '#' else url
             evaluated_items.append({
                 'label':    item['label'],
-                'url':      url,
+                'url':      href,
+                'path':     url,   # without query string: active item matching
                 'icon':     item.get('icon', ''),
                 'disabled': not item_permitted,
                 'active':   False,   # resolved below
@@ -64,7 +66,7 @@ def _evaluate_menu(request, groups: list, current_url: str = '') -> list:
         # Active item: exact match wins; fall back to longest prefix match.
         # This ensures /gui/requests/new/ activates "New", not "List".
         if current_url:
-            candidate_urls = [i['url'] for i in evaluated_items if not i.get('divider') and i['url'] != '#']
+            candidate_urls = [i['path'] for i in evaluated_items if not i.get('divider') and i['path'] != '#']
             exact = current_url if current_url in candidate_urls else None
             if exact:
                 best = exact
@@ -73,7 +75,7 @@ def _evaluate_menu(request, groups: list, current_url: str = '') -> list:
                 best = max(prefixes, key=len) if prefixes else None
             for item in evaluated_items:
                 if not item.get('divider'):
-                    item['active'] = (item['url'] == best)
+                    item['active'] = (item['path'] == best)
 
         result.append({
             'label':    group['label'],

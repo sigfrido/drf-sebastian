@@ -186,3 +186,10 @@ def home_slots() -> list:
     ``sebastian/<pack>/home.html``; a plugin with another slot goes to the first one.
     Default: ``['left', 'right']`` (two columns)."""
     return _sebastian('HOME_SLOTS', ['left', 'right'])
+
+
+def default_filter_store() -> str | None:
+    """``DEFAULT_FILTER_STORE`` — dotted path of the `DefaultFilterStore` keeping the users'
+    own default list filters (see `sebastian.default_filter`); ``None`` disables saving.
+    Default: ``'sebastian.default_filter.SessionDefaultFilterStore'``."""
+    return _sebastian('DEFAULT_FILTER_STORE', 'sebastian.default_filter.SessionDefaultFilterStore')

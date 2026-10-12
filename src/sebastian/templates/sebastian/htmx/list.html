@@ -31,10 +31,37 @@
   </div>
   {% endfor %}
   {% endblock filter_fields %}
+  {% block filter_buttons %}
+  {# Filter + menu: Clear, Default, Save as default, Restore default (sebastian.default_filter) #}
   <div class="col-auto align-self-end">
-    <button type="submit" class="btn btn-secondary btn-sm">{% strans "Filter" %}</button>
-    <a href="{{ request.path }}" class="btn btn-link btn-sm">{% strans "Clear" %}</a>
+    <div class="btn-group btn-group-sm">
+      <button type="submit" class="btn btn-secondary">{% strans "Filter" %}</button>
+      <button type="button" class="btn btn-secondary dropdown-toggle dropdown-toggle-split"
+              data-bs-toggle="dropdown" aria-expanded="false">
+        <span class="visually-hidden">{% strans "Filter options" %}</span>
+      </button>
+      <ul class="dropdown-menu dropdown-menu-end">
+        <li><a class="dropdown-item" href="{{ request.path }}">{% icon "x-circle" "me-1" %}{% strans "Clear" %}</a></li>
+        {% if default_filter.has_default %}
+        <li><a class="dropdown-item" href="{{ default_filter.url }}">{% icon "funnel" "me-1" %}{% strans "Default" %}</a></li>
+        {% endif %}
+        {% if default_filter.save_url %}
+        <li><hr class="dropdown-divider"></li>
+        <li><button type="button" class="dropdown-item"
+                    hx-post="{{ default_filter.save_url }}" hx-vals='{"op": "save"}'
+                    hx-include="#sb-filter-form" hx-target="#sebastian-content" hx-push-url="true">
+          {% icon "bookmark-plus" "me-1" %}{% strans "Save as default" %}</button></li>
+        {% if default_filter.has_personal %}
+        <li><button type="button" class="dropdown-item"
+                    hx-post="{{ default_filter.save_url }}" hx-vals='{"op": "reset"}'
+                    hx-target="#sebastian-content" hx-push-url="true">
+          {% icon "arrow-counterclockwise" "me-1" %}{% strans "Restore default" %}</button></li>
+        {% endif %}
+        {% endif %}
+      </ul>
+    </div>
   </div>
+  {% endblock filter_buttons %}
 </form>
 {% endif %}
 

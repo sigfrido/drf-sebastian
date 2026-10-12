@@ -321,7 +321,8 @@ def get_link_action(context, field_name):
     file-download links directly on the field value instead of in the action button group.
     """
     view = context.get('view')
-    if not view:
+    # plain DRF views rendered by the HTML renderer (e.g. the router's APIRootView) have no actions
+    if view is None or not hasattr(view, 'get_available_actions'):
         return None
     for action_dict in view.get_available_actions():
         if action_dict.get('gui_config', {}).get('link_field') == field_name:

@@ -211,3 +211,27 @@ msgstr "Impossibile caricare questo riquadro."
 msgctxt "sebastian"
 msgid "Nothing available for your profile."
 msgstr "Nessuna funzione disponibile per il tuo profilo."
+
+msgctxt "sebastian"
+msgid "Filter options"
+msgstr "Opzioni del filtro"
+
+msgctxt "sebastian"
+msgid "Default"
+msgstr "Predefinito"
+
+msgctxt "sebastian"
+msgid "Save as default"
+msgstr "Salva come predefinito"
+
+msgctxt "sebastian"
+msgid "Restore default"
+msgstr "Ripristina predefinito"
+
+msgctxt "sebastian"
+msgid "Default filter saved."
+msgstr "Filtro predefinito salvato."
+
+msgctxt "sebastian"
+msgid "Default filter restored."
+msgstr "Ripristinato il filtro predefinito."

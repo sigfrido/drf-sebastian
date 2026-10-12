@@ -24,6 +24,12 @@ class TestHome:
         assert r.status_code == 200
         assert b'Sebastian' in r.content
 
+    def test_api_root_as_html(self, auth_client):
+        # the HTML renderer also draws plain DRF views (no sebastian actions)
+        r = auth_client.get('/api/', **GUI)
+        assert r.status_code == 200
+        assert b'/api/suppliers/' in r.content
+
     def test_home_lists_registered_viewsets(self, auth_client):
         r = auth_client.get('/gui/', **GUI)
         assert b'Supplier' in r.content  # label from verbose_name_plural

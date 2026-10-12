@@ -48,6 +48,9 @@ class MenuItem:
     url_name: str = ''     # explicit URL name — for non-ViewSet pages
     icon: str = ''
     permission: Permission = None
+    # Open the list with its default filter (?_filter=default, see sebastian.default_filter):
+    # None = when the item is the 'list' action of its viewset
+    default_filter: bool = None
 
 
 @dataclass

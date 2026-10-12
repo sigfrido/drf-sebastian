@@ -192,6 +192,8 @@ class RequestViewSet(GUIMixin, viewsets.ModelViewSet):
 
     class Sebastian:
         label = 'Requests'
+        # Menu and home open the drafts, by budget (sebastian.default_filter)
+        default_filter = 'status=draft&ordering=-budget'
         ordering = (
             ('title',    'Title ↑'),
             ('-title',   'Title ↓'),

@@ -174,6 +174,7 @@ class SebastianHTMLRenderer(BaseRenderer):
             'field_labels':       self._get_field_labels(view, getattr(view, '_sebastian_obj', None)),
             'filter_form':        self._get_filter_form(view, request),
             'ordering_config':    self._get_ordering_config(view, request),
+            'default_filter':     self._get_default_filter(view, request, action, is_inline),
             'field_config':       self._get_field_config(sebastian_config, view),
             'cascading_fields':   getattr(sebastian_config, 'cascading_fields', []) or [],
             'inlines':            self._get_inlines(view),
@@ -438,6 +439,12 @@ class SebastianHTMLRenderer(BaseRenderer):
             if page < num_pages:
                 pagination['last'] = replace_query_param(url, 'page', num_pages)
         return pagination
+
+    def _get_default_filter(self, view, request, action, is_inline):
+        if action != 'list' or is_inline or view is None:
+            return None
+        from .default_filter import list_context
+        return list_context(view, request)
 
     def _get_ordering_config(self, view, request):
         if not view or not request:

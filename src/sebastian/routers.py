@@ -177,9 +177,14 @@ class GUIRouter:
                     url_name = f'{basename}-gui-new'
                 else:
                     url_name = f'{basename}-gui-{item.action}'
+                use_default = item.default_filter
+                if use_default is None:
+                    # any list may have the user's own default filter
+                    use_default = item.action == 'list'
                 items.append({
                     'label':      item.label,
                     'url_name':   url_name,
+                    'query':      '_filter=default' if use_default else '',
                     'icon':       item.icon,
                     'permission': item.permission,
                 })
@@ -206,7 +211,7 @@ class GUIRouter:
 
         routes.append(path(
             f'{prefix}/',
-            self._wrap(viewset.as_view({'get': 'list', 'post': 'create'})),
+            self._wrap(viewset.as_view({'get': 'list', 'post': 'create'}, basename=basename)),
             kw,
             name=f'{basename}-gui-list',
         ))
@@ -217,6 +222,13 @@ class GUIRouter:
                 self._wrap(viewset.as_view({'get': 'create_form'})),
                 kw,
                 name=f'{basename}-gui-new',
+            ))
+            # Save/forget the user's default filter of the list (sebastian.default_filter)
+            routes.append(path(
+                f'{prefix}/default-filter/',
+                self._wrap(viewset.as_view({'post': 'save_default_filter'}, basename=basename)),
+                kw,
+                name=f'{basename}-gui-default-filter',
             ))
 
         routes.append(path(

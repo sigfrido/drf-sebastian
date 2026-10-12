@@ -87,6 +87,13 @@ def _strings():  # pragma: no cover - never called, see module docstring
         # Home plugins (home.py, home.html, home_plugin.html):
         pgettext('sebastian', 'This panel could not be loaded.'),
         pgettext('sebastian', 'Nothing available for your profile.'),
+        # Default filter of the lists (default_filter.py, mixins.py, list.html):
+        pgettext('sebastian', 'Filter options'),
+        pgettext('sebastian', 'Default'),
+        pgettext('sebastian', 'Save as default'),
+        pgettext('sebastian', 'Restore default'),
+        pgettext('sebastian', 'Default filter saved.'),
+        pgettext('sebastian', 'Default filter restored.'),
         # Default skin labels (app_settings._DEFAULT_SKINS, via sgettext_lazy):
         pgettext('sebastian', 'Light theme'),
         pgettext('sebastian', 'Dark theme'),

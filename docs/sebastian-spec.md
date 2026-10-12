@@ -421,6 +421,34 @@ class Sebastian:
 
 `GUIMixin.pagination_class` is `sebastian.pagination.SebastianPagination` (a DRF `PageNumberPagination`), which paginates only when `on`. When on, it applies to the GUI **and** the API: `/api/...` answers `{count, next, previous, page, num_pages, results}` instead of a plain list. The list templates show the record count and `« ‹ Page n of m › »`; the links are full-page `href`s keeping the query string (filters, ordering). A page out of range (or not a number) shows, in the GUI, the first page of the same list with the error as a Django message; the API answers DRF's 404. With `Sebastian.ordering` and no ordering selected, the list is ordered by primary key, so pages are stable (§4.7). Pagination inside an inline (`NestedGUIMixin`) is not supported: the page links would navigate away from the parent page.
 
+#### Default filter and user-dependent filter values
+
+A list may declare a **default filter** (GUI only), a query string — filters *and* ordering — or a callable `(request) -> str`:
+
+```python
+class Sebastian:
+    default_filter = 'status=draft&ordering=-budget'
+```
+
+- **Every** GUI list can also have the user's **own** default filter, declared or not.
+- `<list>/?_filter=default` redirects (302; htmx follows it and pushes the final URL) to the list filtered by the user's own default filter, if saved, otherwise by the declared one (none: the unfiltered list). Without `_filter` nothing changes: a bare list URL is unfiltered (*Clear*).
+- Menu items `MenuItem(action='list')` point to `?_filter=default` (so do `MenuLinksPlugin` buttons on the home page); `MenuItem(..., default_filter=True|False)` forces it on or off (e.g. `url_name` items pointing to another viewset's list). The active-item match ignores the query string.
+- The htmx list's **Filter** button is a split button: *Clear*, *Default* (when a declared or own default filter applies), *Save as default* (the current filters and ordering, without `page`), *Restore default* (only when the user saved one). Save/restore POST to `<list>/default-filter/` (`op=save|reset`, route `{basename}-gui-default-filter`) and redirect to `?_filter=default` with a message. The block is `{% block filter_buttons %}`. The plain pack shows *Clear* and *Default* only.
+- The users' own default filters are kept by `SEBASTIAN['DEFAULT_FILTER_STORE']`, dotted path of a `sebastian.default_filter.DefaultFilterStore` (`get/set/delete(request, key, ...)`, key = router basename); default `SessionDefaultFilterStore` (until logout); `None` disables saving. Projects keep them in their user profile with their own store.
+
+**Metavalues** (`sebastian.filters`, needs django-filter): extra choices of a filter computed for the current user, like workflango's `owner=me`:
+
+```python
+from sebastian.filters import MetaModelChoiceFilter
+
+supplier = MetaModelChoiceFilter(
+    queryset=Supplier.objects.all(),
+    metavalues={'my_supplier': ('My supplier', lambda request: request.user.supplier)},
+)
+```
+
+They are listed first among the choices; `?supplier=my_supplier` filters by the value returned for the request user; `None` means no filtering. They fit default filters (`default_filter = 'supplier=my_supplier'`).
+
 ### 4.5 Detail Views
 
 Auto-generated from serializer fields and `@action` methods:
@@ -796,6 +824,9 @@ SEBASTIAN = {
     # Home page plugins (§4.3.1)
     'HOME_AUTODISCOVER': True,          # import <app>/plugins on the first home request
     'HOME_SLOTS':        ['left', 'right'],  # slots drawn by home.html; others → first
+
+    # Users' own default list filters (§4.4); None = no "Save as default"
+    'DEFAULT_FILTER_STORE': 'sebastian.default_filter.SessionDefaultFilterStore',
 }
 ```
 
@@ -931,8 +962,10 @@ drf-sebastian/
 │   ├── apps.py
 │   ├── app_settings.py         SEBASTIAN settings accessors
 │   ├── config.py                FieldGroup, MenuItem, MenuGroup, MenuDivider
+│   ├── default_filter.py        Sebastian.default_filter, DefaultFilterStore
 │   ├── decorators.py            @action wrapper, @typeahead
 │   ├── dispatch.py              call()
+│   ├── filters.py               MetaModelChoiceFilter (user-dependent filter values)
 │   ├── home.py                  HomePlugin, MenuLinksPlugin, register_home_plugin
 │   ├── mixins.py                GUIMixin, NestedGUIMixin, SingletonGUIMixin
 │   ├── pagination.py            SebastianPagination
