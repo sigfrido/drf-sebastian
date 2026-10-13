@@ -237,7 +237,7 @@ class GUIRouter:
                 'get': 'retrieve',
                 'put': 'update', 'patch': 'partial_update',
                 'delete': 'destroy',
-            })),
+            }, basename=basename)),   # basename: key of the user's default filter (list link)
             kw,
             name=f'{basename}-gui-detail',
         ))

@@ -130,3 +130,12 @@ def list_context(view, request):
         'save_url':     f'{request.path}default-filter/' if store else '',
         'has_personal': personal is not None,
     }
+
+
+def list_link(view, request, base='..'):
+    """Link from a detail page back to its list: `base` with ``?_filter=default`` only when a
+    default filter applies (declared on the viewset, or the user's own), so a list with none is
+    reached without the extra redirect."""
+    if has_default(type(view)) or personal_default(view, request) is not None:
+        return f'{base}/?{FILTER_PARAM}={DEFAULT}'
+    return base

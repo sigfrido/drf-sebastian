@@ -6,6 +6,7 @@ All notable changes to this project are documented here, starting from this rele
 
 ### Fixed
 
+- **Back to the list from a detail page**: the list link in the detail title opens the list with its default filter (`../?_filter=default`, the user's own or the declared one) instead of the unfiltered list; a plain `..` when no default filter applies, avoiding the redirect (context `list_link`, `default_filter.list_link()`; `GUIRouter` passes `basename` to the detail views too) (opus #91)
 - **Filter form layout**: filter fields (labels included), the ordering widget and the Filter button are aligned at the top (they were centered / at the bottom when a multi-select filter took more than one line); a multi-select filter with selected values no longer shows an empty second line (TomSelect's search input takes no space until the control is focused)
 - **Empty option of choice selects**: the "---------" option is offered only when the field is required (it forces an explicit choice) or accepts blank/null (new filter `has_empty_choice`), in the forms and modals of both packs. An optional field accepting neither — typically a model field with a default — no longer shows it: an empty value would just leave the field unchanged, and read as "no value"
 

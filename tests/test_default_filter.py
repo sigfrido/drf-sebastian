@@ -159,3 +159,17 @@ class TestMetaModelChoiceFilter:
         choices = list(_filterset(SimpleNamespace(supplier=None))('').form.fields['supplier'].choices)
         assert [str(label) for _v, label in choices[:2]] == ['---------', 'My supplier']
         assert len(choices) == 4
+
+
+@pytest.mark.django_db
+def test_detail_links_back_to_the_list(auth_client, supplier, purchase_request):
+    def link(url):
+        return auth_client.get(url, **GUI).content.decode()
+    supplier_detail = f'/gui/suppliers/{supplier.pk}/'
+    # no default filter: plain link, no redirect
+    assert '<h4><a href="..">' in link(supplier_detail)
+    # declared default filter
+    assert '<h4><a href="../?_filter=default">' in link(f'{REQUESTS}{purchase_request.pk}/')
+    # the user's own default filter
+    auth_client.post('/gui/suppliers/default-filter/', {'op': 'save', 'active': 'true'})
+    assert '<h4><a href="../?_filter=default">' in link(supplier_detail)

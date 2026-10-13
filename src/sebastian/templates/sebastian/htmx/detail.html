@@ -7,7 +7,7 @@
 
 <div class="d-flex justify-content-between align-items-start mb-3">
   <div>
-    <h4><a href="..">{{ view.get_view_name }}</a> — {{ instance }}</h4>
+    <h4><a href="{{ list_link|default:'..' }}">{{ view.get_view_name }}</a> — {{ instance }}</h4>
     {% block extra_detail_subtitle %}{% endblock %}
   </div>
   <div class="d-flex gap-1 flex-shrink-0">
