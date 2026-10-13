@@ -31,7 +31,7 @@
             {% if field.choices %}
             <select class="form-select" id="modal_{{ field_name }}" name="{{ field_name }}"
                     {% if field.required %}required{% endif %}>
-              <option value="">---------</option>
+              {% if field|has_empty_choice %}<option value="">---------</option>{% endif %}
               {% for val, lbl in field.choices.items %}
               <option value="{{ val }}"
                 {% if instance %}{% if instance|get_item:field_name == val %}selected{% endif %}{% endif %}>

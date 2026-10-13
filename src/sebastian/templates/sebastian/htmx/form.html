@@ -97,7 +97,7 @@
                 id="id_{{ field_name }}" name="{{ field_name }}"
                 {% if fc.dropdown_width %}data-dropdown-width="{{ fc.dropdown_width }}"{% endif %}
                 {% if field.required %}required{% endif %}>
-          <option value="">---------</option>
+          {% if field|has_empty_choice %}<option value="">---------</option>{% endif %}
           {% for val, lbl in field.choices.items %}
           <option value="{{ val }}"
             {% if instance %}{% if instance|get_item:field_name == val %}selected{% endif %}{% endif %}>

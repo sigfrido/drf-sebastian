@@ -2,6 +2,13 @@
 
 All notable changes to this project are documented here, starting from this release. Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.0.0-rc8] - unreleased
+
+### Fixed
+
+- **Filter form layout**: filter fields (labels included), the ordering widget and the Filter button are aligned at the top (they were centered / at the bottom when a multi-select filter took more than one line); a multi-select filter with selected values no longer shows an empty second line (TomSelect's search input takes no space until the control is focused)
+- **Empty option of choice selects**: the "---------" option is offered only when the field is required (it forces an explicit choice) or accepts blank/null (new filter `has_empty_choice`), in the forms and modals of both packs. An optional field accepting neither — typically a model field with a default — no longer shows it: an empty value would just leave the field unchanged, and read as "no value"
+
 ## [1.0.0-rc7] - 2026-10-12
 
 ### Changed — htmx 4 (breaking for projects with their own htmx code)
@@ -33,7 +40,6 @@ All notable changes to this project are documented here, starting from this rele
 
 ### Fixed
 
-- **Filter form layout**: filter fields (labels included), the ordering widget and the Filter button are aligned at the top (they were centered / at the bottom when a multi-select filter took more than one line); a multi-select filter with selected values no longer shows an empty second line (TomSelect's search input takes no space until the control is focused)
 - **API root as HTML**: `get_link_action` no longer fails on plain DRF views drawn by the HTML renderer (e.g. the router's `APIRootView` at `/api/` when `SebastianHTMLRenderer` is a default renderer)
 - **Unstable order of paginated lists**: in GUI mode, a list with `Sebastian.ordering` and no ordering selected was unordered (`order_by()`), so pages could overlap or skip records (and Django warned about an unordered paginated queryset). It is now ordered by primary key
 - **Expired session in htmx requests**: an htmx request redirected to the login page swapped the login form into its target (menu bar, content area, workflow panel). The htmx pack now detects a response that arrived through a redirect to the login page, skips the swap and loads the login page in full, with `next` set to the current page. New tag `{% sb_login_url %}` (`SEBASTIAN['LOGIN_URL']`, else Django's `LOGIN_URL`)

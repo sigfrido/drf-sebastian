@@ -215,3 +215,14 @@ class TestLoginUrlTag:
                               if k != 'LOGIN_URL'}
         settings.LOGIN_URL = '/accounts/login/'
         assert sb_login_url() == '/accounts/login/'
+
+
+def test_has_empty_choice():
+    from rest_framework import serializers
+    from sebastian.templatetags.sebastian_tags import has_empty_choice
+    choices = [('a', 'A'), ('b', 'B')]
+    assert has_empty_choice(serializers.ChoiceField(choices=choices))                 # required
+    assert has_empty_choice(serializers.ChoiceField(choices=choices, required=False, allow_blank=True))
+    assert has_empty_choice(serializers.ChoiceField(choices=choices, required=False, allow_null=True))
+    # optional, neither blank nor null (model field with a default): no empty option
+    assert not has_empty_choice(serializers.ChoiceField(choices=choices, required=False))

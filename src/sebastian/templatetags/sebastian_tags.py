@@ -471,3 +471,13 @@ def home_plugins(context, slot):
     by the home view in ``home_slots``. Usage: ``{% home_plugins "left" %}``."""
     rendered = (context.get('home_slots') or {}).get(slot, [])
     return mark_safe(''.join(rendered))
+
+
+@register.filter
+def has_empty_choice(field) -> bool:
+    """Whether a choice select offers the empty option ("---------"): when a value is
+    required (the empty option forces an explicit choice) or the field accepts blank / null.
+    Not for an optional field that accepts neither (e.g. a model field with a default): an
+    empty value would just leave it unchanged, and the option would read as "no value"."""
+    return bool(getattr(field, 'required', False) or getattr(field, 'allow_blank', False)
+                or getattr(field, 'allow_null', False))
