@@ -373,16 +373,18 @@ class _SebastianBaseMixin:
         cancel_url = action_url.rstrip('/').rsplit('/', 1)[0] + '/'
 
         def _confirm_response(serializer_instance, status=200):
+            instance_data = self.get_serializer(instance).data
             resp = DRFResponse({
                 'action':             'confirm',
                 'confirm_prompt':     resolved['prompt'] if resolved else '',
                 'confirm_icon':       resolved['icon']   if resolved else '',
                 'confirm_style':      resolved['style']  if resolved else 'primary',
                 'confirm_serializer': serializer_instance,
+                'confirm_values':     self._confirm_values(instance_data, serializer_instance),
                 'form_errors':        {},
                 'action_url':         action_url,
                 'cancel_url':         cancel_url,
-                'instance':           self.get_serializer(instance).data,
+                'instance':           instance_data,
                 'htmx_target':        '#sebastian-modal',
             }, status=status)
             return resp
@@ -416,6 +418,17 @@ class _SebastianBaseMixin:
         if isinstance(result, DRFResponse):
             return result
         return DRFResponse(self.get_serializer(instance).data)
+
+    @staticmethod
+    def _confirm_values(instance_data, serializer_instance):
+        """Values shown in the confirmation modal's fields: the instance's, overridden by the
+        confirmation serializer's own data (the initial values from ``{action}_get()`` on GET,
+        the submitted ones when the POST is rejected)."""
+        values = dict(instance_data or {})
+        if serializer_instance is not None:
+            values.update({name: value for name, value in serializer_instance.data.items()
+                           if name in serializer_instance.fields})
+        return values
 
     def _do_delete_redirect(self, request):
         """Return the appropriate redirect after a successful delete."""
@@ -466,16 +479,18 @@ class _SebastianBaseMixin:
                 action_label = gui_config.get('label', action_name.replace('_', ' ').title())
                 resolved     = self._resolve_confirmation(conf, action_label, instance)
                 cancel_url   = self.request.path.rstrip('/').rsplit('/', 1)[0] + '/'
+                instance_data = self.get_serializer(instance).data
                 resp = DRFResponse({
                     'action':             'confirm',
                     'confirm_prompt':     resolved['prompt'] if resolved else '',
                     'confirm_icon':       resolved['icon']   if resolved else '',
                     'confirm_style':      resolved['style']  if resolved else 'primary',
                     'confirm_serializer': serializer_instance,
+                    'confirm_values':     self._confirm_values(instance_data, serializer_instance),
                     'form_errors':        {},
                     'action_url':         self.request.path,
                     'cancel_url':         cancel_url,
-                    'instance':           self.get_serializer(instance).data,
+                    'instance':           instance_data,
                     'htmx_target':        '#sebastian-modal',
                 }, status=400)
                 resp['X-Sebastian-Form-Error'] = 'true'

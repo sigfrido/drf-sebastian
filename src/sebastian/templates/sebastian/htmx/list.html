@@ -135,6 +135,15 @@
                   {% if cfg.icon %}{% icon cfg.icon %}{% endif %}
                   {{ cfg.label }}
                 </button>
+                {% elif cfg.confirmation.serializer %}
+                <button class="btn {{ cfg|btn_class_cfg:skin_name }} btn-sm"
+                        hx-get="{{ request.path }}{{ item|get_item:lookup_field }}/{{ action.name }}/confirm/"
+                        hx-target="#sebastian-modal"
+                        hx-swap="innerHTML"
+                        title="{{ cfg.hint|default:cfg.label|default:action.name }}">
+                  {% if cfg.icon %}{% icon cfg.icon %}{% endif %}
+                  {{ cfg.label }}
+                </button>
                 {% elif cfg.confirmation %}
                 {% with obj_id=item|get_item:lookup_field %}
                 <button class="btn {{ cfg|btn_class_cfg:skin_name }} btn-sm"

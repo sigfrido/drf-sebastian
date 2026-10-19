@@ -263,7 +263,7 @@ class RequestViewSet(GUIMixin, viewsets.ModelViewSet):
         return self._post_confirmation_action('submit', instance)
 
     def submit_get(self, instance):
-        return {'justification': instance.justification or '', 'confirmed': False}
+        return {'justification': instance.justification or '', 'urgency': 'normal', 'confirmed': False}
 
     def submit_valid(self, instance, serializer):
         if serializer is None:

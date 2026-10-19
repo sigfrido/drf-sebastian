@@ -6,6 +6,16 @@
   {% if cfg.icon %}{% icon cfg.icon %}{% endif %}
   {{ cfg.label }}
 </button>
+{% elif cfg.confirmation.serializer %}
+{# fields to fill in first: the modal is loaded from the server (confirm.html) #}
+<button class="btn {{ cfg|btn_class_cfg:skin_name }} btn-sm"
+        hx-get="{{ object_url }}{{ action.name }}/confirm/"
+        hx-target="#sebastian-modal"
+        hx-swap="innerHTML"
+        title="{{ cfg.hint|default:cfg.label|default:action.name }}">
+  {% if cfg.icon %}{% icon cfg.icon %}{% endif %}
+  {{ cfg.label }}
+</button>
 {% elif cfg.confirmation %}
 <button class="btn {{ cfg|btn_class_cfg:skin_name }} btn-sm"
         data-sb-confirm-url="{{ object_url }}{{ action.name }}/"

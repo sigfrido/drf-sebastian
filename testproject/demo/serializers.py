@@ -9,6 +9,12 @@ class SubmitSerializer(serializers.Serializer):
         label='Justification',
         required=True,
     )
+    urgency = serializers.ChoiceField(
+        label='Urgency',
+        choices=[('low', 'Low'), ('normal', 'Normal'), ('high', 'High')],
+        required=False,
+        default='normal',
+    )
     confirmed = serializers.BooleanField(
         label='I confirm this request is within my department\'s available budget',
         required=False,

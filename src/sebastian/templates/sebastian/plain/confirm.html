@@ -34,7 +34,7 @@
            id="id_{{ field_name }}"
            name="{{ field_name }}"
            value="true"
-           {% if data.instance %}{% if data.instance|get_item:field_name %}checked{% endif %}{% endif %}>
+           {% if data.confirm_values|get_item:field_name %}checked{% endif %}>
     <label class="form-check-label" for="id_{{ field_name }}">
       {{ field.label|default:field_name }}
       {% if field.required %}<span class="text-danger">*</span>{% endif %}
@@ -42,6 +42,28 @@
     {% with field_errors=form_errors|get_item:field_name %}
     {% if field_errors %}
     <div class="invalid-feedback d-block">
+      {% for e in field_errors %}{{ e }}{% if not forloop.last %} {% endif %}{% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+  </div>
+  {% elif field.choices %}
+  <div class="mb-3">
+    <label class="form-label" for="id_{{ field_name }}">
+      {{ field.label|default:field_name }}
+      {% if field.required %}<span class="text-danger">*</span>{% endif %}
+    </label>
+    <select class="form-select{% with field_errors=form_errors|get_item:field_name %}{% if field_errors %} is-invalid{% endif %}{% endwith %}"
+            id="id_{{ field_name }}" name="{{ field_name }}"
+            {% if field.required %}required{% endif %}>
+      {% if field|has_empty_choice %}<option value="">---------</option>{% endif %}
+      {% for val, lbl in field.choices.items %}
+      <option value="{{ val }}" {% if data.confirm_values|get_item:field_name|stringformat:"s" == val|stringformat:"s" %}selected{% endif %}>{{ lbl }}</option>
+      {% endfor %}
+    </select>
+    {% with field_errors=form_errors|get_item:field_name %}
+    {% if field_errors %}
+    <div class="invalid-feedback">
       {% for e in field_errors %}{{ e }}{% if not forloop.last %} {% endif %}{% endfor %}
     </div>
     {% endif %}
@@ -57,7 +79,7 @@
            class="form-control{% with field_errors=form_errors|get_item:field_name %}{% if field_errors %} is-invalid{% endif %}{% endwith %}"
            id="id_{{ field_name }}"
            name="{{ field_name }}"
-           value="{% if data.instance %}{{ data.instance|get_item:field_name }}{% endif %}"
+           value="{{ data.confirm_values|get_item:field_name|default_if_none:'' }}"
            {% if field.required %}required{% endif %}>
     {% with field_errors=form_errors|get_item:field_name %}
     {% if field_errors %}

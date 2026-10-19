@@ -404,6 +404,30 @@ class TestRequestActionsGUI:
         assert b'type="checkbox"' in r.content
         assert b'name="confirmed"' in r.content
 
+    @override_settings(**SEBASTIAN_HTMX)
+    def test_gui_action_with_serializer_button_loads_modal(self, auth_client, purchase_request):
+        """An action whose confirmation has a serializer hx-gets the modal with its fields
+        instead of the generic yes/no prompt (which would POST without them)."""
+        r = auth_client.get(f'/gui/requests/{purchase_request.pk}/', **HTMX)
+        html = r.content.decode()
+        assert f'hx-get="/gui/requests/{purchase_request.pk}/submit/confirm/"' in html
+        assert f'data-sb-confirm-url="/gui/requests/{purchase_request.pk}/submit/"' not in html
+
+    @override_settings(**SEBASTIAN_HTMX)
+    def test_gui_confirm_modal_choice_field_and_initial_values(self, auth_client, purchase_request):
+        """A ChoiceField in a confirmation serializer renders as a select; the fields start
+        from the values returned by {action}_get(), and keep the submitted ones on error."""
+        import re
+        r = auth_client.get(f'/gui/requests/{purchase_request.pk}/submit/confirm/', **HTMX)
+        html = r.content.decode()
+        select = re.search(r'<select[^>]*name="urgency".*?</select>', html, re.S).group(0)
+        assert re.search(r'<option value="normal"\s*selected>', select)
+        assert 'type="select"' not in html
+        r = auth_client.post(f'/gui/requests/{purchase_request.pk}/submit/',
+                             {'justification': '', 'urgency': 'high'}, **HTMX)
+        assert r.status_code == 400
+        assert re.search(r'<option value="high"\s*selected>', r.content.decode())
+
     def test_gui_approve_full_flow(self, auth_client, purchase_request):
         """Draft → submit → approve: redirect to detail, final status approved."""
         auth_client.post(
@@ -480,7 +504,7 @@ class TestRequestActionsGUI:
         with override_settings(SEBASTIAN={'HIDE_UNAUTHORIZED_ACTIONS': True}):
             r = auth_client.get(f'/gui/requests/{purchase_request.pk}/', **HTMX)
         assert r.status_code == 200
-        assert b'/submit/"' in r.content
+        assert b'/submit/confirm/"' in r.content
 
 
 @pytest.mark.django_db

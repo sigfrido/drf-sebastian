@@ -7,9 +7,15 @@ All notable changes to this project are documented here, starting from this rele
 ### Fixed
 
 - **Detail page header on narrow windows**: title and buttons (Edit, Delete, actions) wrap instead of squeezing the title — the buttons go below the title when both do not fit on one line (htmx and plain packs)
+- **Actions with a confirmation serializer (htmx pack)**: their buttons (detail and list rows) load the modal with the serializer's fields (`GET {action}/confirm/` into `#sebastian-modal`), as documented; they opened the generic yes/no prompt, which posted the action without the fields
+
+### Added
+
+- **Choice fields in confirmation modals**: a `ChoiceField` of the confirmation serializer (`gui_config['confirmation']['serializer']`) renders as a select instead of a text input (htmx and plain packs)
 
 ### Changed
 
+- **Confirmation modal values**: the fields of the confirmation serializer start from the values returned by `{action}_get(instance)` (they were taken from the instance's own data, so `{action}_get()` had no effect on fields the instance does not have) and keep the submitted values when the POST is rejected; instance data still fills the fields the confirmation serializer does not provide (context `confirm_values`)
 - **Detail page buttons in a box**: Edit, Delete and the actions sit in a bordered box (`card border-secondary`, class `sb-detail-actions`), shown only when there is at least one button (htmx and plain packs)
 
 ## [1.0.0] - 2026-10-13
