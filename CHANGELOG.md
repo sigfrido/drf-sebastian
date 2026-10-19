@@ -2,6 +2,16 @@
 
 All notable changes to this project are documented here, starting from this release. Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.0.1] - unreleased
+
+### Fixed
+
+- **Detail page header on narrow windows**: title and buttons (Edit, Delete, actions) wrap instead of squeezing the title — the buttons go below the title when both do not fit on one line (htmx and plain packs)
+
+### Changed
+
+- **Detail page buttons in a box**: Edit, Delete and the actions sit in a bordered box (`card border-secondary`, class `sb-detail-actions`), shown only when there is at least one button (htmx and plain packs)
+
 ## [1.0.0] - 2026-10-13
 
 First stable release. Changes since 1.0.0-rc7:

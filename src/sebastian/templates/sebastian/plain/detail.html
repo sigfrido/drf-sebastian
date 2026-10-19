@@ -5,9 +5,12 @@
 {% block content %}
 {% with groups=visible_groups %}
 
-<div class="d-flex justify-content-between align-items-center mb-3">
+{% actions "actions" as detail_actions %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
   <h4><a href="{{ list_link|default:'..' }}">{{ view.get_view_name }}</a> — {% strans "Detail" %}</h4>
-  <div class="d-flex gap-1">
+  {% if view.can_update or view.can_delete or detail_actions.strip %}
+  <div class="card border-secondary sb-detail-actions">
+  <div class="card-body py-2 px-2 d-flex flex-wrap gap-1">
     {% if view.can_update %}
     <a href="{{ request.path }}edit/"
        class="btn {{ 'edit'|btn_class:skin_name }} btn-sm">
@@ -20,8 +23,10 @@
       {% icon "trash" %} {% strans "Delete" %}
     </a>
     {% endif %}
-    {% actions "actions" %}
+    {{ detail_actions }}
   </div>
+  </div>
+  {% endif %}
 </div>
 
 {% if groups %}

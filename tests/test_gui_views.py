@@ -211,6 +211,15 @@ class TestSupplierGUIDelete:
 
 @pytest.mark.django_db
 class TestSupplierGUIDetail:
+    def test_detail_buttons_in_a_box(self, auth_client, supplier):
+        html = auth_client.get(f'/gui/suppliers/{supplier.pk}/', **GUI).content.decode()
+        box = html.index('sb-detail-actions')
+        assert box < html.index(f'/gui/suppliers/{supplier.pk}/edit/')
+
+    def test_no_box_without_buttons(self, regular_client, supplier):
+        html = regular_client.get(f'/gui/suppliers/{supplier.pk}/', **GUI).content.decode()
+        assert 'sb-detail-actions' not in html
+
     def test_detail_returns_html(self, auth_client, supplier):
         r = auth_client.get(f'/gui/suppliers/{supplier.pk}/', **HTMX)
         assert r.status_code == 200
