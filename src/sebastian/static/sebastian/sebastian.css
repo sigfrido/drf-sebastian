@@ -89,3 +89,13 @@
 .nav-tabs .nav-link.active {
   font-weight: bold;
 }
+
+/* Collapsible inline sections (Sebastian.collapsed on the inline ViewSet) */
+details.sb-inline > summary {
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: .5rem;
+}
+details.sb-inline:not([open]) > summary {
+  margin-bottom: 0;
+}

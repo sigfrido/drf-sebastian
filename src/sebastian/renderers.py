@@ -557,7 +557,18 @@ class SebastianHTMLRenderer(BaseRenderer):
                 or inline_vs.__name__.lower().replace('viewset', '')
             )
             label = getattr(inline_sebastian, 'label', None) or mountpoint.title()
-            result.append({'mountpoint': mountpoint, 'label': label})
+            # Sebastian.collapsed: the section opens and closes (<details>); True/False or a
+            # permission-like callable(request, parent_obj) telling whether it starts closed
+            collapsible = hasattr(inline_sebastian, 'collapsed')
+            collapsed = False
+            if collapsible:
+                value = inline_sebastian.collapsed
+                if isinstance(value, bool):
+                    collapsed = value
+                elif obj is not None and request is not None:
+                    collapsed = _check_permission(value, request, obj)
+            result.append({'mountpoint': mountpoint, 'label': label,
+                           'collapsible': collapsible, 'collapsed': collapsed})
         return result
 
     def _resolve_confirm_template(self, view, pack: str) -> str:

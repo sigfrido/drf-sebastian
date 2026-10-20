@@ -1147,3 +1147,36 @@ class TestPagination:
         r = auth_client.get('/gui/suppliers/', **HTMX)
         assert self._rows(r.content) == 5
         assert b'Page 1 of 2' in r.content
+
+
+@pytest.mark.django_db
+class TestCollapsibleInlines:
+    """Sebastian.collapsed on an inline ViewSet: the section opens and closes (<details>)."""
+
+    def test_open_or_closed_by_parent_state(self, auth_client, purchase_request):
+        from demo.models import Request as R
+        html = auth_client.get(f'/gui/requests/{purchase_request.pk}/', **HTMX).content.decode()
+        assert '<details class="sb-inline" open>' in html            # draft: open
+        assert '<summary>Attachments</summary>' in html
+        assert 'id="inline-attachments"' in html                    # content loaded anyway
+        purchase_request.status = R.Status.SUBMITTED
+        purchase_request.save()
+        html = auth_client.get(f'/gui/requests/{purchase_request.pk}/', **HTMX).content.decode()
+        assert '<details class="sb-inline">' in html                 # closed
+
+    def test_plain_pack(self, auth_client, purchase_request):
+        from django.test import override_settings
+        with override_settings(SEBASTIAN={'TEMPLATE_PACK': 'plain'}):
+            html = auth_client.get(f'/gui/requests/{purchase_request.pk}/', **HTMX).content.decode()
+        assert '<details class="sb-inline" open>' in html
+
+    def test_not_collapsible_without_the_attribute(self, auth_client, purchase_request):
+        from demo.views import AttachmentViewSet
+        collapsed = AttachmentViewSet.Sebastian.collapsed
+        del AttachmentViewSet.Sebastian.collapsed
+        try:
+            html = auth_client.get(f'/gui/requests/{purchase_request.pk}/', **HTMX).content.decode()
+        finally:
+            AttachmentViewSet.Sebastian.collapsed = collapsed
+        assert 'id="inline-attachments"' in html
+        assert 'sb-inline' not in html

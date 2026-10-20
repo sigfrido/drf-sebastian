@@ -126,11 +126,15 @@
 {# --- Inline sections (NestedGUIMixin viewsets) --- #}
 {% for inline in inlines %}
 <div class="mt-3 border-top pt-3">
+  {# Sebastian.collapsed: the section opens and closes; its content is loaded anyway #}
+  {% if inline.collapsible %}<details class="sb-inline"{% if not inline.collapsed %} open{% endif %}>
+  <summary>{{ inline.label }}</summary>{% endif %}
   <div id="inline-{{ inline.mountpoint }}"
        hx-get="{{ object_url }}{{ inline.mountpoint }}/"
        hx-trigger="load">
     <p class="text-muted small">{% strans "Loading…" %}</p>
   </div>
+  {% if inline.collapsible %}</details>{% endif %}
 </div>
 {% endfor %}
 

@@ -127,6 +127,8 @@ class AttachmentViewSet(NestedGUIMixin, viewsets.ModelViewSet):
 
     class Sebastian:
         label  = 'Attachments'
+        # the section opens and closes; closed once the request has left the draft
+        collapsed = staticmethod(lambda request, obj: obj.status != 'draft')
         groups = [
             FieldGroup('data', ['description', 'file', 'uploaded_at'], label='Data'),
         ]
