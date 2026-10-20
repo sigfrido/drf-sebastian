@@ -188,6 +188,22 @@ def home_slots() -> list:
     return _sebastian('HOME_SLOTS', ['left', 'right'])
 
 
+def help_settings() -> dict:
+    """``HELP`` — online help (see `sebastian.help`): ``{'PAGES_DIR': path of the Markdown
+    pages, 'INDEX': name of the table of contents page (default ``'index'``)}``. Without
+    ``PAGES_DIR`` the help is off. Default: ``{}``."""
+    return _sebastian('HELP', {}) or {}
+
+
+def help_pages_dir():
+    """``HELP['PAGES_DIR']``, or None if the help is off."""
+    return help_settings().get('PAGES_DIR') or None
+
+
+def help_index_page() -> str:
+    return help_settings().get('INDEX', 'index')
+
+
 def default_filter_store() -> str | None:
     """``DEFAULT_FILTER_STORE`` — dotted path of the `DefaultFilterStore` keeping the users'
     own default list filters (see `sebastian.default_filter`); ``None`` disables saving.

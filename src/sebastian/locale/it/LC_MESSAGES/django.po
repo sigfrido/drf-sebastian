@@ -235,3 +235,27 @@ msgstr "Filtro predefinito salvato."
 msgctxt "sebastian"
 msgid "Default filter restored."
 msgstr "Ripristinato il filtro predefinito."
+
+msgctxt "sebastian"
+msgid "Help"
+msgstr "Guida"
+
+msgctxt "sebastian"
+msgid "Help contents"
+msgstr "Indice della guida"
+
+msgctxt "sebastian"
+msgid "Help pages"
+msgstr "Pagine della guida"
+
+msgctxt "sebastian"
+msgid "Single page, to print as PDF"
+msgstr "Pagina singola, da stampare in PDF"
+
+msgctxt "sebastian"
+msgid "Print / PDF"
+msgstr "Stampa / PDF"
+
+msgctxt "sebastian"
+msgid "Contents"
+msgstr "Indice"

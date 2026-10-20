@@ -190,9 +190,19 @@ class SebastianHTMLRenderer(BaseRenderer):
             'menu_url':           menu_url,
             'messages_url':       messages_url,
             'file_field_template': f'sebastian/{pack}/_file_field.html',
+            # contextual help (Sebastian.help_page, sebastian.help)
+            'help_url':           self._get_help_url(sebastian_config, is_inline),
         }
 
         return render_to_string(template_name, context, request=request)
+
+    @staticmethod
+    def _get_help_url(sebastian_config, is_inline) -> str:
+        page = getattr(sebastian_config, 'help_page', None)
+        if not page or is_inline:
+            return ''
+        from .help import help_url
+        return help_url(page)
 
     def _render_error(self, data, response, request) -> str:
         pack = app_settings.template_pack()

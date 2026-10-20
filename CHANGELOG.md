@@ -2,16 +2,18 @@
 
 All notable changes to this project are documented here, starting from this release. Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
-## [1.0.1] - unreleased
+## [1.1.0] - unreleased
+
+### Added
+
+- **Online help** (`sebastian.help`, `help` extra: `markdown`, `pymdown-extensions`): Markdown pages in `SEBASTIAN['HELP']['PAGES_DIR']` served inside the GUI behind the login (`/gui/help/`), with the side navigation of `index.md` (H2 = books), previous/next, plain relative links and images rewritten to help URLs, admonitions, tables and mermaid diagrams (vendored mermaid 11.4.1). Each book has a single printable page (`/gui/help/book/<slug>/`: chapters numbered, table of contents, A4 print stylesheet with page footer) to print as PDF from the browser. Contextual help: `Sebastian.help_page` shows a help icon on list and detail pages; `{% help_url %}` tag; `sebastian/_help_subtitle.html` (empty) to override, e.g. with the application version. See spec §4.12 (opus #92)
+- `sebastian.views.gui_page_context(request)`: layout context (pack, skin, menu, messages) for custom GUI pages
+- **Choice fields in confirmation modals**: a `ChoiceField` of the confirmation serializer (`gui_config['confirmation']['serializer']`) renders as a select instead of a text input (htmx and plain packs)
 
 ### Fixed
 
 - **Detail page header on narrow windows**: title and buttons (Edit, Delete, actions) wrap instead of squeezing the title — the buttons go below the title when both do not fit on one line (htmx and plain packs)
 - **Actions with a confirmation serializer (htmx pack)**: their buttons (detail and list rows) load the modal with the serializer's fields (`GET {action}/confirm/` into `#sebastian-modal`), as documented; they opened the generic yes/no prompt, which posted the action without the fields
-
-### Added
-
-- **Choice fields in confirmation modals**: a `ChoiceField` of the confirmation serializer (`gui_config['confirmation']['serializer']`) renders as a select instead of a text input (htmx and plain packs)
 
 ### Changed
 

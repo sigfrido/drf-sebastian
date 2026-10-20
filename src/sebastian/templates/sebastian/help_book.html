@@ -1,0 +1,93 @@
+{% load static sebastian_tags %}<!doctype html>
+{# Single printable page of a help book (sebastian.help): print it as PDF from the browser #}
+<html lang="{{ LANGUAGE_CODE|default:'en' }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ book.title }} — {{ help_title }}</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 15mm 20mm 25mm 20mm;
+      @bottom-left { content: {{ footer_css }}; font-size: 8pt; color: #666; }
+      @bottom-right { content: counter(page) " / " counter(pages); font-size: 8pt; color: #666; }
+    }
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      font-size: 11pt;
+      line-height: 1.45;
+      color: #222;
+      max-width: 52rem;
+      margin: 2rem auto;
+      padding: 0 1rem;
+      counter-reset: chapter;
+    }
+    h1 { font-size: 20pt; margin: 0 0 1rem; }
+    .subtitle { color: #666; margin: -.75rem 0 1.25rem; }
+    h2 { font-size: 15pt; margin-top: 0; }
+    h3 { font-size: 12.5pt; margin-top: 1.25rem; }
+    h4 { font-size: 11pt; }
+    /* chapter numbers: the pages are the chapters (h2), their sections the h3 */
+    .chapter h2 { counter-increment: chapter; counter-reset: section; }
+    .chapter h2::before { content: counter(chapter) ". "; }
+    .chapter h3 { counter-increment: section; }
+    .chapter h3::before { content: counter(chapter) "." counter(section) ". "; }
+    .toc ol { counter-reset: item; list-style: none; padding-left: 1.25rem; }
+    .toc > ol { padding-left: 0; }
+    .toc li { counter-increment: item; }
+    .toc li::before { content: counters(item, ".") ". "; }
+    .toc a { color: inherit; text-decoration: none; }
+    a { color: #0b5ed7; }
+    img { max-width: 100%; height: auto; border: 1px solid #ccc; }
+    table { border-collapse: collapse; margin: .75rem 0; }
+    th, td { border: 1px solid #999; padding: 3pt 5pt; vertical-align: top; text-align: left; }
+    th { background: #eee; }
+    code { font-size: 95%; }
+    .admonition { border-left: 3pt solid #0b5ed7; background: #f3f6fa; padding: 4pt 10pt; margin: .75rem 0; }
+    .admonition.warning { border-left-color: #e0a800; }
+    .admonition.danger { border-left-color: #dc3545; }
+    .admonition-title { font-weight: bold; margin: 0 0 2pt; }
+    .mermaid { text-align: center; margin: 1rem 0; }
+    .toolbar { text-align: right; margin-bottom: 1rem; }
+    @media print {
+      body { max-width: none; margin: 0; padding: 0; }
+      .toolbar { display: none; }
+      a { color: inherit; text-decoration: none; }
+      /* each chapter on a new page; headings never alone at the bottom of a page */
+      .chapter { break-before: page; }
+      h2, h3, h4 { break-after: avoid; break-inside: avoid; }
+      /* Chrome ignores break-after: avoid; a heading carries along an invisible block as tall
+         as a few lines, so it moves to the next page with them instead of staying alone */
+      h2::after, h3::after, h4::after { content: ""; display: block; height: 4em; margin-bottom: -4em; }
+      img, table, pre { break-inside: avoid; }
+      /* diagrams on a single page, below their heading */
+      .mermaid { break-inside: avoid; }
+      .mermaid svg { max-width: 100% !important; max-height: 200mm; width: auto; height: auto; }
+    }
+  </style>
+</head>
+<body>
+  <div class="toolbar"><button type="button" onclick="window.print()">{% strans "Print / PDF" %}</button></div>
+  <h1>{{ book.title }}</h1>
+  {% if help_subtitle %}<p class="subtitle">{{ help_subtitle }}</p>{% endif %}
+  <nav class="toc" aria-label="{% strans 'Contents' %}">
+    <ol>
+      {% for p in pages %}{% with first=p.headings.0 %}
+      <li><a href="#{{ first.1 }}">{{ first.2 }}</a>
+        <ol>{% for h in p.headings %}{% if h.0 == 3 %}<li><a href="#{{ h.1 }}">{{ h.2 }}</a></li>{% endif %}{% endfor %}</ol>
+      </li>
+      {% endwith %}{% endfor %}
+    </ol>
+  </nav>
+  {% for p in pages %}
+  <section class="chapter">{{ p.html|safe }}</section>
+  {% endfor %}
+  {% if help_has_mermaid %}
+  <script src="{% static help_mermaid_js %}"></script>
+  <script>
+    mermaid.initialize({startOnLoad: false, theme: 'default'});
+    mermaid.run({querySelector: '.mermaid'});
+  </script>
+  {% endif %}
+</body>
+</html>

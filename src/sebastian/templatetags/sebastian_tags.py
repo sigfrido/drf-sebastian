@@ -24,6 +24,14 @@ def icon(context, name, extra_class=''):
     return mark_safe(_ICON_RENDERERS[key](name, extra_class))
 
 
+@register.simple_tag(name='help_url')
+def help_url_tag(page=''):
+    """URL of a help page (sebastian.help): ``{% help_url "gui/lists#filters" %}``, the index
+    with no argument; '' if the help is not configured."""
+    from ..help import help_url
+    return help_url(page)
+
+
 @register.simple_tag
 def strans(text):
     """Shorthand for ``{% trans text context "sebastian" %}``.

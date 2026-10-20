@@ -87,4 +87,6 @@ SEBASTIAN = {
     # 'TEMPLATE_PACK': 'plain',
     'HIDE_UNAUTHORIZED_ACTIONS': False, # Disable instead
     'LOGIN_URL': LOGIN_URL,
+    # online help: Markdown pages (sebastian.help)
+    'HELP': {'PAGES_DIR': BASE_DIR / 'help'},
 }

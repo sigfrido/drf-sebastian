@@ -21,6 +21,31 @@ from .config import _check_permission
 from .renderers import SebastianHTMLRenderer
 
 
+def gui_page_context(request) -> dict:
+    """Context of a custom GUI page extending ``pack_base`` (layout, skin, menu, messages):
+    the same keys the ViewSet pages get from the renderer."""
+    from . import app_settings
+    from .renderers import is_htmx_partial
+    pack = app_settings.template_pack()
+    skin_name = getattr(request, 'sebastian_skin', None) or app_settings.skin()
+
+    def url(name):
+        try:
+            return reverse(name)
+        except NoReverseMatch:
+            return ''
+    return {
+        'is_htmx':        is_htmx_partial(request),
+        'pack_name':      pack,
+        'pack_base':      f'sebastian/{pack}/base.html',
+        'skin_name':      skin_name,
+        'skin_css_files': app_settings.skin_css_files(skin_name),
+        'menu_url':       url('sebastian-menu'),
+        'messages_url':   url('sebastian-messages'),
+        'file_field_template': f'sebastian/{pack}/_file_field.html',
+    }
+
+
 def _evaluate_menu(request, groups: list, current_url: str = '') -> list:
     """
     Evaluate a list of resolved menu groups against the current request.

@@ -142,8 +142,25 @@ class GUIRouter:
         ]
         for prefix, viewset, basename in self.api_router.registry:
             urls += self._routes_for(prefix, viewset, basename)
+        urls += self._help_urls()
         urls += self._extra_urls
         return urls
+
+    def _help_urls(self):
+        """Online help (sebastian.help), when SEBASTIAN['HELP']['PAGES_DIR'] is set."""
+        from . import app_settings
+        if not app_settings.help_pages_dir():
+            return []
+        from .help import views as help_views
+        return [
+            path('help/', self._wrap(help_views.help_index), name='sebastian-help-index'),
+            path('help/book/<slug:slug>/', self._wrap(help_views.help_book),
+                 name='sebastian-help-book'),
+            path('help/file/<path:path>', self._wrap(help_views.help_file),
+                 name='sebastian-help-file'),
+            path('help/<path:page>/', self._wrap(help_views.help_page),
+                 name='sebastian-help-page'),
+        ]
 
     def add_page(self, url_path: str, view, name: str):
         """Register a custom GUI page (plain Django view or DRF APIView).

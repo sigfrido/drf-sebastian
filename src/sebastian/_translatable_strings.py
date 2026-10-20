@@ -98,4 +98,11 @@ def _strings():  # pragma: no cover - never called, see module docstring
         pgettext('sebastian', 'Light theme'),
         pgettext('sebastian', 'Dark theme'),
         pgettext('sebastian', 'Accessible theme'),
+        # Online help (help/, _help_layout.html, help_book.html, list/detail help icon):
+        pgettext('sebastian', 'Help'),
+        pgettext('sebastian', 'Help contents'),
+        pgettext('sebastian', 'Help pages'),
+        pgettext('sebastian', 'Single page, to print as PDF'),
+        pgettext('sebastian', 'Print / PDF'),
+        pgettext('sebastian', 'Contents'),
     )

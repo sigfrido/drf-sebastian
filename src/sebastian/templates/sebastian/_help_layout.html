@@ -1,0 +1,95 @@
+{% load static sebastian_tags %}
+{# Help page body, shared by the packs (sebastian.help): table of contents and page #}
+<style>
+  /* here rather than in sebastian.css: not hidden by a cached copy of the stylesheet */
+  .sb-help-content {
+    max-width: 60rem;
+    min-width: 0;   /* a column of the grid: wide content must not widen it */
+  }
+  /* nothing wider than the column: images and diagrams scale down, tables and code scroll */
+  .sb-help-content img,
+  .sb-help-content .mermaid svg {
+    max-width: 100% !important;
+    height: auto;
+  }
+  .sb-help-content pre {
+    overflow-x: auto;
+  }
+  .sb-help-content img {
+    border: 1px solid var(--bs-border-color);
+    border-radius: .25rem;
+  }
+  .sb-help-content table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    margin: 1rem 0;
+    border-collapse: collapse;
+  }
+  .sb-help-content th,
+  .sb-help-content td {
+    border: 1px solid var(--bs-border-color);
+    padding: .25rem .5rem;
+    vertical-align: top;
+  }
+  .sb-help-content h1 { font-size: 1.75rem; margin-bottom: 1rem; }
+  .sb-help-content h2 { font-size: 1.4rem; margin-top: 1.75rem; }
+  .sb-help-content h3 { font-size: 1.15rem; margin-top: 1.25rem; }
+  .sb-help-content .admonition {
+    border-left: .25rem solid var(--bs-primary);
+    background: var(--bs-tertiary-bg);
+    padding: .5rem 1rem;
+    margin: 1rem 0;
+  }
+  .sb-help-content .admonition.warning { border-left-color: var(--bs-warning); }
+  .sb-help-content .admonition.danger { border-left-color: var(--bs-danger); }
+  .sb-help-content .admonition-title { font-weight: bold; margin-bottom: .25rem; }
+  .sb-help-content .mermaid { text-align: center; margin: 1rem 0; }
+  .sb-help-nav a[aria-current="page"] { color: var(--bs-emphasis-color); }
+  /* narrow screens: the contents above the page, scrolling within a limited height */
+  @media (max-width: 991.98px) {
+    .sb-help-nav {
+      max-height: 35vh;
+      overflow-y: auto;
+      border-bottom: 1px solid var(--bs-border-color);
+      padding-bottom: .5rem;
+    }
+  }
+</style>
+<div class="row sb-help">
+  <nav class="col-12 col-lg-3 mb-3 sb-help-nav" aria-label="{% strans 'Help contents' %}">
+    <a href="{% url 'sebastian-help-index' %}" class="d-block fw-semibold text-decoration-none">{% icon "question-circle" %} {{ help_title }}</a>
+    {# below the title, e.g. the version of the application: override sebastian/_help_subtitle.html #}
+    <div class="small text-muted mb-2">{% include "sebastian/_help_subtitle.html" %}</div>
+    {% for book in help_books %}
+    <div class="d-flex justify-content-between align-items-center mt-3">
+      <span class="small fw-semibold text-uppercase text-secondary">{{ book.title }}</span>
+      <a href="{% url 'sebastian-help-book' book.slug %}" target="_blank" rel="noopener"
+         class="text-secondary" title="{% strans 'Single page, to print as PDF' %}">{% icon "printer" %}</a>
+    </div>
+    <ul class="list-unstyled ms-2 mb-0">
+      {% for p in book.pages %}
+      <li class="py-1"><a href="{% url 'sebastian-help-page' p.name %}"
+          class="text-decoration-none{% if p.name == help_page %} fw-semibold{% endif %}"
+          {% if p.name == help_page %}aria-current="page"{% endif %}>{{ p.title }}</a></li>
+      {% endfor %}
+    </ul>
+    {% endfor %}
+  </nav>
+  <article class="col-12 col-lg-9 sb-help-content">
+    {{ help_content|safe }}
+    {% if help_previous or help_next %}
+    <nav class="d-flex justify-content-between gap-3 border-top pt-3 mt-4" aria-label="{% strans 'Help pages' %}">
+      <span>{% if help_previous %}<a href="{% url 'sebastian-help-page' help_previous.name %}">{% icon "arrow-left" %} {{ help_previous.title }}</a>{% endif %}</span>
+      <span>{% if help_next %}<a href="{% url 'sebastian-help-page' help_next.name %}">{{ help_next.title }} {% icon "arrow-right" %}</a>{% endif %}</span>
+    </nav>
+    {% endif %}
+  </article>
+</div>
+{% if help_has_mermaid %}
+<script src="{% static help_mermaid_js %}"></script>
+<script>
+  mermaid.initialize({startOnLoad: false, theme: '{% if skin_name == "dark" %}dark{% else %}default{% endif %}'});
+  mermaid.run({querySelector: '.sb-help-content .mermaid'});
+</script>
+{% endif %}

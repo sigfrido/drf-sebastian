@@ -10,7 +10,7 @@
 {% actions "actions" as detail_actions %}
 <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
   <div>
-    <h4><a href="{{ list_link|default:'..' }}">{{ view.get_view_name }}</a> — {{ instance }}</h4>
+    <h4><a href="{{ list_link|default:'..' }}">{{ view.get_view_name }}</a> — {{ instance }}{% if help_url %} <a href="{{ help_url }}" target="_blank" rel="noopener" class="fs-6 text-secondary text-decoration-none" title="{% strans 'Help' %}">{% icon "question-circle" %}</a>{% endif %}</h4>
     {% block extra_detail_subtitle %}{% endblock %}
   </div>
   {% if view.can_update or view.can_delete or detail_actions.strip %}
