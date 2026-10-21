@@ -60,7 +60,9 @@
     }
   }
 </style>
-<div class="row sb-help">
+{# project's stylesheets for its help pages (HELP['CSS']) #}
+{% for css in help_css %}<link rel="stylesheet" href="{% static css %}">
+{% endfor %}<div class="row sb-help">
   <nav class="col-12 col-lg-3 mb-3 sb-help-nav" aria-label="{% strans 'Help contents' %}">
     <a href="{% url 'sebastian-help-index' %}" class="d-block fw-semibold text-decoration-none">{% icon "question-circle" %} {{ help_title }}</a>
     {# below the title, e.g. the version of the application: override sebastian/_help_subtitle.html #}

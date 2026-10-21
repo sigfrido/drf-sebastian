@@ -43,6 +43,9 @@ class TestHelpPages:
         assert 'href="https://www.djangoproject.com/" rel="noopener" target="_blank"' in html
         html = auth_client.get('/gui/help/workflow/').content.decode()
         assert '<div class="mermaid">stateDiagram-v2' in html
+        # Markdown inside <div ... markdown="1"> (md_in_html), e.g. a part wrapped to be styled
+        assert '<div class="demo-states">' in html
+        assert '<h2 id="draft">Draft</h2>' in html and '<em>draft</em>' in html
         assert 'mermaid/mermaid.min.js' in html
 
     def test_book_single_page(self, auth_client):
@@ -104,3 +107,12 @@ def test_help_off_without_pages_dir(settings):
     from sebastian.help import help_url
     settings.SEBASTIAN = {**settings.SEBASTIAN, 'HELP': {}}
     assert help_url('workflow') == ''
+
+
+@pytest.mark.django_db
+def test_project_stylesheets(auth_client, settings):
+    settings.SEBASTIAN = {**settings.SEBASTIAN,
+                          'HELP': {**settings.SEBASTIAN['HELP'], 'CSS': ['demo/help.css']}}
+    for url in ('/gui/help/gui/requests/', '/gui/help/book/guide/'):
+        html = auth_client.get(url).content.decode()
+        assert '<link rel="stylesheet" href="/static/demo/help.css">' in html, url

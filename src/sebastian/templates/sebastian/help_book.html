@@ -68,6 +68,8 @@
       .mermaid svg { max-width: 100% !important; max-height: 200mm; width: auto; height: auto; }
     }
   </style>
+  {% for css in help_css %}<link rel="stylesheet" href="{% static css %}">
+  {% endfor %}
 </head>
 <body>
   <div class="toolbar"><button type="button" onclick="window.print()">{% strans "Print / PDF" %}</button></div>

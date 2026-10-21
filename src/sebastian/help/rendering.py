@@ -28,6 +28,8 @@ def _markdown(treeprocessor):
     md = markdown.Markdown(extensions=[
         'toc', 'tables', 'attr_list', 'admonition', 'pymdownx.details',
         'pymdownx.superfences',
+        # Markdown inside <div class="…" markdown="1">: pages can wrap parts in a class to style
+        'md_in_html',
     ], extension_configs={
         'toc': {'permalink': False},
         'pymdownx.superfences': {'custom_fences': [

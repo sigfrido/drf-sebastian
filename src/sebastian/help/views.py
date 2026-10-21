@@ -36,6 +36,7 @@ def _context(request, site, page):
         'help_previous': {'name': previous, 'title': site.title(previous)} if previous else None,
         'help_next': {'name': following, 'title': site.title(following)} if following else None,
         'help_mermaid_js': 'sebastian/vendor/mermaid/mermaid.min.js',
+        'help_css': app_settings.help_css(),
     }
 
 
@@ -83,6 +84,7 @@ def help_book(request, slug):
         'pages': [{'name': name, 'html': r.html, 'headings': r.headings} for name, r in pages],
         'help_has_mermaid': any(r.has_mermaid for _, r in pages),
         'help_mermaid_js': 'sebastian/vendor/mermaid/mermaid.min.js',
+        'help_css': app_settings.help_css(),
         'skin_name': app_settings.skin(),
     })
 

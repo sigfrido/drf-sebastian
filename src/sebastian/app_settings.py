@@ -204,6 +204,12 @@ def help_index_page() -> str:
     return help_settings().get('INDEX', 'index')
 
 
+def help_css() -> list:
+    """``HELP['CSS']`` — static paths of the project's stylesheets for the help pages and the
+    books' single pages (e.g. styles for its own documents). Default: ``[]``."""
+    return list(help_settings().get('CSS', []) or [])
+
+
 def default_filter_store() -> str | None:
     """``DEFAULT_FILTER_STORE`` — dotted path of the `DefaultFilterStore` keeping the users'
     own default list filters (see `sebastian.default_filter`); ``None`` disables saving.

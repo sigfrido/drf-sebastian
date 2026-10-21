@@ -624,10 +624,11 @@ Actions with no explicit `group` key default to `'actions'`.
 
 `sebastian.help` serves help pages written in Markdown inside the GUI, behind the same login (`help` extra: `markdown`, `pymdown-extensions`). It is on when `SEBASTIAN['HELP']['PAGES_DIR']` is set.
 
-- **Pages**: `*.md` files in `PAGES_DIR` (sub-folders allowed), with images and other files next to them. Plain Markdown links and images, relative to the page (`[text](../workflow/phases.md#owner)`, `![alt](img/home.png)`): the help rewrites them to help URLs, so the same files read correctly in GitHub or an IDE preview. Markdown extensions: `toc` (heading ids), `tables`, `attr_list`, `admonition` (`!!! note "Title"`), `pymdownx.details`, `pymdownx.superfences` with a `mermaid` fence drawn in the browser by the vendored mermaid.js (loaded only on pages with a diagram). External links open in a new tab.
+- **Pages**: `*.md` files in `PAGES_DIR` (sub-folders allowed), with images and other files next to them. Plain Markdown links and images, relative to the page (`[text](../workflow/phases.md#owner)`, `![alt](img/home.png)`): the help rewrites them to help URLs, so the same files read correctly in GitHub or an IDE preview. Markdown extensions: `toc` (heading ids), `tables`, `attr_list`, `md_in_html` (Markdown inside `<div class="…" markdown="1">`, e.g. to style a part of a page), `admonition` (`!!! note "Title"`), `pymdownx.details`, `pymdownx.superfences` with a `mermaid` fence drawn in the browser by the vendored mermaid.js (loaded only on pages with a diagram). External links open in a new tab.
 - **Table of contents**: `index.md` (`HELP['INDEX']`): its H1 is the title of the help, each H2 a *book* (slug from the title, or `## Title {#slug}`) followed by the ordered list of links to its pages. It drives the side navigation, previous/next and the books.
 - **Single page of a book** (`/gui/help/book/<slug>/`): the pages of the book in index order, as chapters (page H1 → H2, ids prefixed with the page), numbered with CSS counters, with a table of contents; links to pages of the same book become anchors. A standalone page with a print stylesheet (A4, a chapter per page, page footer with title and page numbers through `@page` margin boxes): print it as PDF from the browser.
 - **URLs** (`GUIRouter`): `help/` (index), `help/<page>/`, `help/book/<slug>/`, `help/file/<path>` (images and attachments only; never the `.md` sources, nothing outside `PAGES_DIR`). Names: `sebastian-help-index`, `-page`, `-book`, `-file`.
+- **Project styles**: `HELP['CSS']`, a list of static paths, adds the project's stylesheets to the help pages and the books' single pages (e.g. styles for its own generated documents).
 - **Subtitle**: the template `sebastian/_help_subtitle.html` (empty) is included below the title in the contents and below the book title in its single page (as plain text also in the printed footer): a project overrides it, e.g. with the version of the application.
 - **Contextual help**: `Sebastian.help_page = 'gui/lists'` (optionally `#anchor`) shows a help icon next to the title of list and detail pages; `{% help_url "page#anchor" %}` (index without argument, `''` when the help is off) for menus and links; `sebastian.help.help_url()` from Python.
 
@@ -842,7 +843,7 @@ SEBASTIAN = {
     'DEFAULT_FILTER_STORE': 'sebastian.default_filter.SessionDefaultFilterStore',
 
     # Online help (§4.12): off without PAGES_DIR
-    'HELP': {'PAGES_DIR': BASE_DIR / 'help', 'INDEX': 'index'},
+    'HELP': {'PAGES_DIR': BASE_DIR / 'help', 'INDEX': 'index', 'CSS': []},
 }
 ```
 
