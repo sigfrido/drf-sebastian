@@ -24,9 +24,12 @@
     }
     h1 { font-size: 20pt; margin: 0 0 1rem; }
     .subtitle { color: #666; margin: -.75rem 0 1.25rem; }
+    /* decreasing heading sizes down to h5 = body text (11pt) */
     h2 { font-size: 15pt; margin-top: 0; }
-    h3 { font-size: 12.5pt; margin-top: 1.25rem; }
-    h4 { font-size: 11pt; }
+    h3 { font-size: 13pt; margin-top: 1.25rem; }
+    h4 { font-size: 12pt; margin-top: 1rem; }
+    h5 { font-size: 11pt; margin-top: .9rem; }
+    h6 { font-size: 10pt; margin-top: .8rem; }
     /* chapter numbers: the pages are the chapters (h2), their sections the h3 */
     .chapter h2 { counter-increment: chapter; counter-reset: section; }
     .chapter h2::before { content: counter(chapter) ". "; }
