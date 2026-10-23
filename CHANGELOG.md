@@ -2,6 +2,16 @@
 
 All notable changes to this project are documented here, starting from this release. Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Added
+
+- **Actions opening a modal**: `gui_config['modal']` on a GET action makes its button (detail and list rows, htmx pack) `hx-get` the action into `#sebastian-modal`; the response is the markup of a Bootstrap modal, shown as for confirmation modals (e.g. a custom multi-step dialog). The plain pack renders a normal link (opus #84: remote signing of the compatibility statement)
+
+### Fixed
+
+- **`open_url` on file links in lists**: the file links of `link_field` actions in list rows (inline sections included) open in a new tab when the action has `open_url`, as on the detail page (htmx and plain packs); they replaced the page
+
 ## [1.1.0] - 2026-10-21
 
 ### Added

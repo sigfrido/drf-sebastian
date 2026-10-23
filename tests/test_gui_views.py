@@ -341,6 +341,28 @@ class TestAttachmentInlineGUI:
         monkeypatch.setitem(AttachmentViewSet.download.gui_config, 'open_url', True)
         assert link in auth_client.get(url, **HTMX).content
 
+    def test_link_field_in_list_opens_in_new_tab_only_with_open_url(self, auth_client, purchase_request,
+                                                                     attachment, monkeypatch):
+        from demo.views import AttachmentViewSet
+        url = f'/gui/requests/{purchase_request.pk}/attachments/'
+        link = f'href="{url}{attachment.pk}/download/" target="_blank" rel="noopener"'.encode()
+        assert link not in auth_client.get(url, **HTMX).content
+        monkeypatch.setitem(AttachmentViewSet.download.gui_config, 'open_url', True)
+        assert link in auth_client.get(url, **HTMX).content
+
+    def test_modal_action_loads_into_modal(self, auth_client, purchase_request, attachment,
+                                           monkeypatch):
+        from demo.views import AttachmentViewSet
+        cfg = dict(AttachmentViewSet.download.gui_config, position='both', modal=True, label='Sign')
+        cfg.pop('link_field')
+        monkeypatch.setattr(AttachmentViewSet.download, 'gui_config', cfg)
+        import re
+        url = f'/gui/requests/{purchase_request.pk}/attachments/{attachment.pk}/'
+        button = re.compile(rf'hx-get="{url}download/"\s+hx-target="#sebastian-modal"')
+        assert button.search(auth_client.get(url, **HTMX).content.decode())
+        rows = auth_client.get(f'/gui/requests/{purchase_request.pk}/attachments/', **HTMX)
+        assert button.search(rows.content.decode())
+
     def test_inline_update_returns_updated_list(self, auth_client, purchase_request, attachment):
         r = auth_client.patch(
             f'/gui/requests/{purchase_request.pk}/attachments/{attachment.pk}/',

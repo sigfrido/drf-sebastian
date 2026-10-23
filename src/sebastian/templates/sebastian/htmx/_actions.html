@@ -25,6 +25,16 @@
   {% if cfg.icon %}{% icon cfg.icon %}{% endif %}
   {{ cfg.label }}
 </button>
+{% elif cfg.modal %}
+{# the GET response is a modal (.modal markup), shown in #sebastian-modal #}
+<button class="btn {{ cfg|btn_class_cfg:skin_name }} btn-sm"
+        hx-get="{{ object_url }}{{ action.name }}/"
+        hx-target="#sebastian-modal"
+        hx-swap="innerHTML"
+        title="{{ cfg.hint|default:cfg.label|default:action.name }}">
+  {% if cfg.icon %}{% icon cfg.icon %}{% endif %}
+  {{ cfg.label }}
+</button>
 {% elif cfg.open_url %}
 <a href="{{ object_url }}{{ action.name }}/"
    target="_blank"
