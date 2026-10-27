@@ -57,6 +57,16 @@ class TestDefaultFilter:
         r = auth_client.get(REQUESTS + '?_filter=default', **GUI)
         assert r['Location'] == f'{REQUESTS}?{DECLARED}'
 
+    def test_own_default_filter_off(self, auth_client, monkeypatch):
+        from demo.views import SupplierViewSet
+        auth_client.post('/gui/suppliers/default-filter/', {'op': 'save', 'active': 'true'})
+        monkeypatch.setattr(SupplierViewSet.Sebastian, 'own_default_filter', False, raising=False)
+        html = auth_client.get('/gui/suppliers/', **HTMX).content.decode()
+        assert 'default-filter/' not in html
+        # a filter saved earlier no longer applies; saving is refused
+        assert auth_client.get('/gui/suppliers/?_filter=default', **GUI)['Location'] == '/gui/suppliers/'
+        assert auth_client.post('/gui/suppliers/default-filter/', {'op': 'save'}).status_code == 404
+
     def test_own_default_on_list_without_declared_default(self, auth_client):
         html = auth_client.get('/gui/suppliers/', **GUI).content.decode()
         assert 'Save as default' in html and '>Default<' not in html.replace('\n', '')

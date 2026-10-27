@@ -226,3 +226,21 @@ def test_has_empty_choice():
     assert has_empty_choice(serializers.ChoiceField(choices=choices, required=False, allow_null=True))
     # optional, neither blank nor null (model field with a default): no empty option
     assert not has_empty_choice(serializers.ChoiceField(choices=choices, required=False))
+
+
+# ── bootstrapfield ────────────────────────────────────────────────────────────
+
+def test_bootstrapfield_classes_by_widget():
+    from django import forms
+    from sebastian.templatetags.sebastian_tags import bootstrapfield
+
+    class Form(forms.Form):
+        name = forms.CharField()
+        kind = forms.ChoiceField(choices=[('a', 'A')])
+        flag = forms.BooleanField(widget=forms.CheckboxInput)
+
+    form = Form()
+    assert 'form-control form-control-sm' in bootstrapfield(form['name'])
+    assert 'form-select form-select-sm' in bootstrapfield(form['kind'])
+    flag = bootstrapfield(form['flag'])
+    assert 'form-check-input' in flag and 'form-control' not in flag

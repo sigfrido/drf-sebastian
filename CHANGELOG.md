@@ -2,6 +2,16 @@
 
 All notable changes to this project are documented here, starting from this release. Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Added
+
+- **`Sebastian.own_default_filter = False`**: no users' own default filter on that list (no *Save as default* / *Restore default*; a saved one is ignored; `default-filter/` answers 404), for lists where it makes no sense (opus #16)
+
+### Fixed
+
+- **Checkbox filters**: a `CheckboxInput` filter field gets `form-check-input` (was `form-control`, an empty white box) and is vertically centred with its label (htmx and plain packs)
+
 ## [1.2.0] - 2026-10-23
 
 ### Added

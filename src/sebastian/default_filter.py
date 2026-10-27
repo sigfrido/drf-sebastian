@@ -18,6 +18,8 @@ use that URL.
 The user's own default filters are kept by the store named by
 ``SEBASTIAN['DEFAULT_FILTER_STORE']`` (dotted path of a `DefaultFilterStore`
 subclass; default `SessionDefaultFilterStore`; ``None`` = no saving).
+``Sebastian.own_default_filter = False`` turns them off for one list (e.g. a
+list with a single trivial filter).
 """
 from urllib.parse import urlencode
 
@@ -82,9 +84,12 @@ def has_default(viewset_class):
     return declared_default(viewset_class) is not None
 
 
-def _user_store(request):
+def _user_store(request, view):
+    """The store of the users' own default filters, None when the list has none."""
     user = getattr(request, 'user', None)
     if user is None or not user.is_authenticated:
+        return None
+    if not getattr(getattr(type(view), 'Sebastian', None), 'own_default_filter', True):
         return None
     return get_store()
 
@@ -95,7 +100,7 @@ def store_key(view):
 
 
 def personal_default(view, request):
-    store = _user_store(request)
+    store = _user_store(request, view)
     return store.get(request, store_key(view)) if store else None
 
 
@@ -122,7 +127,7 @@ def querystring_of(params):
 def list_context(view, request):
     """Context of the list template's filter button: every GUI list can have the user's own
     default filter (with a store); *Default* is offered when one applies (declared or own)."""
-    store = _user_store(request)
+    store = _user_store(request, view)
     personal = store.get(request, store_key(view)) if store else None
     return {
         'url':          f'{request.path}?{FILTER_PARAM}={DEFAULT}',

@@ -437,6 +437,7 @@ class Sebastian:
 - Menu items `MenuItem(action='list')` point to `?_filter=default` (so do `MenuLinksPlugin` buttons on the home page); `MenuItem(..., default_filter=True|False)` forces it on or off (e.g. `url_name` items pointing to another viewset's list). The active-item match ignores the query string.
 - The htmx list's **Filter** button is a split button: *Clear*, *Default* (when a declared or own default filter applies), *Save as default* (the current filters and ordering, without `page`), *Restore default* (only when the user saved one). Save/restore POST to `<list>/default-filter/` (`op=save|reset`, route `{basename}-gui-default-filter`) and redirect to `?_filter=default` with a message. The block is `{% block filter_buttons %}`. The plain pack shows *Clear* and *Default* only.
 - The users' own default filters are kept by `SEBASTIAN['DEFAULT_FILTER_STORE']`, dotted path of a `sebastian.default_filter.DefaultFilterStore` (`get/set/delete(request, key, ...)`, key = router basename); default `SessionDefaultFilterStore` (until logout); `None` disables saving. Projects keep them in their user profile with their own store.
+- `Sebastian.own_default_filter = False` turns the users' own default filters off for one list (e.g. a list with a single trivial filter): no *Save as default* / *Restore default*, a saved one is ignored, `default-filter/` answers 404. The declared `default_filter` still applies.
 
 **Metavalues** (`sebastian.filters`, needs django-filter): extra choices of a filter computed for the current user, like workflango's `owner=me`:
 

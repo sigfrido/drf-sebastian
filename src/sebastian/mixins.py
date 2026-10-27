@@ -613,7 +613,7 @@ class GUIMixin(_SebastianBaseMixin):
         list with its default filter."""
         from django.contrib import messages
         from django.http import HttpResponseRedirect
-        store = default_filter._user_store(request)
+        store = default_filter._user_store(request, self)
         if store is None:
             from rest_framework.exceptions import NotFound
             raise NotFound()

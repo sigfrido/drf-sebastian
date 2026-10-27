@@ -35,7 +35,7 @@
   {% endif %}
   {% block filter_fields %}
   {% for field in filter_form %}
-  <div class="col-auto d-flex align-items-start gap-1">
+  <div class="col-auto d-flex {% if field.widget_type == 'checkbox' %}align-items-center{% else %}align-items-start{% endif %} gap-1">
     <label class="col-form-label col-form-label-sm text-nowrap" for="{{ field.id_for_label }}">{{ field.label }}</label>
     {{ field|bootstrapfield }}
   </div>

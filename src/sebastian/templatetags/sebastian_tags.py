@@ -348,6 +348,8 @@ def json(value) -> str:
 def bootstrapfield(field):
     if field.widget_type in ('select', 'selectmultiple'):
         return add_class(field, 'form-select form-select-sm')
+    if field.widget_type == 'checkbox':
+        return add_class(field, 'form-check-input')
     return add_class(field, 'form-control form-control-sm')
 
 @register.filter
