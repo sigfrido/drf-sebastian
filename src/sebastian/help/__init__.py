@@ -21,6 +21,16 @@ preview; the help rewrites them to help URLs. Each book is also available as a s
 page (pages in index order, headings numbered, links within the book turned into anchors), to
 print as PDF from the browser.
 
+A book can be restricted to some users with ``SEBASTIAN['HELP']['BOOKS']``: ``{book slug:
+permission}``, a permission-like callable ``(request, obj)`` (called with ``obj=None``) or its
+dotted path; books not listed are visible to every logged-in user. For the others a restricted
+book disappears from the navigation and from the index page, its pages and single page answer
+404, previous/next skip it and contextual help icons pointing to it are hidden. Help files
+(images, PDF) are not restricted::
+
+    SEBASTIAN = {'HELP': {'PAGES_DIR': BASE_DIR / 'help',
+                          'BOOKS': {'admin': 'sebastian.permissions.perm_is_staff'}}}
+
 A ViewSet links its own page with ``Sebastian.help_page = 'gui/lists'`` (optionally with
 ``#anchor``): list and detail pages then show a help icon. Requires the ``help`` extra
 (``markdown`` and ``pymdown-extensions``).

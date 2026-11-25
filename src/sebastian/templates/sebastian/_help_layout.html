@@ -50,6 +50,10 @@
   .sb-help-content .admonition-title { font-weight: bold; margin-bottom: .25rem; }
   .sb-help-content .mermaid { text-align: center; margin: 1rem 0; }
   .sb-help-nav a[aria-current="page"] { color: var(--bs-emphasis-color); }
+  /* wide screens: a thin line between the contents and the page (the skin's border colour) */
+  @media (min-width: 992px) {
+    .sb-help-nav { border-right: 1px solid var(--bs-border-color); }
+  }
   /* narrow screens: the contents above the page, scrolling within a limited height */
   @media (max-width: 991.98px) {
     .sb-help-nav {

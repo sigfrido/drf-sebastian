@@ -6,7 +6,7 @@ from django.shortcuts import render
 
 from .. import app_settings
 from .rendering import render_book, render_page
-from .site import get_site
+from .site import book_visible, get_site
 
 # files of the help folder that can be served (images, attachments); never the sources
 _SERVED = {'.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.pdf'}
@@ -22,14 +22,14 @@ def _site_or_404():
 def _context(request, site, page):
     from ..views import gui_page_context
     index = site.index()
-    previous, following = site.neighbours(page)
+    previous, following = site.neighbours(page, request)
     return {
         **gui_page_context(request),
         'help_title': index.title,
         'help_books': [
             {'slug': b.slug, 'title': b.title,
              'pages': [{'name': p, 'title': site.title(p)} for p in b.pages if site.exists(p)]}
-            for b in index.books
+            for b in site.visible_books(request)
         ],
         'help_page': page,
         'help_book': site.book_of(page),
@@ -47,9 +47,12 @@ def help_index(request):
 
 def help_page(request, page):
     site = _site_or_404()
-    if not site.exists(page):
+    # a page of a book the user cannot see does not exist for them (HELP['BOOKS'])
+    if not site.exists(page) or not site.page_visible(page, request):
         raise Http404(f'Help page not found: {page}')
-    rendered = render_page(site, page)
+    # the index lists every book: without the sections of the books the user cannot see
+    rendered = render_page(site, page, source=site.index_source(request)
+                           if page == site.index_page else None)
     context = _context(request, site, page)
     context.update({
         'page_title': f'{site.title(page)} — {context["help_title"]}',
@@ -63,7 +66,7 @@ def help_book(request, slug):
     """Single printable page of a book: its pages in index order (print it as PDF)."""
     site = _site_or_404()
     book = site.book(slug)
-    if book is None:
+    if book is None or not book_visible(book, request):
         raise Http404(f'Help book not found: {slug}')
     from django.template.loader import render_to_string
     from django.utils.html import strip_tags

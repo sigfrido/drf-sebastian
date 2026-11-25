@@ -191,17 +191,23 @@ class SebastianHTMLRenderer(BaseRenderer):
             'messages_url':       messages_url,
             'file_field_template': f'sebastian/{pack}/_file_field.html',
             # contextual help (Sebastian.help_page, sebastian.help)
-            'help_url':           self._get_help_url(sebastian_config, is_inline),
+            'help_url':           self._get_help_url(sebastian_config, is_inline, request),
         }
 
         return render_to_string(template_name, context, request=request)
 
     @staticmethod
-    def _get_help_url(sebastian_config, is_inline) -> str:
+    def _get_help_url(sebastian_config, is_inline, request=None) -> str:
         page = getattr(sebastian_config, 'help_page', None)
         if not page or is_inline:
             return ''
-        from .help import help_url
+        from .help import help_url, get_site
+        from .help.site import normalize
+        site = get_site()
+        # no icon towards a page of a book the user cannot see (HELP['BOOKS'])
+        if site is not None and request is not None and \
+                not site.page_visible(normalize(page.partition('#')[0]), request):
+            return ''
         return help_url(page)
 
     def _render_error(self, data, response, request) -> str:

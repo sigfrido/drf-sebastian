@@ -116,3 +116,56 @@ def test_project_stylesheets(auth_client, settings):
     for url in ('/gui/help/gui/requests/', '/gui/help/book/guide/'):
         html = auth_client.get(url).content.decode()
         assert '<link rel="stylesheet" href="/static/demo/help.css">' in html, url
+
+
+# ── books visible only to some users (HELP['BOOKS']) ─────────────────────────
+
+def _solo_superuser(request, obj):
+    return request.user.is_superuser
+
+
+@pytest.fixture
+def guide_for_superusers(settings):
+    """The 'guide' book visible only to superusers (dotted path of a permission-like callable)."""
+    settings.SEBASTIAN = {**settings.SEBASTIAN, 'HELP': {
+        **settings.SEBASTIAN['HELP'], 'BOOKS': {'guide': 'tests.test_help._solo_superuser'}}}
+
+
+@pytest.mark.django_db
+class TestRestrictedBooks:
+
+    def test_hidden_from_other_users(self, auth_client_regular, guide_for_superusers):
+        html = auth_client_regular.get('/gui/help/').content.decode()
+        assert 'href="/gui/help/book/guide/"' not in html
+        assert 'href="/gui/help/gui/requests/"' not in html
+        assert 'href="/gui/help/book/workflow/"' in html   # books without a rule: everyone
+        assert auth_client_regular.get('/gui/help/gui/requests/').status_code == 404
+        assert auth_client_regular.get('/gui/help/book/guide/').status_code == 404
+        # previous / next skip the pages of the hidden book
+        html = auth_client_regular.get('/gui/help/workflow/').content.decode()
+        assert '/gui/help/gui/suppliers/' not in html
+
+    def test_visible_to_allowed_users(self, auth_client, guide_for_superusers):
+        html = auth_client.get('/gui/help/').content.decode()
+        assert 'href="/gui/help/book/guide/"' in html
+        assert auth_client.get('/gui/help/gui/requests/').status_code == 200
+        assert auth_client.get('/gui/help/book/guide/').status_code == 200
+
+    def test_callable_and_contextual_icon(self, settings, rf, admin_user, regular_user):
+        from sebastian.help import get_site
+        from sebastian.permissions import perm_is_staff
+        from sebastian.renderers import SebastianHTMLRenderer
+        settings.SEBASTIAN = {**settings.SEBASTIAN, 'HELP': {
+            **settings.SEBASTIAN['HELP'], 'BOOKS': {'guide': perm_is_staff}}}
+        site = get_site()
+
+        class Config:
+            help_page = 'gui/requests#submitting'
+
+        for user, visible in ((regular_user, False), (admin_user, True)):
+            request = rf.get('/')
+            request.user = user
+            assert site.page_visible('gui/requests', request) is visible
+            assert site.page_visible('workflow', request)
+            url = SebastianHTMLRenderer._get_help_url(Config, False, request)
+            assert url == ('/gui/help/gui/requests/#submitting' if visible else '')

@@ -49,10 +49,11 @@ class RenderedPage:
         self.has_mermaid = 'class="mermaid"' in html
 
 
-def render_page(site, page, book=None):
-    """HTML of `page`. With `book` (a `Book`), for the book's single page: headings one level
-    down (the book title is the H1) and ids prefixed by the page, links to pages of the same
-    book turned into anchors."""
+def render_page(site, page, book=None, source=None):
+    """HTML of `page` (or of `source`, its text already filtered, e.g. the index without the
+    books the user cannot see). With `book` (a `Book`), for the book's single page: headings
+    one level down (the book title is the H1) and ids prefixed by the page, links to pages of
+    the same book turned into anchors."""
     headings = []
 
     def url_of(target, anchor):
@@ -90,7 +91,7 @@ def render_page(site, page, book=None):
                     el.set('id', page_anchor(page) if level == 2 else page_anchor(page, hid))
                 headings.append((level, el.get('id') or '', ''.join(el.itertext())))
 
-    html = _markdown(rewrite).convert(site.source(page))
+    html = _markdown(rewrite).convert(site.source(page) if source is None else source)
     if book is not None:
         # anchors written as raw HTML (<a id="x"></a>, e.g. generated documents) are not in the
         # Markdown tree: prefix them like the heading ids

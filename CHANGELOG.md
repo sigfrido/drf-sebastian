@@ -2,6 +2,16 @@
 
 All notable changes to this project are documented here, starting from this release. Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Added
+
+- **Help books visible only to some users** (`SEBASTIAN['HELP']['BOOKS']`): `{book slug: permission}`, the permission being a permission-like callable `(request, obj)` (called with `obj=None`, e.g. `sebastian.permissions.perm_is_staff`) or its dotted path; books not listed stay visible to every logged-in user. For the other users a restricted book is not in the side navigation nor in the index page, its pages and its single page answer 404, previous/next skip it and the contextual help icon of a ViewSet pointing to it is hidden. Files of the help folder (images, PDF) are still served to every logged-in user (opus: per-module and administration books)
+
+### Changed
+
+- **Help pages**: a thin line (the skin's border colour) separates the side contents from the page on wide screens; on narrow screens the contents keep their bottom line
+
 ## [1.2.1] - 2026-10-29
 
 ### Added

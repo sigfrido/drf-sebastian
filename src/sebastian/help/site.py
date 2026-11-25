@@ -119,13 +119,52 @@ class HelpSite:
     def book_of(self, page: str):
         return next((b for b in self.index().books if page in b.pages), None)
 
-    def neighbours(self, page: str):
-        """(previous, next) page in index order, across books; None at the ends."""
-        order = [p for b in self.index().books for p in b.pages]
+    # ------------------------------------------------------------------ visibility
+
+    def visible_books(self, request):
+        """Books of the index the user of `request` can see (``HELP['BOOKS']``)."""
+        return [b for b in self.index().books if book_visible(b, request)]
+
+    def index_source(self, request) -> str:
+        """Source of the index page without the sections (H2 and what follows, up to the next
+        H2) of the books the user of `request` cannot see."""
+        hidden = {b.title for b in self.index().books if not book_visible(b, request)}
+        lines, skipping = [], False
+        for line in self.source(self.index_page).splitlines():
+            heading = _HEADING.match(line)
+            if heading and len(heading.group(1)) <= 2:
+                skipping = len(heading.group(1)) == 2 and heading.group(2) in hidden
+            if not skipping:
+                lines.append(line)
+        return '\n'.join(lines)
+
+    def page_visible(self, page: str, request) -> bool:
+        """True if the page is in a book the user can see, or in no book (e.g. the index)."""
+        books = [b for b in self.index().books if page in b.pages]
+        return not books or any(book_visible(b, request) for b in books)
+
+    def neighbours(self, page: str, request=None):
+        """(previous, next) page in index order, across books; None at the ends. With `request`,
+        only pages of the books the user can see."""
+        books = self.index().books if request is None else self.visible_books(request)
+        order = [p for b in books for p in b.pages]
         if page not in order:
             return None, None
         i = order.index(page)
         return (order[i - 1] if i > 0 else None), (order[i + 1] if i < len(order) - 1 else None)
+
+
+def book_visible(book, request) -> bool:
+    """True if the user of `request` can see `book`: its permission in ``HELP['BOOKS']``
+    (permission-like callable or dotted path, called with ``obj=None``), visible to all if it
+    has none."""
+    permission = app_settings.help_book_permissions().get(book.slug)
+    if permission is None:
+        return True
+    if isinstance(permission, str):
+        from django.utils.module_loading import import_string
+        permission = import_string(permission)
+    return bool(permission(request, None))
 
 
 _site = None

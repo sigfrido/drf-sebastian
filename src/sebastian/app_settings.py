@@ -204,6 +204,14 @@ def help_index_page() -> str:
     return help_settings().get('INDEX', 'index')
 
 
+def help_book_permissions() -> dict:
+    """``HELP['BOOKS']`` — who can see each book of the help: ``{book slug: permission}``, the
+    permission being a permission-like callable ``(request, obj)`` (called with ``obj=None``,
+    e.g. ``sebastian.permissions.perm_is_staff``) or its dotted path. Books not listed are
+    visible to every logged-in user. Default: ``{}``."""
+    return dict(help_settings().get('BOOKS', {}) or {})
+
+
 def help_css() -> list:
     """``HELP['CSS']`` — static paths of the project's stylesheets for the help pages and the
     books' single pages (e.g. styles for its own documents). Default: ``[]``."""
